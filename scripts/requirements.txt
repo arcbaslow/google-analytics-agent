@@ -1,0 +1,8 @@
+google-analytics-data>=0.18,<1
+google-analytics-admin>=0.22,<1
+google-auth>=2.25,<3
+google-auth-oauthlib>=1.2,<2
+google-api-python-client>=2.100,<3
+jinja2>=3.1,<4
+weasyprint>=60,<70
+pytest>=7.4,<9

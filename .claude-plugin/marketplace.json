@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "google-analytics-agent",
+  "owner": {
+    "name": "Dilshat Rakhimov"
+  },
+  "metadata": {
+    "description": "GA4 toolkit: data quality, funnel, segments, attribution, event taxonomy, property config; plus write surfaces for event rules, audiences, custom dimensions and metrics, key events, saved segments, and saved reports."
+  },
+  "plugins": [
+    {
+      "name": "google-analytics-agent",
+      "source": "./",
+      "description": "Specialist agents and skills covering both read-side analysis (funnel, segments, attribution, event taxonomy, data quality, property configuration) and write-side management (event rules, audiences, custom dimensions and metrics, key events, saved segments, custom reports)."
+    }
+  ]
+}

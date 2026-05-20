@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+pytest-cache-files-*/
+
+# Credentials and cache (local-only, never committed)
+.secrets/
+.ga4-credentials.json
+.ga4-cache/
+.ga4-definitions/
+*.token
+client_secret*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# Generated reports
+*.report.html
+*.report.pdf

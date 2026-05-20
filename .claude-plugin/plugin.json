@@ -1,0 +1,22 @@
+{
+  "name": "google-analytics-agent",
+  "version": "0.3.0",
+  "description": "Multi-agent toolkit for GA4. Read the Data and Admin APIs, audit data quality, funnels, attribution, event taxonomy, property configuration. Write side: edit event rules, manage audiences, custom dimensions, key events, saved segments, and saved reports.",
+  "author": {
+    "name": "Dilshat Rakhimov",
+    "url": "https://goodlabs.kz"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ga4",
+    "google-analytics",
+    "funnel",
+    "attribution",
+    "event-tracking",
+    "audiences",
+    "conversion-rate",
+    "data-quality",
+    "analytics-admin-api",
+    "analytics-data-api"
+  ]
+}

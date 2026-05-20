@@ -1,0 +1,33 @@
+[project]
+name = "google-analytics-agent"
+version = "0.3.0"
+description = "Multi-agent toolkit for analyzing and managing Google Analytics 4 properties. Works with Claude Code, Codex, and Gemini CLI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Dilshat Rakhimov" }
+]
+dependencies = [
+  "google-analytics-data>=0.18.0",
+  "google-analytics-admin>=0.22.0",
+  "google-auth>=2.25.0",
+  "google-auth-oauthlib>=1.2.0",
+  "jinja2>=3.1.0",
+  "weasyprint>=60.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "ruff>=0.1.0"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["scripts"]
+python_files = ["test_*.py"]
