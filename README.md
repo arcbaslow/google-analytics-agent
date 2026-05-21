@@ -1,5 +1,9 @@
 # google-analytics-agent
 
+[![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![version](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
+
 A multi-agent toolkit for Google Analytics 4. Talks to the GA4 Data API and
 Admin API, profiles the property's live website, runs specialist analysis
 subagents (funnel, segments, attribution, event taxonomy, data quality,
@@ -68,7 +72,21 @@ Three layers:
 
 ## Install
 
-From inside the project directory:
+From inside the project directory.
+
+### Recommended: `uv`
+
+```
+uv venv
+uv pip install -r scripts/requirements.txt
+uv run python scripts/ga4_auth.py --check
+```
+
+[`uv`](https://github.com/astral-sh/uv) is a single-binary Python installer
+and runner. One install of `uv` replaces the venv + pip dance and is
+faster on cold-start.
+
+### Plain venv (works everywhere)
 
 ```
 python -m venv .venv

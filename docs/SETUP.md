@@ -28,6 +28,23 @@ gcloud config set project <PROJECT_ID>
 gcloud services enable analyticsdata.googleapis.com analyticsadmin.googleapis.com
 ```
 
+## 2.5. Install Python deps
+
+The fastest path is [`uv`](https://github.com/astral-sh/uv):
+
+```
+uv venv
+uv pip install -r scripts/requirements.txt
+```
+
+Or plain `pip`:
+
+```
+python -m venv .venv
+source .venv/bin/activate              # or .venv\Scripts\Activate.ps1 on Windows
+pip install -r scripts/requirements.txt
+```
+
 ## 3. Authenticate (default path: gcloud ADC)
 
 For read-only analysis:
