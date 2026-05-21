@@ -1,0 +1,69 @@
+name: Bug report
+description: Something in the toolkit doesn't work the way the docs say it does.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, factual description. No screenshots needed unless they show a UI bug.
+      placeholder: "`python scripts/ga4_audit.py --property X` returned ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: "I expected ..."
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Exact command
+      placeholder: "python scripts/ga4_audit.py --property 123456789 --format md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error output
+      description: Full stderr / stack trace if there was one. Use a code block.
+      render: shell
+
+  - type: dropdown
+    id: auth-path
+    attributes:
+      label: Auth path
+      options:
+        - gcloud ADC (default)
+        - legacy OAuth client (--oauth)
+        - service account (GOOGLE_APPLICATION_CREDENTIALS)
+        - not sure
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "3.11.7"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "macOS 14.5 / Ubuntu 22.04 / Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Custom configuration, recent changes, suspected cause, etc.

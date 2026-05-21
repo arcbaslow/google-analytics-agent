@@ -28,7 +28,7 @@ gcloud config set project <PROJECT_ID>
 gcloud services enable analyticsdata.googleapis.com analyticsadmin.googleapis.com
 ```
 
-## 2.5. Install Python deps
+## 3. Install Python deps
 
 The fastest path is [`uv`](https://github.com/astral-sh/uv):
 
@@ -45,7 +45,19 @@ source .venv/bin/activate              # or .venv\Scripts\Activate.ps1 on Window
 pip install -r scripts/requirements.txt
 ```
 
-## 3. Authenticate (default path: gcloud ADC)
+For PDF report rendering (optional — markdown is the default):
+
+```
+pip install -e ".[pdf]"
+```
+
+For development (running tests, lint):
+
+```
+pip install -e ".[dev]"
+```
+
+## 4. Authenticate (default path: gcloud ADC)
 
 For read-only analysis:
 
@@ -84,7 +96,7 @@ python scripts/ga4_auth.py --adc          # read scope
 python scripts/ga4_auth.py --adc --write  # write scope
 ```
 
-## 4. Grant GA4 property access
+## 5. Grant GA4 property access
 
 For each GA4 property you want to analyze, ensure the Google account you
 authenticated with above has at least Viewer access at the property level.
@@ -96,7 +108,7 @@ Marketer or Analyst roles may be insufficient for some Admin API reads
 (data filters, attribution settings). Viewer or higher is recommended for
 the read path; Editor or higher for writes.
 
-## 5. Try a single command
+## 6. Try a single command
 
 ```
 python scripts/ga4_events.py --property 123456789 --list-events --days 7 --json
@@ -104,7 +116,7 @@ python scripts/ga4_events.py --property 123456789 --list-events --days 7 --json
 
 If events come back, you're set.
 
-## 6. Profile the property (recommended first step)
+## 7. Profile the property (recommended first step)
 
 Before any audit, run the context profiler. It reads the property's
 web-stream URL, fetches the live site, and caches a profile of vertical,
@@ -119,7 +131,7 @@ The result is stored under `~/.claude/ga4-context/<id>.json`. Audits
 read it automatically; pass `--vertical <name>` to any audit to override
 the inferred vertical when picking benchmark bands.
 
-## 7. Run the full audit
+## 8. Run the full audit
 
 From any runtime (Codex, Gemini CLI, plain shell):
 
@@ -143,7 +155,7 @@ This goes through the LLM-powered specialist agents and produces a
 richer report. The mechanical driver above is the same shape but
 deterministic, useful in CI or under runtimes without subagent support.
 
-## 8. Inspect industry benchmarks
+## 9. Inspect industry benchmarks
 
 ```
 python scripts/ga4_benchmarks.py --list-verticals
