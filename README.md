@@ -394,6 +394,28 @@ Write path (event rules, audiences, custom defs, key events) is wired
 and unit-tested but not yet covered by integration tests against a live
 property. Local segment and custom-report stores are complete.
 
+## Releasing
+
+Releases publish to PyPI automatically via `.github/workflows/release.yml`,
+using PyPI Trusted Publishing (OIDC — no API token stored in the repo).
+
+To cut a release:
+
+1. Bump `version` in `pyproject.toml` and commit.
+2. Push to `master`.
+3. Create a GitHub Release with tag `vX.Y.Z` (matching the new version).
+
+The workflow then verifies the tag matches the packaged version, builds the
+sdist and wheel, runs `twine check`, and publishes to PyPI from the `pypi`
+environment. The tag/version guard (`scripts/check_release_version.py`) fails
+the build if the Release tag and `pyproject.toml` version disagree.
+
+One-time setup (already done for this repo, listed for forks):
+
+- On PyPI, register a Trusted Publisher for the project: owner, repo,
+  workflow `release.yml`, environment `pypi`.
+- In GitHub repo settings, create an environment named `pypi`.
+
 ## License
 
 MIT. See `pyproject.toml`.
