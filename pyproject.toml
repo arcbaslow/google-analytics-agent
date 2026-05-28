@@ -34,6 +34,9 @@ dev = [
   "mcp>=1.2,<2"
 ]
 
+[project.scripts]
+ga4-mcp = "ga4_mcp:main"
+
 [tool.setuptools]
 package-dir = { "" = "scripts" }
 py-modules = [
