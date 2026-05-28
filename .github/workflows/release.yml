@@ -18,7 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          # On a release event, github.ref is the tag, so checkout uses it by
+          # default. On manual dispatch we leave this empty so checkout falls
+          # back to the branch HEAD (which carries the release tooling); older
+          # tags may predate scripts/check_release_version.py.
+          ref: ${{ github.event.release.tag_name }}
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
