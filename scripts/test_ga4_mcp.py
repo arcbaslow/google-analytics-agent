@@ -26,9 +26,7 @@ def test_audit_tool_wraps_orchestrate():
 
 
 def test_funnel_tool_wraps_build_funnel():
-    with mock.patch.object(
-        ga4_mcp.ga4_funnel, "build_funnel", return_value={"steps": []}
-    ) as bf:
+    with mock.patch.object(ga4_mcp.ga4_funnel, "build_funnel", return_value={"steps": []}) as bf:
         out = ga4_mcp.funnel(property_id="123", steps=["view_item", "purchase"], days=14)
     bf.assert_called_once()
     assert out == {"steps": []}
@@ -73,9 +71,7 @@ def test_create_audience_preview_then_apply():
         "create_audience",
         return_value={"name": "properties/123/audiences/5"},
     ) as create:
-        applied = ga4_mcp.create_audience(
-            property_id="123", definition=definition, confirm=True
-        )
+        applied = ga4_mcp.create_audience(property_id="123", definition=definition, confirm=True)
     create.assert_called_once_with("123", definition)
     assert applied["applied"] is True
 
@@ -87,9 +83,7 @@ def test_list_audiences_tool():
 
 
 def test_list_segments_tool():
-    with mock.patch.object(
-        ga4_mcp.ga4_definitions, "list_segments", return_value=[{"name": "s"}]
-    ):
+    with mock.patch.object(ga4_mcp.ga4_definitions, "list_segments", return_value=[{"name": "s"}]):
         out = ga4_mcp.list_segments()
     assert out == [{"name": "s"}]
 
