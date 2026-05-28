@@ -1,13 +1,11 @@
-google-analytics-data>=0.18,<1
-google-analytics-admin>=0.22,<1
-google-auth>=2.25,<3
-google-auth-oauthlib>=1.2,<2
-google-api-python-client>=2.100,<3
-jinja2>=3.1,<4
+# Single source of truth for dependencies is pyproject.toml.
+# This file installs the package (and its runtime deps) in editable mode so
+# the documented `pip install -r scripts/requirements.txt` / uv paths keep working.
+-e .
 
-# weasyprint is an optional PDF-rendering dependency. Markdown is the
-# default audit output and needs no extra system libs. Install via the
-# pdf extras when you need PDF:
-#     pip install -e ".[pdf]"
-# Or just:
-#     pip install weasyprint
+# Optional PDF rendering (needs system libs — see README):
+#   pip install -e ".[pdf]"
+# MCP server:
+#   pip install -e ".[mcp]"
+# Contributor tooling:
+#   pip install -e ".[dev]"
