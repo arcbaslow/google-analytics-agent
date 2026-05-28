@@ -49,6 +49,7 @@ py-modules = [
   "ga4_definitions",
   "ga4_events",
   "ga4_funnel",
+  "ga4_mcp",
   "ga4_report",
   "ga4_utils"
 ]
