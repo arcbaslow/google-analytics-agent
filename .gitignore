@@ -35,3 +35,6 @@ build/
 # Generated reports
 *.report.html
 *.report.pdf
+
+# Local planning docs (specs, implementation plans) - not for the public repo
+docs/superpowers/
