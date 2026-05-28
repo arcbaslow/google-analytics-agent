@@ -404,6 +404,8 @@ hand-crafted audit showing the markdown report shape — header, property
 context, executive summary, severity-grouped action plan with benchmark
 verdicts, and per-agent appendix.
 
+A condensed view is in [`examples/sample-audit-screenshot.md`](examples/sample-audit-screenshot.md).
+
 ## Acknowledgements
 
 Built on top of `google-analytics-data` and `google-analytics-admin`.
