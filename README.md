@@ -418,8 +418,9 @@ branch), trigger it manually against an existing tag:
 gh workflow run release.yml -f tag=vX.Y.Z
 ```
 
-The manual run checks out the given tag and follows the same build, verify,
-and publish path.
+The manual run builds from the branch HEAD it is dispatched on (so push the
+version bump first) and otherwise follows the same verify and publish path.
+The `tag` input is checked against the packaged version by the same guard.
 
 One-time setup (already done for this repo, listed for forks):
 
