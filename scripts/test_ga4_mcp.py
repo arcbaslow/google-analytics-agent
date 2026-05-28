@@ -1,5 +1,6 @@
 from unittest import mock
 
+import ga4_auth
 import ga4_mcp
 
 
@@ -100,3 +101,14 @@ def test_run_saved_report_tool():
         out = ga4_mcp.run_saved_report(name="weekly", property_id="123")
     rr.assert_called_once()
     assert out == {"rows": []}
+
+
+def test_audit_surfaces_auth_error_as_structured_result():
+    with mock.patch.object(
+        ga4_mcp.ga4_audit,
+        "orchestrate",
+        side_effect=ga4_auth.AuthRequiredError("run gcloud ..."),
+    ):
+        out = ga4_mcp.audit(property_id="123")
+    assert out["error"] == "auth_required"
+    assert "gcloud" in out["hint"]
