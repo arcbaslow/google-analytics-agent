@@ -21,14 +21,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install runtime + dev deps
+      - name: Install package + dev deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r scripts/requirements.txt
-          pip install ruff pytest pytest-cov
+          pip install -e ".[dev]"
 
       - name: Lint
         run: ruff check scripts/
 
-      - name: Run tests
-        run: pytest scripts/ -q
+      - name: Format check
+        run: ruff format --check scripts/
+
+      - name: Type check
+        run: mypy
+
+      - name: Run tests with coverage
+        run: pytest scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=67
