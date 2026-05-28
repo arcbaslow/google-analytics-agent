@@ -14,6 +14,7 @@ def _redirect_context_dir(monkeypatch, tmp_path):
 
 # ---------- Storage round-trip ----------
 
+
 def test_save_and_load_context(tmp_path):
     ctx = {"property_id": "123", "site": {"summary": "test"}}
     path = ga4_context.save_context("123", ctx)
@@ -84,6 +85,7 @@ def test_wordpress_platform_and_media_vertical():
 
 # ---------- Extractors ----------
 
+
 def test_extract_title():
     assert ga4_context._extract_title(NEXTJS_HTML) == "Acme"
     assert ga4_context._extract_title("<html><body>no title</body></html>") is None
@@ -114,6 +116,7 @@ def test_extract_jsonld_handles_arrays():
 
 
 # ---------- robots.txt + sitemap ----------
+
 
 def test_parse_robots_picks_sitemap_lines():
     text = """User-agent: *
@@ -157,6 +160,7 @@ def test_parse_sitemap_detects_index():
 
 # ---------- analyze_website with mocked fetch ----------
 
+
 def test_analyze_website_uses_mocked_fetch(monkeypatch):
     seen = []
 
@@ -165,8 +169,10 @@ def test_analyze_website_uses_mocked_fetch(monkeypatch):
         if url.endswith("/robots.txt"):
             return 200, {"content-type": "text/plain"}, "Sitemap: https://example.com/sitemap.xml\n"
         if "sitemap.xml" in url:
-            return 200, {"content-type": "application/xml"}, (
-                "<urlset><url><loc>https://example.com/products/a</loc></url></urlset>"
+            return (
+                200,
+                {"content-type": "application/xml"},
+                ("<urlset><url><loc>https://example.com/products/a</loc></url></urlset>"),
             )
         return 200, {"content-type": "text/html", "server": "nginx"}, NEXTJS_HTML
 
@@ -182,20 +188,42 @@ def test_analyze_website_uses_mocked_fetch(monkeypatch):
 
 # ---------- build_property_context end-to-end ----------
 
+
 def test_build_property_context_no_web_stream(monkeypatch):
-    monkeypatch.setattr(ga4_context, "extract_property_urls", lambda pid: [
-        {"stream_id": "1", "stream_name": "iOS app", "default_uri": None, "type": "IOS_APP_DATA_STREAM"},
-    ])
+    monkeypatch.setattr(
+        ga4_context,
+        "extract_property_urls",
+        lambda pid: [
+            {
+                "stream_id": "1",
+                "stream_name": "iOS app",
+                "default_uri": None,
+                "type": "IOS_APP_DATA_STREAM",
+            },
+        ],
+    )
     out = ga4_context.build_property_context("999")
     assert out["status"] == "no_web_stream"
 
 
 def test_build_property_context_with_web_stream(monkeypatch):
-    monkeypatch.setattr(ga4_context, "extract_property_urls", lambda pid: [
-        {"stream_id": "1", "stream_name": "Web", "default_uri": "https://example.com",
-         "type": "WEB_DATA_STREAM"},
-    ])
-    monkeypatch.setattr(ga4_context, "analyze_website", lambda url: {"summary": "stub", "inferred": {"vertical": "ecommerce"}})
+    monkeypatch.setattr(
+        ga4_context,
+        "extract_property_urls",
+        lambda pid: [
+            {
+                "stream_id": "1",
+                "stream_name": "Web",
+                "default_uri": "https://example.com",
+                "type": "WEB_DATA_STREAM",
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        ga4_context,
+        "analyze_website",
+        lambda url: {"summary": "stub", "inferred": {"vertical": "ecommerce"}},
+    )
     out = ga4_context.build_property_context("123")
     assert out["status"] == "ok"
     assert out["context"]["primary_stream"]["default_uri"] == "https://example.com"

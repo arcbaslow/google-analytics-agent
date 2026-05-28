@@ -88,7 +88,9 @@ def scrub_pii(data: Any) -> Any:
     return data
 
 
-def normalize_currency(value: float, from_code: str, to_code: str = "USD", fx_rates: dict[str, float] | None = None) -> float:
+def normalize_currency(
+    value: float, from_code: str, to_code: str = "USD", fx_rates: dict[str, float] | None = None
+) -> float:
     """
     Convert a revenue figure from one currency to another. Uses a static FX
     table by default; replace `fx_rates` with a live source or per-day

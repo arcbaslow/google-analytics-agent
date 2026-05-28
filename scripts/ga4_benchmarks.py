@@ -47,106 +47,106 @@ _DIRECTION = {
 # work in consistent units. Time is in seconds. Counts are integers.
 _BENCHMARKS: dict[str, dict[str, dict[str, float]]] = {
     "ecommerce": {
-        "bounce_rate":               {"p25": 0.35, "p50": 0.45, "p75": 0.58},
-        "engagement_rate":           {"p25": 0.42, "p50": 0.55, "p75": 0.65},
-        "pages_per_session":         {"p25": 2.6,  "p50": 3.8,  "p75": 5.5},
+        "bounce_rate": {"p25": 0.35, "p50": 0.45, "p75": 0.58},
+        "engagement_rate": {"p25": 0.42, "p50": 0.55, "p75": 0.65},
+        "pages_per_session": {"p25": 2.6, "p50": 3.8, "p75": 5.5},
         "avg_engagement_time_seconds": {"p25": 80, "p50": 130, "p75": 210},
-        "conversion_rate":           {"p25": 0.012, "p50": 0.023, "p75": 0.042},
-        "cart_abandonment_rate":     {"p25": 0.60,  "p50": 0.70,  "p75": 0.78},
-        "direct_share":              {"p25": 0.10,  "p50": 0.20,  "p75": 0.32},
-        "mobile_share":              {"p25": 0.55,  "p50": 0.68,  "p75": 0.80},
-        "sampling_pct":              {"p25": 0,     "p50": 0.01,  "p75": 0.05},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.012, "p50": 0.023, "p75": 0.042},
+        "cart_abandonment_rate": {"p25": 0.60, "p50": 0.70, "p75": 0.78},
+        "direct_share": {"p25": 0.10, "p50": 0.20, "p75": 0.32},
+        "mobile_share": {"p25": 0.55, "p50": 0.68, "p75": 0.80},
+        "sampling_pct": {"p25": 0, "p50": 0.01, "p75": 0.05},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "saas": {
-        "bounce_rate":               {"p25": 0.32, "p50": 0.42, "p75": 0.55},
-        "engagement_rate":           {"p25": 0.48, "p50": 0.60, "p75": 0.72},
-        "pages_per_session":         {"p25": 2.2,  "p50": 3.3,  "p75": 4.8},
+        "bounce_rate": {"p25": 0.32, "p50": 0.42, "p75": 0.55},
+        "engagement_rate": {"p25": 0.48, "p50": 0.60, "p75": 0.72},
+        "pages_per_session": {"p25": 2.2, "p50": 3.3, "p75": 4.8},
         "avg_engagement_time_seconds": {"p25": 95, "p50": 160, "p75": 250},
-        "conversion_rate":           {"p25": 0.008, "p50": 0.018, "p75": 0.035},
-        "direct_share":              {"p25": 0.15,  "p50": 0.25,  "p75": 0.38},
-        "mobile_share":              {"p25": 0.25,  "p50": 0.40,  "p75": 0.55},
-        "sampling_pct":              {"p25": 0,     "p50": 0.01,  "p75": 0.05},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.008, "p50": 0.018, "p75": 0.035},
+        "direct_share": {"p25": 0.15, "p50": 0.25, "p75": 0.38},
+        "mobile_share": {"p25": 0.25, "p50": 0.40, "p75": 0.55},
+        "sampling_pct": {"p25": 0, "p50": 0.01, "p75": 0.05},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "media": {
-        "bounce_rate":               {"p25": 0.45, "p50": 0.58, "p75": 0.72},
-        "engagement_rate":           {"p25": 0.30, "p50": 0.42, "p75": 0.55},
-        "pages_per_session":         {"p25": 1.6,  "p50": 2.2,  "p75": 3.5},
-        "avg_engagement_time_seconds": {"p25": 45, "p50": 80,  "p75": 140},
-        "conversion_rate":           {"p25": 0.001, "p50": 0.004, "p75": 0.012},
-        "direct_share":              {"p25": 0.08,  "p50": 0.15,  "p75": 0.26},
-        "mobile_share":              {"p25": 0.55,  "p50": 0.70,  "p75": 0.82},
-        "sampling_pct":              {"p25": 0,     "p50": 0.02,  "p75": 0.10},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "bounce_rate": {"p25": 0.45, "p50": 0.58, "p75": 0.72},
+        "engagement_rate": {"p25": 0.30, "p50": 0.42, "p75": 0.55},
+        "pages_per_session": {"p25": 1.6, "p50": 2.2, "p75": 3.5},
+        "avg_engagement_time_seconds": {"p25": 45, "p50": 80, "p75": 140},
+        "conversion_rate": {"p25": 0.001, "p50": 0.004, "p75": 0.012},
+        "direct_share": {"p25": 0.08, "p50": 0.15, "p75": 0.26},
+        "mobile_share": {"p25": 0.55, "p50": 0.70, "p75": 0.82},
+        "sampling_pct": {"p25": 0, "p50": 0.02, "p75": 0.10},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "lead_gen": {
-        "bounce_rate":               {"p25": 0.40, "p50": 0.52, "p75": 0.65},
-        "engagement_rate":           {"p25": 0.35, "p50": 0.48, "p75": 0.62},
-        "pages_per_session":         {"p25": 2.0,  "p50": 3.0,  "p75": 4.5},
+        "bounce_rate": {"p25": 0.40, "p50": 0.52, "p75": 0.65},
+        "engagement_rate": {"p25": 0.35, "p50": 0.48, "p75": 0.62},
+        "pages_per_session": {"p25": 2.0, "p50": 3.0, "p75": 4.5},
         "avg_engagement_time_seconds": {"p25": 60, "p50": 110, "p75": 180},
-        "conversion_rate":           {"p25": 0.018, "p50": 0.035, "p75": 0.065},
-        "direct_share":              {"p25": 0.12,  "p50": 0.22,  "p75": 0.36},
-        "mobile_share":              {"p25": 0.40,  "p50": 0.55,  "p75": 0.70},
-        "sampling_pct":              {"p25": 0,     "p50": 0.01,  "p75": 0.05},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.018, "p50": 0.035, "p75": 0.065},
+        "direct_share": {"p25": 0.12, "p50": 0.22, "p75": 0.36},
+        "mobile_share": {"p25": 0.40, "p50": 0.55, "p75": 0.70},
+        "sampling_pct": {"p25": 0, "p50": 0.01, "p75": 0.05},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "finance": {
-        "bounce_rate":               {"p25": 0.40, "p50": 0.51, "p75": 0.62},
-        "engagement_rate":           {"p25": 0.40, "p50": 0.52, "p75": 0.65},
-        "pages_per_session":         {"p25": 2.4,  "p50": 3.5,  "p75": 5.0},
+        "bounce_rate": {"p25": 0.40, "p50": 0.51, "p75": 0.62},
+        "engagement_rate": {"p25": 0.40, "p50": 0.52, "p75": 0.65},
+        "pages_per_session": {"p25": 2.4, "p50": 3.5, "p75": 5.0},
         "avg_engagement_time_seconds": {"p25": 90, "p50": 150, "p75": 230},
-        "conversion_rate":           {"p25": 0.015, "p50": 0.030, "p75": 0.055},
-        "direct_share":              {"p25": 0.20,  "p50": 0.32,  "p75": 0.48},
-        "mobile_share":              {"p25": 0.45,  "p50": 0.60,  "p75": 0.72},
-        "sampling_pct":              {"p25": 0,     "p50": 0.01,  "p75": 0.05},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.015, "p50": 0.030, "p75": 0.055},
+        "direct_share": {"p25": 0.20, "p50": 0.32, "p75": 0.48},
+        "mobile_share": {"p25": 0.45, "p50": 0.60, "p75": 0.72},
+        "sampling_pct": {"p25": 0, "p50": 0.01, "p75": 0.05},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "travel": {
-        "bounce_rate":               {"p25": 0.38, "p50": 0.50, "p75": 0.62},
-        "engagement_rate":           {"p25": 0.40, "p50": 0.52, "p75": 0.65},
-        "pages_per_session":         {"p25": 2.5,  "p50": 4.0,  "p75": 6.0},
+        "bounce_rate": {"p25": 0.38, "p50": 0.50, "p75": 0.62},
+        "engagement_rate": {"p25": 0.40, "p50": 0.52, "p75": 0.65},
+        "pages_per_session": {"p25": 2.5, "p50": 4.0, "p75": 6.0},
         "avg_engagement_time_seconds": {"p25": 100, "p50": 170, "p75": 260},
-        "conversion_rate":           {"p25": 0.010, "p50": 0.025, "p75": 0.048},
-        "cart_abandonment_rate":     {"p25": 0.72,  "p50": 0.81,  "p75": 0.88},
-        "direct_share":              {"p25": 0.15,  "p50": 0.25,  "p75": 0.38},
-        "mobile_share":              {"p25": 0.55,  "p50": 0.68,  "p75": 0.80},
-        "sampling_pct":              {"p25": 0,     "p50": 0.02,  "p75": 0.08},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.010, "p50": 0.025, "p75": 0.048},
+        "cart_abandonment_rate": {"p25": 0.72, "p50": 0.81, "p75": 0.88},
+        "direct_share": {"p25": 0.15, "p50": 0.25, "p75": 0.38},
+        "mobile_share": {"p25": 0.55, "p50": 0.68, "p75": 0.80},
+        "sampling_pct": {"p25": 0, "p50": 0.02, "p75": 0.08},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "education": {
-        "bounce_rate":               {"p25": 0.42, "p50": 0.54, "p75": 0.65},
-        "engagement_rate":           {"p25": 0.35, "p50": 0.46, "p75": 0.58},
-        "pages_per_session":         {"p25": 2.0,  "p50": 3.0,  "p75": 4.5},
+        "bounce_rate": {"p25": 0.42, "p50": 0.54, "p75": 0.65},
+        "engagement_rate": {"p25": 0.35, "p50": 0.46, "p75": 0.58},
+        "pages_per_session": {"p25": 2.0, "p50": 3.0, "p75": 4.5},
         "avg_engagement_time_seconds": {"p25": 70, "p50": 120, "p75": 200},
-        "conversion_rate":           {"p25": 0.010, "p50": 0.025, "p75": 0.050},
-        "direct_share":              {"p25": 0.18,  "p50": 0.30,  "p75": 0.42},
-        "mobile_share":              {"p25": 0.45,  "p50": 0.60,  "p75": 0.74},
-        "sampling_pct":              {"p25": 0,     "p50": 0.02,  "p75": 0.08},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.010, "p50": 0.025, "p75": 0.050},
+        "direct_share": {"p25": 0.18, "p50": 0.30, "p75": 0.42},
+        "mobile_share": {"p25": 0.45, "p50": 0.60, "p75": 0.74},
+        "sampling_pct": {"p25": 0, "p50": 0.02, "p75": 0.08},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     "nonprofit": {
-        "bounce_rate":               {"p25": 0.45, "p50": 0.55, "p75": 0.68},
-        "engagement_rate":           {"p25": 0.33, "p50": 0.45, "p75": 0.58},
-        "pages_per_session":         {"p25": 1.8,  "p50": 2.6,  "p75": 3.8},
-        "avg_engagement_time_seconds": {"p25": 55, "p50": 95,  "p75": 160},
-        "conversion_rate":           {"p25": 0.008, "p50": 0.020, "p75": 0.040},
-        "direct_share":              {"p25": 0.20,  "p50": 0.32,  "p75": 0.45},
-        "mobile_share":              {"p25": 0.55,  "p50": 0.68,  "p75": 0.80},
-        "sampling_pct":              {"p25": 0,     "p50": 0.02,  "p75": 0.08},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "bounce_rate": {"p25": 0.45, "p50": 0.55, "p75": 0.68},
+        "engagement_rate": {"p25": 0.33, "p50": 0.45, "p75": 0.58},
+        "pages_per_session": {"p25": 1.8, "p50": 2.6, "p75": 3.8},
+        "avg_engagement_time_seconds": {"p25": 55, "p50": 95, "p75": 160},
+        "conversion_rate": {"p25": 0.008, "p50": 0.020, "p75": 0.040},
+        "direct_share": {"p25": 0.20, "p50": 0.32, "p75": 0.45},
+        "mobile_share": {"p25": 0.55, "p50": 0.68, "p75": 0.80},
+        "sampling_pct": {"p25": 0, "p50": 0.02, "p75": 0.08},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
     # "other" is a fallback that averages across all verticals
     "other": {
-        "bounce_rate":               {"p25": 0.40, "p50": 0.51, "p75": 0.63},
-        "engagement_rate":           {"p25": 0.38, "p50": 0.50, "p75": 0.62},
-        "pages_per_session":         {"p25": 2.1,  "p50": 3.1,  "p75": 4.6},
+        "bounce_rate": {"p25": 0.40, "p50": 0.51, "p75": 0.63},
+        "engagement_rate": {"p25": 0.38, "p50": 0.50, "p75": 0.62},
+        "pages_per_session": {"p25": 2.1, "p50": 3.1, "p75": 4.6},
         "avg_engagement_time_seconds": {"p25": 70, "p50": 125, "p75": 200},
-        "conversion_rate":           {"p25": 0.010, "p50": 0.022, "p75": 0.045},
-        "direct_share":              {"p25": 0.14,  "p50": 0.25,  "p75": 0.38},
-        "mobile_share":              {"p25": 0.45,  "p50": 0.60,  "p75": 0.75},
-        "sampling_pct":              {"p25": 0,     "p50": 0.01,  "p75": 0.06},
-        "not_set_share":             {"p25": 0,     "p50": 0.02,  "p75": 0.07},
+        "conversion_rate": {"p25": 0.010, "p50": 0.022, "p75": 0.045},
+        "direct_share": {"p25": 0.14, "p50": 0.25, "p75": 0.38},
+        "mobile_share": {"p25": 0.45, "p50": 0.60, "p75": 0.75},
+        "sampling_pct": {"p25": 0, "p50": 0.01, "p75": 0.06},
+        "not_set_share": {"p25": 0, "p50": 0.02, "p75": 0.07},
     },
 }
 
@@ -288,14 +288,22 @@ def enrich_findings(findings: list[dict[str, Any]], vertical: str | None) -> lis
 
 # ---------- CLI ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="GA4 benchmark engine")
     parser.add_argument("--list-verticals", action="store_true")
     parser.add_argument("--vertical", help="Vertical name (e.g. ecommerce, saas, media)")
-    parser.add_argument("--compare", nargs=2, metavar=("METRIC", "VALUE"),
-                        help="Compare a single value against the benchmark")
-    parser.add_argument("--all-metrics", action="store_true",
-                        help="With --vertical, print every metric's benchmark band")
+    parser.add_argument(
+        "--compare",
+        nargs=2,
+        metavar=("METRIC", "VALUE"),
+        help="Compare a single value against the benchmark",
+    )
+    parser.add_argument(
+        "--all-metrics",
+        action="store_true",
+        help="With --vertical, print every metric's benchmark band",
+    )
     args = parser.parse_args()
 
     if args.list_verticals:
@@ -314,9 +322,15 @@ def main():
         print(json.dumps(benchmarks_for(args.vertical), indent=2, default=str))
         return 0
     if args.vertical:
-        print(json.dumps({"vertical": normalize_vertical(args.vertical),
-                          "metrics": list(benchmarks_for(args.vertical).keys())},
-                         indent=2))
+        print(
+            json.dumps(
+                {
+                    "vertical": normalize_vertical(args.vertical),
+                    "metrics": list(benchmarks_for(args.vertical).keys()),
+                },
+                indent=2,
+            )
+        )
         return 0
     parser.print_help()
     return 1

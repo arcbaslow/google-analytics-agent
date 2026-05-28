@@ -12,6 +12,10 @@ env/
 .ruff_cache/
 .mypy_cache/
 pytest-cache-files-*/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Credentials and cache (local-only, never committed)
 .secrets/
@@ -35,3 +39,6 @@ build/
 # Generated reports
 *.report.html
 *.report.pdf
+
+# Local planning docs (specs, implementation plans) - not for the public repo
+docs/superpowers/

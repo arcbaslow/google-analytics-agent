@@ -52,6 +52,7 @@ import ga4_utils
 
 # ---------- Helpers ----------
 
+
 def _ok(agent, summary, findings=None, data=None):
     return {
         "agent": agent,
@@ -76,6 +77,7 @@ def _safe_float(v, default=0.0):
 
 
 # ---------- Quality ----------
+
 
 def run_quality(property_id, days=28):
     findings = []
@@ -102,11 +104,13 @@ def run_quality(property_id, days=28):
         data["currency_code"] = meta.get("currency_code")
         data["time_zone"] = meta.get("time_zone")
     except Exception as e:
-        findings.append({
-            "severity": "High",
-            "title": "Could not query Data API for sampling check",
-            "detail": f"{type(e).__name__}: {e}",
-        })
+        findings.append(
+            {
+                "severity": "High",
+                "title": "Could not query Data API for sampling check",
+                "detail": f"{type(e).__name__}: {e}",
+            }
+        )
 
     try:
         src_report = ga4_data.run_report(
@@ -133,48 +137,58 @@ def run_quality(property_id, days=28):
             data["direct_share"] = direct_share
             data["not_set_share"] = not_set_share
     except Exception as e:
-        findings.append({
-            "severity": "Medium",
-            "title": "Could not query sessionSource breakdown",
-            "detail": f"{type(e).__name__}: {e}",
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Could not query sessionSource breakdown",
+                "detail": f"{type(e).__name__}: {e}",
+            }
+        )
 
     if sampling_pct > 0.10:
-        findings.append({
-            "severity": "High",
-            "title": "Sampling rate above 10% on 28-day session report",
-            "detail": "Long-window queries are being sampled. Findings on this window are directional only.",
-            "metric": "sampling_pct",
-            "metric_value": round(sampling_pct, 4),
-        })
+        findings.append(
+            {
+                "severity": "High",
+                "title": "Sampling rate above 10% on 28-day session report",
+                "detail": "Long-window queries are being sampled. Findings on this window are directional only.",
+                "metric": "sampling_pct",
+                "metric_value": round(sampling_pct, 4),
+            }
+        )
     elif sampling_pct > 0.01:
-        findings.append({
-            "severity": "Medium",
-            "title": "Visible sampling on 28-day session report",
-            "detail": f"Sampling rate {sampling_pct:.1%}. Verify high-stakes findings on a shorter window.",
-            "metric": "sampling_pct",
-            "metric_value": round(sampling_pct, 4),
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Visible sampling on 28-day session report",
+                "detail": f"Sampling rate {sampling_pct:.1%}. Verify high-stakes findings on a shorter window.",
+                "metric": "sampling_pct",
+                "metric_value": round(sampling_pct, 4),
+            }
+        )
 
     if direct_share > 0.30:
         sev = "Critical" if direct_share > 0.50 else "High"
-        findings.append({
-            "severity": sev,
-            "title": "High (direct)/(none) share",
-            "detail": f"{direct_share:.1%} of sessions attributed to direct. UTM tagging gaps, lost referrers on payment-gateway redirect-back, or missing GTM container on some pages are likely.",
-            "metric": "direct_share",
-            "metric_value": round(direct_share, 4),
-        })
+        findings.append(
+            {
+                "severity": sev,
+                "title": "High (direct)/(none) share",
+                "detail": f"{direct_share:.1%} of sessions attributed to direct. UTM tagging gaps, lost referrers on payment-gateway redirect-back, or missing GTM container on some pages are likely.",
+                "metric": "direct_share",
+                "metric_value": round(direct_share, 4),
+            }
+        )
 
     if not_set_share > 0.05:
         sev = "High" if not_set_share > 0.10 else "Medium"
-        findings.append({
-            "severity": sev,
-            "title": "High (not set) share on sessionSource",
-            "detail": f"{not_set_share:.1%} of sessions have (not set) source. Server-side tag misconfiguration or cross-domain handoff dropping referrers.",
-            "metric": "not_set_share",
-            "metric_value": round(not_set_share, 4),
-        })
+        findings.append(
+            {
+                "severity": sev,
+                "title": "High (not set) share on sessionSource",
+                "detail": f"{not_set_share:.1%} of sessions have (not set) source. Server-side tag misconfiguration or cross-domain handoff dropping referrers.",
+                "metric": "not_set_share",
+                "metric_value": round(not_set_share, 4),
+            }
+        )
 
     confidence = ga4_utils.format_confidence(sampling_pct * 100, not_set_share * 100)
     data["confidence_label"] = confidence
@@ -184,10 +198,13 @@ def run_quality(property_id, days=28):
     if sampling_pct:
         summary_bits.append(f"sampling {sampling_pct:.1%}")
 
-    return _ok("ga4-quality", "; ".join(summary_bits) or "data quality scan complete", findings, data)
+    return _ok(
+        "ga4-quality", "; ".join(summary_bits) or "data quality scan complete", findings, data
+    )
 
 
 # ---------- Events ----------
+
 
 def run_events(property_id, days=7):
     findings = []
@@ -202,7 +219,13 @@ def run_events(property_id, days=7):
         return _ok(
             "ga4-events",
             f"events fetch failed: {e}",
-            [{"severity": "High", "title": "Could not list events from Data API", "detail": str(e)}],
+            [
+                {
+                    "severity": "High",
+                    "title": "Could not list events from Data API",
+                    "detail": str(e),
+                }
+            ],
         )
 
     ecomm_events = ["view_item", "add_to_cart", "begin_checkout", "add_payment_info", "purchase"]
@@ -221,32 +244,40 @@ def run_events(property_id, days=7):
                     if pct is None or pct >= 95:
                         continue
                     sev = "Critical" if pct < 60 else "High"
-                    findings.append({
-                        "severity": sev,
-                        "title": f"{ev}.{param} coverage below 95%",
-                        "detail": f"{ev} fires with {param} on only {pct}% of events in the {days}-day window.",
-                    })
+                    findings.append(
+                        {
+                            "severity": sev,
+                            "title": f"{ev}.{param} coverage below 95%",
+                            "detail": f"{ev} fires with {param} on only {pct}% of events in the {days}-day window.",
+                        }
+                    )
             except Exception as e:
-                findings.append({
-                    "severity": "Low",
-                    "title": f"Could not check parameter coverage for {ev}",
-                    "detail": str(e),
-                })
+                findings.append(
+                    {
+                        "severity": "Low",
+                        "title": f"Could not check parameter coverage for {ev}",
+                        "detail": str(e),
+                    }
+                )
 
     elif fires_count == 0:
-        findings.append({
-            "severity": "Medium",
-            "title": "No recommended e-commerce events fire on this property",
-            "detail": "If this is an e-commerce property, instrument the GA4 recommended events. If not, ignore — this audit's funnel preset is e-commerce; pass --funnel-steps for a custom funnel.",
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "No recommended e-commerce events fire on this property",
+                "detail": "If this is an e-commerce property, instrument the GA4 recommended events. If not, ignore — this audit's funnel preset is e-commerce; pass --funnel-steps for a custom funnel.",
+            }
+        )
 
     else:
         missing = data["ecomm_events_missing"]
-        findings.append({
-            "severity": "High",
-            "title": "Partial e-commerce taxonomy",
-            "detail": f"{fires_count} of 5 recommended events fire. Missing: {', '.join(missing)}.",
-        })
+        findings.append(
+            {
+                "severity": "High",
+                "title": "Partial e-commerce taxonomy",
+                "detail": f"{fires_count} of 5 recommended events fire. Missing: {', '.join(missing)}.",
+            }
+        )
 
     return _ok(
         "ga4-events",
@@ -257,6 +288,7 @@ def run_events(property_id, days=7):
 
 
 # ---------- Funnel ----------
+
 
 def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
     if not steps:
@@ -274,41 +306,62 @@ def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
             check_postpayment=check_postpayment,
         )
     except Exception as e:
-        return _ok("ga4-funnel", f"funnel failed: {e}",
-                   [{"severity": "High", "title": "Funnel report failed", "detail": str(e)}])
+        return _ok(
+            "ga4-funnel",
+            f"funnel failed: {e}",
+            [{"severity": "High", "title": "Funnel report failed", "detail": str(e)}],
+        )
 
     if "error" in result:
-        return _ok("ga4-funnel", result["error"], [
-            {"severity": "Critical", "title": "Funnel could not be built", "detail": result["error"]},
-        ], result)
+        return _ok(
+            "ga4-funnel",
+            result["error"],
+            [
+                {
+                    "severity": "Critical",
+                    "title": "Funnel could not be built",
+                    "detail": result["error"],
+                },
+            ],
+            result,
+        )
 
     findings = []
     agg = (result.get("rates") or {}).get("aggregate") or {}
     overall_cr = agg.get("overall_conversion_pct", 0) / 100.0
     if overall_cr:
-        findings.append({
-            "severity": "Low",
-            "title": "Overall funnel conversion rate",
-            "detail": f"View-to-conversion: {overall_cr:.2%} across the {result.get('window_days')}-day window.",
-            "metric": "conversion_rate",
-            "metric_value": round(overall_cr, 5),
-        })
+        findings.append(
+            {
+                "severity": "Low",
+                "title": "Overall funnel conversion rate",
+                "detail": f"View-to-conversion: {overall_cr:.2%} across the {result.get('window_days')}-day window.",
+                "metric": "conversion_rate",
+                "metric_value": round(overall_cr, 5),
+            }
+        )
 
     leakiest = agg.get("leakiest_step")
     if leakiest and leakiest.get("users_dropped"):
-        findings.append({
-            "severity": "High",
-            "title": f"Leakiest step: {leakiest['from']} → {leakiest['to']}",
-            "detail": (
-                f"{leakiest['users_dropped']:,} users lost at this step "
-                f"({leakiest.get('share_of_total_loss_pct', 0)}% of total funnel loss). "
-                "Focus instrumentation and UX investigation here first."
-            ),
-        })
+        findings.append(
+            {
+                "severity": "High",
+                "title": f"Leakiest step: {leakiest['from']} → {leakiest['to']}",
+                "detail": (
+                    f"{leakiest['users_dropped']:,} users lost at this step "
+                    f"({leakiest.get('share_of_total_loss_pct', 0)}% of total funnel loss). "
+                    "Focus instrumentation and UX investigation here first."
+                ),
+            }
+        )
 
     for w in result.get("warnings", []):
-        findings.append({"severity": "Critical" if "post-payment" in w.lower() else "Medium",
-                         "title": "Funnel warning", "detail": w})
+        findings.append(
+            {
+                "severity": "Critical" if "post-payment" in w.lower() else "Medium",
+                "title": "Funnel warning",
+                "detail": w,
+            }
+        )
 
     return _ok(
         "ga4-funnel",
@@ -320,41 +373,52 @@ def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
 
 # ---------- Conversions ----------
 
+
 def run_conversions(property_id):
     findings = []
     try:
         key_events = ga4_admin.list_key_events(property_id)
     except Exception as e:
-        return _ok("ga4-conversions", f"key events fetch failed: {e}",
-                   [{"severity": "High", "title": "Could not list key events", "detail": str(e)}])
+        return _ok(
+            "ga4-conversions",
+            f"key events fetch failed: {e}",
+            [{"severity": "High", "title": "Could not list key events", "detail": str(e)}],
+        )
 
     names = [k.get("eventName") or k.get("event_name") for k in key_events]
     count = len(key_events)
     data = {"key_event_count": count, "key_event_names": names}
 
     if count == 0:
-        findings.append({
-            "severity": "Critical",
-            "title": "No key events configured",
-            "detail": "Without at least one key event, attribution and standard conversion reports are empty. Mark the property's primary conversion event as a key event.",
-        })
+        findings.append(
+            {
+                "severity": "Critical",
+                "title": "No key events configured",
+                "detail": "Without at least one key event, attribution and standard conversion reports are empty. Mark the property's primary conversion event as a key event.",
+            }
+        )
     elif count < 2:
-        findings.append({
-            "severity": "Medium",
-            "title": "Only one key event configured",
-            "detail": "Add a funnel-shaping event (begin_checkout, add_to_cart, generate_lead) so default GA4 conversion reports cover more of the funnel.",
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Only one key event configured",
+                "detail": "Add a funnel-shaping event (begin_checkout, add_to_cart, generate_lead) so default GA4 conversion reports cover more of the funnel.",
+            }
+        )
     elif count > 30:
-        findings.append({
-            "severity": "High",
-            "title": "Too many key events configured",
-            "detail": f"{count} key events on this property (limit 30). Ads import will reject the overflow; thinning the list improves bid-signal quality.",
-        })
+        findings.append(
+            {
+                "severity": "High",
+                "title": "Too many key events configured",
+                "detail": f"{count} key events on this property (limit 30). Ads import will reject the overflow; thinning the list improves bid-signal quality.",
+            }
+        )
 
     return _ok("ga4-conversions", f"{count} key event(s) configured", findings, data)
 
 
 # ---------- Attribution ----------
+
 
 def run_attribution(property_id, days=28, primary_event="purchase"):
     findings = []
@@ -364,17 +428,23 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
         settings = ga4_admin.get_attribution_settings(property_id)
         data["attribution_settings"] = settings
         if not isinstance(settings, dict) or settings.get("error"):
-            findings.append({
-                "severity": "Low",
-                "title": "Could not read attribution settings",
-                "detail": str(settings.get("error") if isinstance(settings, dict) else settings),
-            })
+            findings.append(
+                {
+                    "severity": "Low",
+                    "title": "Could not read attribution settings",
+                    "detail": str(
+                        settings.get("error") if isinstance(settings, dict) else settings
+                    ),
+                }
+            )
     except Exception as e:
-        findings.append({
-            "severity": "Medium",
-            "title": "Attribution settings request failed",
-            "detail": str(e),
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Attribution settings request failed",
+                "detail": str(e),
+            }
+        )
 
     try:
         channel_report = ga4_data.run_report(
@@ -396,19 +466,23 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
             share = direct / total
             data["primary_event_direct_share"] = share
             if share > 0.30:
-                findings.append({
-                    "severity": "High" if share <= 0.50 else "Critical",
-                    "title": "Direct share on primary conversion above 30%",
-                    "detail": f"{share:.1%} of `{primary_event}` events attribute to direct. UTM tagging gaps or lost referrers on payment-gateway redirect-back are the usual cause.",
-                    "metric": "direct_share",
-                    "metric_value": round(share, 4),
-                })
+                findings.append(
+                    {
+                        "severity": "High" if share <= 0.50 else "Critical",
+                        "title": "Direct share on primary conversion above 30%",
+                        "detail": f"{share:.1%} of `{primary_event}` events attribute to direct. UTM tagging gaps or lost referrers on payment-gateway redirect-back are the usual cause.",
+                        "metric": "direct_share",
+                        "metric_value": round(share, 4),
+                    }
+                )
     except Exception as e:
-        findings.append({
-            "severity": "Medium",
-            "title": "Channel breakdown for primary event failed",
-            "detail": str(e),
-        })
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Channel breakdown for primary event failed",
+                "detail": str(e),
+            }
+        )
 
     return _ok(
         "ga4-attribution",
@@ -420,6 +494,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
 
 # ---------- Property ----------
 
+
 def run_property(property_id):
     findings = []
     data: dict[str, Any] = {}
@@ -427,38 +502,54 @@ def run_property(property_id):
     try:
         details = ga4_admin.get_property_details(property_id)
         data["property"] = details
-        retention = details.get("dataRetentionSettings", {}).get("eventDataRetention") or \
-                    details.get("data_retention_settings", {}).get("event_data_retention")
+        retention = details.get("dataRetentionSettings", {}).get(
+            "eventDataRetention"
+        ) or details.get("data_retention_settings", {}).get("event_data_retention")
         if retention and retention not in {"FOURTEEN_MONTHS", "FIFTY_MONTHS"}:
-            findings.append({
-                "severity": "High",
-                "title": "Data retention shorter than 14 months",
-                "detail": f"Event-data retention is {retention}. For multi-month cohort analysis set to FOURTEEN_MONTHS in Admin → Data Settings → Data Retention.",
-            })
+            findings.append(
+                {
+                    "severity": "High",
+                    "title": "Data retention shorter than 14 months",
+                    "detail": f"Event-data retention is {retention}. For multi-month cohort analysis set to FOURTEEN_MONTHS in Admin → Data Settings → Data Retention.",
+                }
+            )
     except Exception as e:
-        findings.append({"severity": "High", "title": "Could not fetch property details", "detail": str(e)})
+        findings.append(
+            {"severity": "High", "title": "Could not fetch property details", "detail": str(e)}
+        )
 
     try:
         streams = ga4_admin.list_data_streams(property_id)
         data["streams"] = streams
         if not streams:
-            findings.append({"severity": "Critical", "title": "No data streams configured",
-                             "detail": "Property has no streams; nothing is being collected."})
+            findings.append(
+                {
+                    "severity": "Critical",
+                    "title": "No data streams configured",
+                    "detail": "Property has no streams; nothing is being collected.",
+                }
+            )
     except Exception as e:
-        findings.append({"severity": "Medium", "title": "Could not list data streams", "detail": str(e)})
+        findings.append(
+            {"severity": "Medium", "title": "Could not list data streams", "detail": str(e)}
+        )
 
     try:
         filters = ga4_admin.list_data_filters(property_id)
         data["data_filters"] = filters
         for f in filters:
             if isinstance(f, dict) and f.get("filterState") == "TEST":
-                findings.append({
-                    "severity": "Medium",
-                    "title": f"Data filter `{f.get('displayName') or f.get('name')}` is in Testing mode",
-                    "detail": "Testing-mode filters do not actually exclude traffic. Activate or delete.",
-                })
+                findings.append(
+                    {
+                        "severity": "Medium",
+                        "title": f"Data filter `{f.get('displayName') or f.get('name')}` is in Testing mode",
+                        "detail": "Testing-mode filters do not actually exclude traffic. Activate or delete.",
+                    }
+                )
     except Exception as e:
-        findings.append({"severity": "Low", "title": "Could not list data filters", "detail": str(e)})
+        findings.append(
+            {"severity": "Low", "title": "Could not list data filters", "detail": str(e)}
+        )
 
     try:
         defs_ = ga4_admin.list_custom_defs(property_id)
@@ -467,12 +558,15 @@ def run_property(property_id):
             "metric_count": len(defs_.get("custom_metrics") or []),
         }
     except Exception as e:
-        findings.append({"severity": "Low", "title": "Could not list custom defs", "detail": str(e)})
+        findings.append(
+            {"severity": "Low", "title": "Could not list custom defs", "detail": str(e)}
+        )
 
     return _ok("ga4-property", "property configuration scan complete", findings, data)
 
 
 # ---------- Segments stub ----------
+
 
 def run_segments_stub():
     return _ok(
@@ -497,8 +591,15 @@ def _resolve_funnel_steps(args, events_output):
     return []
 
 
-def orchestrate(property_id, days=28, funnel_steps_arg=None, vertical_override=None,
-                check_postpayment=False, refresh_context=False, primary_event="purchase"):
+def orchestrate(
+    property_id,
+    days=28,
+    funnel_steps_arg=None,
+    vertical_override=None,
+    check_postpayment=False,
+    refresh_context=False,
+    primary_event="purchase",
+):
     """Run the full audit. Returns (agents_output, context, vertical, confidence)."""
     # gate
     context_payload = ga4_context.build_property_context(property_id, force=refresh_context)
@@ -541,13 +642,22 @@ def orchestrate(property_id, days=28, funnel_steps_arg=None, vertical_override=N
     attribution_out = (
         run_attribution(property_id, days=days, primary_event=primary_event)
         if key_count > 0
-        else _ok("ga4-attribution", "skipped — no key events configured", [],
-                 {"reason": "no_key_events"})
+        else _ok(
+            "ga4-attribution", "skipped — no key events configured", [], {"reason": "no_key_events"}
+        )
     )
 
-    agents_output.extend([
-        quality_out, events_out, funnel_out, seg_out, conv_out, attribution_out, property_out,
-    ])
+    agents_output.extend(
+        [
+            quality_out,
+            events_out,
+            funnel_out,
+            seg_out,
+            conv_out,
+            attribution_out,
+            property_out,
+        ]
+    )
 
     confidence = (quality_out.get("data") or {}).get("confidence_label", "medium")
     return agents_output, context, vertical, confidence
@@ -555,6 +665,7 @@ def orchestrate(property_id, days=28, funnel_steps_arg=None, vertical_override=N
 
 class _Namespace:
     """Tiny stand-in for argparse.Namespace so _resolve_funnel_steps can be reused."""
+
     def __init__(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
@@ -562,18 +673,33 @@ class _Namespace:
 
 # ---------- CLI ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Full GA4 audit, one command, any runtime")
     parser.add_argument("--property", required=True)
     parser.add_argument("--days", type=int, default=28)
-    parser.add_argument("--funnel-steps", help="Comma-separated event names; otherwise auto-detected from ecomm preset overlap")
-    parser.add_argument("--vertical", help="Override the benchmark vertical (else taken from ga4-context inference)")
-    parser.add_argument("--check-postpayment", action="store_true",
-                        help="Run the post-payment heuristic against add_payment_info")
-    parser.add_argument("--refresh-context", action="store_true",
-                        help="Re-fetch the live site even if a cached profile exists")
-    parser.add_argument("--primary-event", default="purchase",
-                        help="Primary conversion event for attribution checks (default: purchase)")
+    parser.add_argument(
+        "--funnel-steps",
+        help="Comma-separated event names; otherwise auto-detected from ecomm preset overlap",
+    )
+    parser.add_argument(
+        "--vertical", help="Override the benchmark vertical (else taken from ga4-context inference)"
+    )
+    parser.add_argument(
+        "--check-postpayment",
+        action="store_true",
+        help="Run the post-payment heuristic against add_payment_info",
+    )
+    parser.add_argument(
+        "--refresh-context",
+        action="store_true",
+        help="Re-fetch the live site even if a cached profile exists",
+    )
+    parser.add_argument(
+        "--primary-event",
+        default="purchase",
+        help="Primary conversion event for attribution checks (default: purchase)",
+    )
     parser.add_argument("--format", choices=["md", "html", "pdf", "json"], default="md")
     parser.add_argument("--output", help="Write report to this path instead of stdout")
     args = parser.parse_args()
@@ -601,17 +727,25 @@ def main():
 
     body: str | bytes
     if args.format == "json":
-        body = json.dumps({
-            "property_id": args.property,
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "confidence": confidence,
-            "vertical": vertical,
-            "context": context,
-            "agents": agents_output,
-        }, indent=2, default=str)
+        body = json.dumps(
+            {
+                "property_id": args.property,
+                "generated_at": datetime.now().isoformat(timespec="seconds"),
+                "confidence": confidence,
+                "vertical": vertical,
+                "context": context,
+                "agents": agents_output,
+            },
+            indent=2,
+            default=str,
+        )
     elif args.format == "md":
         body = ga4_report.render_markdown(
-            args.property, agents_output, confidence=confidence, context=context, vertical=vertical,
+            args.property,
+            agents_output,
+            confidence=confidence,
+            context=context,
+            vertical=vertical,
         )
     elif args.format == "html":
         body = ga4_report.render_html(args.property, agents_output, confidence=confidence)
@@ -625,8 +759,17 @@ def main():
             path.write_bytes(body)
         else:
             path.write_text(body, encoding="utf-8")
-        print(json.dumps({"status": "ok", "output": str(path), "format": args.format,
-                          "confidence": confidence, "vertical": vertical}))
+        print(
+            json.dumps(
+                {
+                    "status": "ok",
+                    "output": str(path),
+                    "format": args.format,
+                    "confidence": confidence,
+                    "vertical": vertical,
+                }
+            )
+        )
     else:
         if isinstance(body, bytes):
             sys.stdout.buffer.write(body)

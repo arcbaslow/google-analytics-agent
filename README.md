@@ -4,6 +4,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![version](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
 
+## Quickstart
+
+```
+uv venv && uv pip install -r scripts/requirements.txt
+python scripts/ga4_auth.py --adc        # run the printed gcloud command, then:
+python scripts/ga4_auth.py --check
+python scripts/ga4_audit.py --property <id> --output audit.md
+```
+
+Or run the MCP server in any MCP client: `uvx --from git+https://github.com/arcbaslow/google-analytics-agent ga4-mcp`
+
 A multi-agent toolkit for Google Analytics 4. Talks to the GA4 Data API and
 Admin API, profiles the property's live website, runs specialist analysis
 subagents (funnel, segments, attribution, event taxonomy, data quality,
@@ -54,6 +65,15 @@ Three layers:
 - Skills under `skills/` route `/ga4 ...` commands (in Claude Code) to the
   right agent or script. For Codex and Gemini CLI, the runtime-specific
   instruction files describe the same flow in their conventions.
+
+### vs. the official Google GA4 MCP server
+
+Google's official server exposes raw Data/Admin API access. This toolkit
+adds, on top of that surface: an industry benchmark engine (nine
+verticals), live-site context profiling (vertical / platform / framework
+/ sitemap), a multi-agent audit orchestrator that produces a prioritized
+action plan, and the same features across Claude Code, Codex, and Gemini
+CLI as well as MCP.
 
 ## Requirements
 
@@ -180,6 +200,34 @@ one-command driver `python scripts/ga4_audit.py --property <id>`.
 Every feature is exposed as a Python CLI under `scripts/`. The runtimes
 above are conveniences — anything they can do, you can do manually.
 
+### MCP server
+
+The same toolkit runs as an MCP server over stdio, usable from any MCP
+client (Claude Desktop/Code, Cursor, Windsurf, n8n).
+
+```json
+{
+  "mcpServers": {
+    "ga4": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/arcbaslow/google-analytics-agent", "ga4-mcp"]
+    }
+  }
+}
+```
+
+The server registers 32 tools. Read and analysis tools cover the full
+audit surface — audit, context, funnel, events, check_events, quality,
+conversions, attribution, property_config, report, benchmarks — plus
+read-only admin reads (property_details, data_streams, custom_defs,
+key_events, attribution_settings, list_audiences, list_event_rules) and
+saved-definition tools (list_segments, list_saved_reports,
+run_saved_report). Write tools follow a dry-run-first contract: tools
+like add_key_event, create_audience, add_custom_dimension, and
+add_event_edit_rule, when called without `confirm=true`, return the exact
+change that would be applied and make no API call; re-invoking the same
+call with `confirm=true` executes it.
+
 ## Commands
 
 Read:
@@ -260,10 +308,6 @@ google-analytics-agent/
     ga4-funnel/          funnel analysis (configurable steps)
     ga4-segments/        cohort drop-off
     ga4-events/          event taxonomy validation
-    ga4-conversions/     key events config audit
-    ga4-attribution/     channel attribution at each step
-    ga4-quality/         data quality audit
-    ga4-property/        property configuration audit
     ga4-events-edit/     EventEditRule / EventCreateRule writes
     ga4-audiences/       audience CRUD
     ga4-custom-defs/     custom dimension / metric CRUD
@@ -274,6 +318,11 @@ google-analytics-agent/
   GEMINI.md              Gemini CLI instructions
   CLAUDE.md              Claude Code instructions (also points here)
 ```
+
+The `conversions`, `attribution`, `quality`, and `property` read commands
+are routed directly by the `ga4` router (which spawns the matching agent in
+`agents/`); they no longer have separate skill directories. Every
+`/ga4 <command>` invocation is unchanged.
 
 ## Funnels
 
@@ -355,6 +404,8 @@ See [`examples/sample-audit.md`](examples/sample-audit.md) for a
 hand-crafted audit showing the markdown report shape — header, property
 context, executive summary, severity-grouped action plan with benchmark
 verdicts, and per-agent appendix.
+
+A condensed view is in [`examples/sample-audit-screenshot.md`](examples/sample-audit-screenshot.md).
 
 ## Acknowledgements
 

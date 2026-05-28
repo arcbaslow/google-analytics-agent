@@ -14,6 +14,7 @@ import ga4_admin
 
 # ---------- parameter name validation ----------
 
+
 def test_validate_param_name_accepts_simple():
     ga4_admin._validate_parameter_name("brand", "EVENT")
 
@@ -46,6 +47,7 @@ def test_validate_param_name_rejects_unknown_scope():
 
 # ---------- audience duration validation ----------
 
+
 def test_create_audience_rejects_over_540_days(monkeypatch):
     mock_client = MagicMock()
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: mock_client)
@@ -56,8 +58,11 @@ def test_create_audience_rejects_over_540_days(monkeypatch):
 
 # ---------- key event limit ----------
 
+
 def test_create_key_event_blocks_at_limit(monkeypatch):
-    monkeypatch.setattr(ga4_admin, "list_key_events", lambda pid: [{"name": f"ke-{i}"} for i in range(30)])
+    monkeypatch.setattr(
+        ga4_admin, "list_key_events", lambda pid: [{"name": f"ke-{i}"} for i in range(30)]
+    )
     mock_client = MagicMock()
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: mock_client)
     with pytest.raises(ValueError, match="limit 30"):
@@ -75,8 +80,13 @@ def test_create_key_event_under_limit_calls_api(monkeypatch):
     fake_types = MagicMock()
     fake_types.KeyEvent.CountingMethod = {"ONCE_PER_EVENT": 1}
 
-    with patch.dict("sys.modules", {"google.analytics.admin_v1beta": MagicMock(),
-                                      "google.analytics.admin_v1beta.types": fake_types}):
+    with patch.dict(
+        "sys.modules",
+        {
+            "google.analytics.admin_v1beta": MagicMock(),
+            "google.analytics.admin_v1beta.types": fake_types,
+        },
+    ):
         monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: mock_client)
         with patch.object(ga4_admin, "_proto_to_dict", return_value={"event_name": "purchase"}):
             out = ga4_admin.create_key_event("123", "purchase")
@@ -85,6 +95,7 @@ def test_create_key_event_under_limit_calls_api(monkeypatch):
 
 
 # ---------- event rule deletes pass through ----------
+
 
 def test_delete_event_edit_rule_calls_alpha(monkeypatch):
     mock_client = MagicMock()

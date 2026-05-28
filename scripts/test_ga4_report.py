@@ -61,23 +61,37 @@ def test_render_html_no_summary():
 def test_cli_writes_html_file(tmp_path, monkeypatch):
     """Round-trip: pass JSON inputs through the CLI, check the file lands on disk."""
     input_path = tmp_path / "agent.json"
-    input_path.write_text(json.dumps({
-        "agent": "ga4-funnel",
-        "summary": "Test summary",
-        "findings": [{"severity": "High", "title": "test", "detail": "test detail"}],
-        "data": {},
-    }))
+    input_path.write_text(
+        json.dumps(
+            {
+                "agent": "ga4-funnel",
+                "summary": "Test summary",
+                "findings": [{"severity": "High", "title": "test", "detail": "test detail"}],
+                "data": {},
+            }
+        )
+    )
     output_path = tmp_path / "report.html"
 
     import sys
-    monkeypatch.setattr(sys, "argv", [
-        "ga4_report.py",
-        "--property", "999",
-        "--inputs", str(input_path),
-        "--format", "html",
-        "--output", str(output_path),
-        "--confidence", "high",
-    ])
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ga4_report.py",
+            "--property",
+            "999",
+            "--inputs",
+            str(input_path),
+            "--format",
+            "html",
+            "--output",
+            str(output_path),
+            "--confidence",
+            "high",
+        ],
+    )
     rc = ga4_report.main()
     assert rc == 0
     assert output_path.exists()

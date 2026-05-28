@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "google-analytics-agent"
 version = "0.3.0"
@@ -12,18 +16,42 @@ dependencies = [
   "google-analytics-data>=0.18.0",
   "google-analytics-admin>=0.22.0",
   "google-auth>=2.25.0",
-  "google-auth-oauthlib>=1.2.0",
-  "jinja2>=3.1.0"
+  "google-auth-oauthlib>=1.2.0"
 ]
 
 [project.optional-dependencies]
 pdf = [
   "weasyprint>=60.0"
 ]
+mcp = [
+  "mcp>=1.2,<2"
+]
 dev = [
   "pytest>=7.4.0",
   "pytest-cov>=4.1.0",
-  "ruff>=0.1.0"
+  "ruff>=0.1.0",
+  "mypy>=1.8.0",
+  "mcp>=1.2,<2"
+]
+
+[project.scripts]
+ga4-mcp = "ga4_mcp:main"
+
+[tool.setuptools]
+package-dir = { "" = "scripts" }
+py-modules = [
+  "ga4_auth",
+  "ga4_admin",
+  "ga4_audit",
+  "ga4_benchmarks",
+  "ga4_context",
+  "ga4_data",
+  "ga4_definitions",
+  "ga4_events",
+  "ga4_funnel",
+  "ga4_mcp",
+  "ga4_report",
+  "ga4_utils"
 ]
 
 [tool.ruff]
@@ -33,3 +61,9 @@ target-version = "py310"
 [tool.pytest.ini_options]
 testpaths = ["scripts"]
 python_files = ["test_*.py"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["scripts"]
+ignore_missing_imports = true
+exclude = "scripts/test_.*\\.py$|scripts/conftest\\.py$"

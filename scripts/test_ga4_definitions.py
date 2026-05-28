@@ -19,6 +19,7 @@ def _redirect_definitions_dir(monkeypatch, tmp_path):
 
 # ---------- segments ----------
 
+
 def test_save_segment_persists_to_disk(tmp_path):
     path = ga4_definitions.save_segment(
         "branded traffic",
@@ -100,6 +101,7 @@ def test_delete_report_def_removes_file():
 
 
 # ---------- CSV serialization ----------
+
 
 def test_to_csv_emits_header_and_rows():
     payload = {

@@ -10,8 +10,10 @@ Claude Code loads `skills/ga4/SKILL.md` as the top-level router. It
 exposes `/ga4 <command>` and routes to:
 
 - read skills: `ga4-audit`, `ga4-context`, `ga4-funnel`, `ga4-segments`,
-  `ga4-events`, `ga4-conversions`, `ga4-attribution`, `ga4-quality`,
-  `ga4-property`
+  `ga4-events`
+- router-hosted read commands (no separate skill; the router verifies auth
+  and spawns the matching agent directly): `conversions`, `attribution`,
+  `quality`, `property`
 - write skills: `ga4-events-edit`, `ga4-audiences`, `ga4-custom-defs`,
   `ga4-key-events`
 - local-definition skills: `ga4-segment-defs`, `ga4-custom-report`

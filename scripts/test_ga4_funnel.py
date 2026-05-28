@@ -1,7 +1,5 @@
 """Tests for ga4_funnel: rate computation, leakiest step, opt-in post-payment check."""
 
-
-
 import ga4_funnel
 
 
@@ -30,9 +28,9 @@ def test_step_rates_leakiest_is_largest_absolute():
     """Leakiest = largest absolute drop, NOT lowest conversion rate."""
     counts = {
         "view_item": 100000,
-        "add_to_cart": 10000,    # 90% drop, 90000 users
+        "add_to_cart": 10000,  # 90% drop, 90000 users
         "begin_checkout": 5000,  # 50% drop, 5000 users
-        "purchase": 100,         # 98% drop, 4900 users
+        "purchase": 100,  # 98% drop, 4900 users
     }
     steps = list(counts.keys())
     out = ga4_funnel._step_rates_from_counts(counts, steps)
@@ -46,9 +44,9 @@ def test_step_rates_leakiest_prefers_volume_over_rate():
     """A step with high volume + moderate drop beats a step with low volume + extreme drop."""
     counts = {
         "view_item": 1000000,
-        "add_to_cart": 500000,    # 50% drop, 500k users
-        "begin_checkout": 5000,   # 99% drop, 495k users
-        "purchase": 50,           # 99% drop, 4950 users
+        "add_to_cart": 500000,  # 50% drop, 500k users
+        "begin_checkout": 5000,  # 99% drop, 495k users
+        "purchase": 50,  # 99% drop, 4950 users
     }
     steps = list(counts.keys())
     out = ga4_funnel._step_rates_from_counts(counts, steps)
@@ -90,7 +88,9 @@ def test_compute_rates_no_breakdown():
         {"funnelStepName": "add_to_cart", "activeUsers": "300"},
         {"funnelStepName": "purchase", "activeUsers": "60"},
     ]
-    out = ga4_funnel._compute_rates(rows, ["view_item", "add_to_cart", "purchase"], has_breakdown=False)
+    out = ga4_funnel._compute_rates(
+        rows, ["view_item", "add_to_cart", "purchase"], has_breakdown=False
+    )
     assert out["aggregate"]["overall_conversion_pct"] == 6.0
 
 
@@ -112,25 +112,37 @@ def test_compute_rates_with_breakdown():
 
 def test_build_funnel_drops_postpayment_api_when_opted_in(monkeypatch):
     """With check_postpayment=True and a post_payment verdict, the step is dropped."""
-    monkeypatch.setattr(ga4_funnel, "check_events", lambda pid, steps, days: {
-        "events": {s: {"present": True, "event_count": 100} for s in steps},
-        "window_days": days,
-    })
-    monkeypatch.setattr(ga4_funnel, "detect_postpayment_api", lambda pid, days: {
-        "verdict": "post_payment",
-        "explanation": "fires after payment",
-        "add_payment_info_count": 105,
-        "purchase_count": 100,
-        "ratio": 1.05,
-    })
-    monkeypatch.setattr(ga4_funnel, "run_funnel_report", lambda **kw: {
-        "rows": [
-            {"funnelStepName": "view_item", "activeUsers": "1000"},
-            {"funnelStepName": "add_to_cart", "activeUsers": "300"},
-            {"funnelStepName": "begin_checkout", "activeUsers": "150"},
-            {"funnelStepName": "purchase", "activeUsers": "60"},
-        ],
-    })
+    monkeypatch.setattr(
+        ga4_funnel,
+        "check_events",
+        lambda pid, steps, days: {
+            "events": {s: {"present": True, "event_count": 100} for s in steps},
+            "window_days": days,
+        },
+    )
+    monkeypatch.setattr(
+        ga4_funnel,
+        "detect_postpayment_api",
+        lambda pid, days: {
+            "verdict": "post_payment",
+            "explanation": "fires after payment",
+            "add_payment_info_count": 105,
+            "purchase_count": 100,
+            "ratio": 1.05,
+        },
+    )
+    monkeypatch.setattr(
+        ga4_funnel,
+        "run_funnel_report",
+        lambda **kw: {
+            "rows": [
+                {"funnelStepName": "view_item", "activeUsers": "1000"},
+                {"funnelStepName": "add_to_cart", "activeUsers": "300"},
+                {"funnelStepName": "begin_checkout", "activeUsers": "150"},
+                {"funnelStepName": "purchase", "activeUsers": "60"},
+            ],
+        },
+    )
 
     out = ga4_funnel.build_funnel("123", days=28, check_postpayment=True)
     assert "add_payment_info" not in out["steps"]
@@ -140,10 +152,14 @@ def test_build_funnel_drops_postpayment_api_when_opted_in(monkeypatch):
 
 def test_build_funnel_default_does_not_run_postpayment_check(monkeypatch):
     """Default behaviour: post-payment heuristic does not run, all steps kept."""
-    monkeypatch.setattr(ga4_funnel, "check_events", lambda pid, steps, days: {
-        "events": {s: {"present": True, "event_count": 100} for s in steps},
-        "window_days": days,
-    })
+    monkeypatch.setattr(
+        ga4_funnel,
+        "check_events",
+        lambda pid, steps, days: {
+            "events": {s: {"present": True, "event_count": 100} for s in steps},
+            "window_days": days,
+        },
+    )
     called = {"detect": False}
 
     def _detect(*_a, **_kw):
@@ -151,12 +167,22 @@ def test_build_funnel_default_does_not_run_postpayment_check(monkeypatch):
         return {"verdict": "post_payment"}
 
     monkeypatch.setattr(ga4_funnel, "detect_postpayment_api", _detect)
-    monkeypatch.setattr(ga4_funnel, "run_funnel_report", lambda **kw: {
-        "rows": [
-            {"funnelStepName": s, "activeUsers": "100"}
-            for s in ["view_item", "add_to_cart", "begin_checkout", "add_payment_info", "purchase"]
-        ],
-    })
+    monkeypatch.setattr(
+        ga4_funnel,
+        "run_funnel_report",
+        lambda **kw: {
+            "rows": [
+                {"funnelStepName": s, "activeUsers": "100"}
+                for s in [
+                    "view_item",
+                    "add_to_cart",
+                    "begin_checkout",
+                    "add_payment_info",
+                    "purchase",
+                ]
+            ],
+        },
+    )
 
     out = ga4_funnel.build_funnel("123", days=28)
     assert "add_payment_info" in out["steps"]
@@ -166,22 +192,40 @@ def test_build_funnel_default_does_not_run_postpayment_check(monkeypatch):
 
 def test_build_funnel_keeps_postpayment_api_when_check_ok(monkeypatch):
     """With check_postpayment=True and an OK verdict, the step is kept."""
-    monkeypatch.setattr(ga4_funnel, "check_events", lambda pid, steps, days: {
-        "events": {s: {"present": True, "event_count": 100} for s in steps},
-        "window_days": days,
-    })
-    monkeypatch.setattr(ga4_funnel, "detect_postpayment_api", lambda pid, days: {
-        "verdict": "ok",
-        "add_payment_info_count": 200,
-        "purchase_count": 100,
-        "ratio": 2.0,
-    })
-    monkeypatch.setattr(ga4_funnel, "run_funnel_report", lambda **kw: {
-        "rows": [
-            {"funnelStepName": s, "activeUsers": "100"}
-            for s in ["view_item", "add_to_cart", "begin_checkout", "add_payment_info", "purchase"]
-        ],
-    })
+    monkeypatch.setattr(
+        ga4_funnel,
+        "check_events",
+        lambda pid, steps, days: {
+            "events": {s: {"present": True, "event_count": 100} for s in steps},
+            "window_days": days,
+        },
+    )
+    monkeypatch.setattr(
+        ga4_funnel,
+        "detect_postpayment_api",
+        lambda pid, days: {
+            "verdict": "ok",
+            "add_payment_info_count": 200,
+            "purchase_count": 100,
+            "ratio": 2.0,
+        },
+    )
+    monkeypatch.setattr(
+        ga4_funnel,
+        "run_funnel_report",
+        lambda **kw: {
+            "rows": [
+                {"funnelStepName": s, "activeUsers": "100"}
+                for s in [
+                    "view_item",
+                    "add_to_cart",
+                    "begin_checkout",
+                    "add_payment_info",
+                    "purchase",
+                ]
+            ],
+        },
+    )
 
     out = ga4_funnel.build_funnel("123", days=28, check_postpayment=True)
     assert "add_payment_info" in out["steps"]

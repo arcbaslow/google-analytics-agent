@@ -42,7 +42,9 @@ def validate_steps(property_id, steps, days=7):
             validated.append(step)
         else:
             dropped.append(step)
-            warnings.append(f"step '{step}' has no events in last {days} days - dropped from funnel")
+            warnings.append(
+                f"step '{step}' has no events in last {days} days - dropped from funnel"
+            )
     return {"validated_steps": validated, "dropped_steps": dropped, "warnings": warnings}
 
 
@@ -64,7 +66,10 @@ def build_funnel(property_id, steps=None, days=28, breakdown=None, check_postpay
     warnings.extend(validation["warnings"])
 
     if len(steps) < 2:
-        return {"error": "fewer than 2 funnel steps with data - cannot build funnel", "validation": validation}
+        return {
+            "error": "fewer than 2 funnel steps with data - cannot build funnel",
+            "validation": validation,
+        }
 
     postpayment_verdict = None
     if check_postpayment and "add_payment_info" in steps:
@@ -79,7 +84,9 @@ def build_funnel(property_id, steps=None, days=28, breakdown=None, check_postpay
                 "reintroducing the step."
             )
 
-    raw = run_funnel_report(property_id=property_id, steps=steps, days=days, breakdown_dimension=breakdown)
+    raw = run_funnel_report(
+        property_id=property_id, steps=steps, days=days, breakdown_dimension=breakdown
+    )
     rates = _compute_rates(raw["rows"], steps, has_breakdown=breakdown is not None)
 
     return {
@@ -111,7 +118,9 @@ def _compute_rates(rows, steps, has_breakdown):
             by_segment[seg][step] += users
         return {
             "aggregate": _step_rates_from_counts(aggregate, steps),
-            "by_segment": {seg: _step_rates_from_counts(counts, steps) for seg, counts in by_segment.items()},
+            "by_segment": {
+                seg: _step_rates_from_counts(counts, steps) for seg, counts in by_segment.items()
+            },
         }
     else:
         counts = {s: 0 for s in steps}
@@ -138,15 +147,17 @@ def _step_rates_from_counts(counts, steps):
         curr_users = counts.get(curr, 0)
         dropped = max(prev_users - curr_users, 0)
         conv = (curr_users / prev_users) if prev_users else 0
-        transitions.append({
-            "from": prev,
-            "to": curr,
-            "from_users": prev_users,
-            "to_users": curr_users,
-            "users_dropped": dropped,
-            "step_conversion_pct": round(conv * 100, 2),
-            "step_dropoff_pct": round((1 - conv) * 100, 2),
-        })
+        transitions.append(
+            {
+                "from": prev,
+                "to": curr,
+                "from_users": prev_users,
+                "to_users": curr_users,
+                "users_dropped": dropped,
+                "step_conversion_pct": round(conv * 100, 2),
+                "step_dropoff_pct": round((1 - conv) * 100, 2),
+            }
+        )
 
     total_loss = top - bottom
     for t in transitions:
@@ -185,12 +196,17 @@ def _get_breakdown_value(row):
 def main():
     parser = argparse.ArgumentParser(description="GA4 funnel constructor")
     parser.add_argument("--property", required=True)
-    parser.add_argument("--steps", help="Comma-separated event names; defaults to the e-commerce preset")
+    parser.add_argument(
+        "--steps", help="Comma-separated event names; defaults to the e-commerce preset"
+    )
     parser.add_argument("--preset", choices=["ecomm"], help="Built-in funnel preset")
     parser.add_argument("--days", type=int, default=28)
     parser.add_argument("--breakdown", help="Optional breakdown dimension")
-    parser.add_argument("--check-postpayment", action="store_true",
-                        help="Run the post-payment heuristic and drop add_payment_info if it fires after purchase")
+    parser.add_argument(
+        "--check-postpayment",
+        action="store_true",
+        help="Run the post-payment heuristic and drop add_payment_info if it fires after purchase",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 

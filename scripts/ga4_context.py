@@ -39,10 +39,11 @@ CONTEXT_DIR = Path.home() / ".claude" / "ga4-context"
 FETCH_TIMEOUT_SECONDS = 12
 USER_AGENT = "google-analytics-agent/0.3 (+context-extractor)"
 MAX_HTML_BYTES = 800_000  # ~800 KB cap on homepage download
-MAX_SITEMAP_URLS = 200    # surface the first N urls for analysis
+MAX_SITEMAP_URLS = 200  # surface the first N urls for analysis
 
 
 # ---------- Storage ----------
+
 
 def _ensure_dir():
     CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
@@ -72,6 +73,7 @@ def delete_context(property_id: str) -> dict[str, Any]:
 
 # ---------- URL extraction ----------
 
+
 def extract_property_urls(property_id: str) -> list[dict[str, Any]]:
     """Pull `defaultUri` from each web stream on the property.
 
@@ -85,19 +87,24 @@ def extract_property_urls(property_id: str) -> list[dict[str, Any]]:
         stream_type = s.get("type_") or s.get("type") or ""
         web = s.get("webStreamData") or s.get("web_stream_data") or {}
         default_uri = web.get("defaultUri") or web.get("default_uri")
-        out.append({
-            "stream_id": s.get("name", "").split("/")[-1],
-            "stream_name": s.get("displayName") or s.get("display_name"),
-            "default_uri": default_uri,
-            "type": stream_type,
-            "raw": s,
-        })
+        out.append(
+            {
+                "stream_id": s.get("name", "").split("/")[-1],
+                "stream_name": s.get("displayName") or s.get("display_name"),
+                "default_uri": default_uri,
+                "type": stream_type,
+                "raw": s,
+            }
+        )
     return out
 
 
 # ---------- HTTP helpers ----------
 
-def _fetch(url: str, timeout: int = FETCH_TIMEOUT_SECONDS, max_bytes: int = MAX_HTML_BYTES) -> tuple[int, dict[str, str], str]:
+
+def _fetch(
+    url: str, timeout: int = FETCH_TIMEOUT_SECONDS, max_bytes: int = MAX_HTML_BYTES
+) -> tuple[int, dict[str, str], str]:
     """Fetch a URL and return (status, headers, body-as-text). Never raises;
     returns (-1, {}, error-message) on transport failure."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
@@ -146,63 +153,87 @@ _PLATFORM_SIGNATURES = [
     ("wix", [r"static\.wixstatic\.com", r"wix-code"]),
     ("squarespace", [r"static1\.squarespace\.com", r"squarespace-content"]),
     ("hubspot_cms", [r"hs-scripts\.com", r"hubspotusercontent"]),
-    ("ghost", [r'<meta name="generator" content="Ghost'])
+    ("ghost", [r'<meta name="generator" content="Ghost']),
 ]
 
 _VERTICAL_SIGNATURES = [
-    ("ecommerce", [
-        r'"@type"\s*:\s*"Product"',
-        r"add[\s_-]?to[\s_-]?cart",
-        r"\bcheckout\b",
-        r"\bcart\b",
-        r"\bsku\b",
-        r"shop\.",
-    ]),
-    ("saas", [
-        r'"@type"\s*:\s*"SoftwareApplication"',
-        r"\bsign\s*up\b",
-        r"\bfree\s*trial\b",
-        r"\bpricing\b",
-        r"start\s*for\s*free",
-    ]),
-    ("media", [
-        r'"@type"\s*:\s*"NewsArticle"',
-        r'"@type"\s*:\s*"Article"',
-        r'"@type"\s*:\s*"BlogPosting"',
-        r"\barticles?/",
-        r"\bblog/",
-    ]),
-    ("lead_gen", [
-        r"\brequest[\s-]?a[\s-]?demo\b",
-        r"\bcontact\s*sales\b",
-        r"\bschedule\s*a\s*call\b",
-        r"\bget\s*a\s*quote\b",
-    ]),
-    ("finance", [
-        r"\binvestor\b",
-        r"\bcredit\s*card\b",
-        r"\binterest\s*rate\b",
-        r'"@type"\s*:\s*"FinancialService"',
-    ]),
-    ("travel", [
-        r"\bflights?\b",
-        r"\bhotels?\b",
-        r"\bbook\s*now\b",
-        r"\bcheck[\s-]?in\b",
-        r'"@type"\s*:\s*"LodgingBusiness"',
-    ]),
-    ("education", [
-        r"\bcourses?\b",
-        r"\bsyllabus\b",
-        r"\benroll(?:ment)?\b",
-        r'"@type"\s*:\s*"Course"',
-    ]),
-    ("nonprofit", [
-        r"\bdonate\b",
-        r"\bdonation\b",
-        r'"@type"\s*:\s*"NGO"',
-        r'"@type"\s*:\s*"NonprofitOrganization"',
-    ]),
+    (
+        "ecommerce",
+        [
+            r'"@type"\s*:\s*"Product"',
+            r"add[\s_-]?to[\s_-]?cart",
+            r"\bcheckout\b",
+            r"\bcart\b",
+            r"\bsku\b",
+            r"shop\.",
+        ],
+    ),
+    (
+        "saas",
+        [
+            r'"@type"\s*:\s*"SoftwareApplication"',
+            r"\bsign\s*up\b",
+            r"\bfree\s*trial\b",
+            r"\bpricing\b",
+            r"start\s*for\s*free",
+        ],
+    ),
+    (
+        "media",
+        [
+            r'"@type"\s*:\s*"NewsArticle"',
+            r'"@type"\s*:\s*"Article"',
+            r'"@type"\s*:\s*"BlogPosting"',
+            r"\barticles?/",
+            r"\bblog/",
+        ],
+    ),
+    (
+        "lead_gen",
+        [
+            r"\brequest[\s-]?a[\s-]?demo\b",
+            r"\bcontact\s*sales\b",
+            r"\bschedule\s*a\s*call\b",
+            r"\bget\s*a\s*quote\b",
+        ],
+    ),
+    (
+        "finance",
+        [
+            r"\binvestor\b",
+            r"\bcredit\s*card\b",
+            r"\binterest\s*rate\b",
+            r'"@type"\s*:\s*"FinancialService"',
+        ],
+    ),
+    (
+        "travel",
+        [
+            r"\bflights?\b",
+            r"\bhotels?\b",
+            r"\bbook\s*now\b",
+            r"\bcheck[\s-]?in\b",
+            r'"@type"\s*:\s*"LodgingBusiness"',
+        ],
+    ),
+    (
+        "education",
+        [
+            r"\bcourses?\b",
+            r"\bsyllabus\b",
+            r"\benroll(?:ment)?\b",
+            r'"@type"\s*:\s*"Course"',
+        ],
+    ),
+    (
+        "nonprofit",
+        [
+            r"\bdonate\b",
+            r"\bdonation\b",
+            r'"@type"\s*:\s*"NGO"',
+            r'"@type"\s*:\s*"NonprofitOrganization"',
+        ],
+    ),
 ]
 
 
@@ -247,15 +278,18 @@ def _extract_lang(html: str) -> str | None:
 
 
 def _extract_canonical(html: str) -> str | None:
-    m = re.search(r'<link\s+[^>]*?rel=["\']canonical["\'][^>]*?href=["\']([^"\']+)["\']', html, re.I)
+    m = re.search(
+        r'<link\s+[^>]*?rel=["\']canonical["\'][^>]*?href=["\']([^"\']+)["\']', html, re.I
+    )
     return m.group(1) if m else None
 
 
 def _extract_jsonld(html: str) -> list[dict[str, Any]]:
-    out = []
+    out: list[dict[str, Any]] = []
     for m in re.finditer(
         r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
-        html, re.I | re.S,
+        html,
+        re.I | re.S,
     ):
         blob = m.group(1).strip()
         try:
@@ -320,6 +354,7 @@ def _classify_page_types(urls: list[str]) -> dict[str, int]:
 
 # ---------- The analyzer ----------
 
+
 def analyze_website(url: str) -> dict[str, Any]:
     """Fetch the URL plus robots.txt and sitemap.xml, return a context dict."""
     parsed = urllib.parse.urlparse(url)
@@ -368,13 +403,15 @@ def analyze_website(url: str) -> dict[str, Any]:
             visible_text = re.sub(r"<[^>]+>", "", visible_text)
             spa_hint = len(visible_text.strip()) < 800 and len(body_inner) > 200
 
-    home.update({
-        "title": title,
-        "lang": lang,
-        "canonical": canonical,
-        "generator": generator,
-        "html_bytes": body_html_length,
-    })
+    home.update(
+        {
+            "title": title,
+            "lang": lang,
+            "canonical": canonical,
+            "generator": generator,
+            "html_bytes": body_html_length,
+        }
+    )
 
     robots_text = _fetch_safely(origin + "/robots.txt")
     robots = _parse_robots(robots_text) if robots_text else None
@@ -392,7 +429,15 @@ def analyze_website(url: str) -> dict[str, Any]:
     inferred_vertical = vertical_hits[0][0] if vertical_hits else "other"
     inferred_platform = platform_hits[0][0] if platform_hits else None
     inferred_framework = framework_hits[0][0] if framework_hits else None
-    is_spa = spa_hint or inferred_framework in {"nextjs", "nuxt", "react", "vue", "angular", "svelte", "remix"}
+    is_spa = spa_hint or inferred_framework in {
+        "nextjs",
+        "nuxt",
+        "react",
+        "vue",
+        "angular",
+        "svelte",
+        "remix",
+    }
 
     summary = _make_summary(home, inferred_vertical, inferred_platform, inferred_framework, is_spa)
 
@@ -442,6 +487,7 @@ def _make_summary(home, vertical, platform, framework, is_spa) -> str:
 
 # ---------- High-level orchestration ----------
 
+
 def build_property_context(property_id: str, force: bool = False) -> dict[str, Any]:
     """Top-level: read GA4 streams, pick the first web stream's URL,
     analyze the site, and persist a structured context dict."""
@@ -479,7 +525,8 @@ def build_property_context(property_id: str, force: bool = False) -> dict[str, A
                 "stream_name": s.get("stream_name"),
                 "default_uri": s.get("default_uri"),
             }
-            for s in streams if s is not primary
+            for s in streams
+            if s is not primary
         ],
         "site": analysis,
     }
@@ -489,13 +536,20 @@ def build_property_context(property_id: str, force: bool = False) -> dict[str, A
 
 # ---------- CLI ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="GA4 property context extractor")
     parser.add_argument("--property", help="GA4 property ID")
     parser.add_argument("--url", help="Analyze an arbitrary URL without GA4 lookup")
-    parser.add_argument("--analyze", action="store_true", help="Extract and analyze (uses cache by default)")
-    parser.add_argument("--refresh", action="store_true", help="Force re-analysis even if a cached context exists")
-    parser.add_argument("--show", action="store_true", help="Print the stored context for a property")
+    parser.add_argument(
+        "--analyze", action="store_true", help="Extract and analyze (uses cache by default)"
+    )
+    parser.add_argument(
+        "--refresh", action="store_true", help="Force re-analysis even if a cached context exists"
+    )
+    parser.add_argument(
+        "--show", action="store_true", help="Print the stored context for a property"
+    )
     parser.add_argument("--delete", action="store_true", help="Delete the stored context")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
