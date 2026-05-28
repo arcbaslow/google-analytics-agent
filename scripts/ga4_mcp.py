@@ -23,14 +23,56 @@ import ga4_definitions
 import ga4_events
 import ga4_funnel
 
+
+def _resolve_version() -> str:
+    """Resolve the installed package version for the server handshake. Falls back
+    to a source marker when the package isn't installed (e.g. running from a raw
+    checkout without `pip install`)."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        try:
+            return version("google-analytics-agent")
+        except PackageNotFoundError:
+            return "0.0.0+source"
+    except Exception:
+        return "0.0.0+source"
+
+
 mcp = FastMCP("google-analytics-agent")
+# FastMCP has no `version` constructor argument; the underlying low-level server
+# otherwise reports the `mcp` library's own version on initialize. Set our real
+# package version so MCP clients see the toolkit version, not the SDK's.
+mcp._mcp_server.version = _resolve_version()
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def _is_reauth_error(exc: BaseException) -> bool:
+    """True for credential errors that a client fixes by re-authenticating:
+    google-auth refresh failures (expired/revoked ADC) and API call errors that
+    are 401s or carry a 'Reauthentication is needed' message."""
+    try:
+        from google.auth.exceptions import RefreshError
+
+        if isinstance(exc, RefreshError):
+            return True
+    except ImportError:
+        pass
+    try:
+        from google.api_core.exceptions import Unauthenticated
+
+        if isinstance(exc, Unauthenticated):
+            return True
+    except ImportError:
+        pass
+    return "reauthentication is needed" in str(exc).lower()
+
+
 def _auth_guarded(fn: F) -> F:
-    """Wrap a tool so an unresolved-credentials error becomes a structured
-    result instead of a stack trace over the wire."""
+    """Wrap a tool so a credentials problem becomes a structured result instead of
+    a stack trace over the wire. Covers both unresolved credentials
+    (AuthRequiredError) and expired/revoked credentials surfaced at call time."""
 
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -38,6 +80,14 @@ def _auth_guarded(fn: F) -> F:
             return fn(*args, **kwargs)
         except ga4_auth.AuthRequiredError as e:
             return {"error": "auth_required", "hint": e.hint}
+        except Exception as e:
+            if _is_reauth_error(e):
+                return {
+                    "error": "auth_required",
+                    "hint": "Credentials are expired or require reauthentication. Run:\n  "
+                    + ga4_auth.adc_command(write=False),
+                }
+            raise
 
     return cast(F, wrapper)
 
