@@ -262,6 +262,68 @@ def delete_event_edit_rule(rule_name: str, confirm: bool = False) -> dict[str, A
     return _applied(ga4_admin.delete_event_edit_rule(rule_name))
 
 
+@mcp.tool()
+def property_details(property_id: str) -> dict[str, Any]:
+    """Fetch the property summary from the Admin API."""
+    return ga4_admin.get_property_details(property_id)
+
+
+@mcp.tool()
+def data_streams(property_id: str) -> list[dict[str, Any]]:
+    """List the data streams configured on the property."""
+    return ga4_admin.list_data_streams(property_id)
+
+
+@mcp.tool()
+def custom_defs(property_id: str) -> dict[str, Any]:
+    """List custom dimensions and metrics on the property."""
+    return ga4_admin.list_custom_defs(property_id)
+
+
+@mcp.tool()
+def key_events(property_id: str) -> list[dict[str, Any]]:
+    """List the key events (conversions) on the property."""
+    return ga4_admin.list_key_events(property_id)
+
+
+@mcp.tool()
+def attribution_settings(property_id: str) -> dict[str, Any]:
+    """Read the property's attribution settings."""
+    return ga4_admin.get_attribution_settings(property_id)
+
+
+@mcp.tool()
+def list_audiences(property_id: str) -> list[dict[str, Any]]:
+    """List the audiences on the property."""
+    return ga4_admin.list_audiences(property_id)
+
+
+@mcp.tool()
+def list_event_rules(property_id: str, stream_id: str) -> dict[str, Any]:
+    """List event edit and create rules for a data stream."""
+    return ga4_admin.list_event_rules(property_id, stream_id)
+
+
+@mcp.tool()
+def list_segments() -> list[dict[str, Any]]:
+    """List locally stored segment definitions."""
+    return ga4_definitions.list_segments()
+
+
+@mcp.tool()
+def list_saved_reports() -> list[dict[str, Any]]:
+    """List locally stored custom report definitions."""
+    return ga4_definitions.list_report_defs()
+
+
+@mcp.tool()
+def run_saved_report(
+    name: str, property_id: str, days: int | None = None
+) -> Any:
+    """Run a saved custom report definition against a property."""
+    return ga4_definitions.run_report_def(name, property_id, days_override=days)
+
+
 def main() -> None:
     mcp.run()
 

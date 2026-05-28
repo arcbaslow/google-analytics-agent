@@ -77,3 +77,26 @@ def test_create_audience_preview_then_apply():
         )
     create.assert_called_once_with("123", definition)
     assert applied["applied"] is True
+
+
+def test_list_audiences_tool():
+    with mock.patch.object(ga4_mcp.ga4_admin, "list_audiences", return_value=[{"name": "a"}]):
+        out = ga4_mcp.list_audiences(property_id="123")
+    assert out == [{"name": "a"}]
+
+
+def test_list_segments_tool():
+    with mock.patch.object(
+        ga4_mcp.ga4_definitions, "list_segments", return_value=[{"name": "s"}]
+    ):
+        out = ga4_mcp.list_segments()
+    assert out == [{"name": "s"}]
+
+
+def test_run_saved_report_tool():
+    with mock.patch.object(
+        ga4_mcp.ga4_definitions, "run_report_def", return_value={"rows": []}
+    ) as rr:
+        out = ga4_mcp.run_saved_report(name="weekly", property_id="123")
+    rr.assert_called_once()
+    assert out == {"rows": []}
