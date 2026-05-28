@@ -73,10 +73,10 @@ Auth:
 | `funnel <id>` | ga4-funnel skill |
 | `segments <id>` | ga4-segments skill |
 | `events <id>` | ga4-events skill |
-| `conversions <id>` | ga4-conversions skill |
-| `attribution <id>` | ga4-attribution skill |
-| `quality <id>` | ga4-quality skill |
-| `property <id>` | ga4-property skill |
+| `conversions <id>` | Verify auth, spawn `ga4-conversions` agent (see Consolidated read commands) |
+| `attribution <id>` | Verify auth, spawn `ga4-attribution` agent (see Consolidated read commands) |
+| `quality <id>` | Verify auth, spawn `ga4-quality` agent (see Consolidated read commands) |
+| `property <id>` | Verify auth, spawn `ga4-property` agent |
 | `benchmarks [--vertical V]` | Run `python scripts/ga4_benchmarks.py` |
 | `events-edit <id> ...` | ga4-events-edit skill |
 | `audiences <id> ...` | ga4-audiences skill |
@@ -86,6 +86,26 @@ Auth:
 | `report ...` | ga4-custom-report skill |
 | `auth` | Run `python scripts/ga4_auth.py --adc` (or `--oauth` as fallback) |
 | `properties` | Run `python scripts/ga4_auth.py --properties` |
+
+## Consolidated read commands
+
+These commands route straight from this router to their agent (there is no
+separate skill file). Verify auth first in every case
+(`python scripts/ga4_auth.py --check`).
+
+- **quality**: spawn the `ga4-quality` agent. It emits a confidence label
+  (High / Medium / Low / Very Low) that downstream agents reference. Save the
+  label to `.ga4-cache/<property-id>/quality-confidence.json` so later runs
+  can read it without re-running the quality audit.
+- **conversions**: spawn the `ga4-conversions` agent. After analysis, if at
+  least one key event is configured, offer: "Want to see attribution at each
+  funnel step? Use `/ga4 attribution <property-id>`".
+- **attribution**: first check at least one key event is configured
+  (`python scripts/ga4_admin.py --property <id> --key-events --json`); if none,
+  return "no key events configured, configure at least `purchase` as a key
+  event first". Otherwise spawn the `ga4-attribution` agent. Default window 28
+  days; for conversion-lag analysis the agent may extend to 90 days internally.
+- **property**: spawn the `ga4-property` agent.
 
 ## Natural Language Routing
 

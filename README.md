@@ -308,10 +308,6 @@ google-analytics-agent/
     ga4-funnel/          funnel analysis (configurable steps)
     ga4-segments/        cohort drop-off
     ga4-events/          event taxonomy validation
-    ga4-conversions/     key events config audit
-    ga4-attribution/     channel attribution at each step
-    ga4-quality/         data quality audit
-    ga4-property/        property configuration audit
     ga4-events-edit/     EventEditRule / EventCreateRule writes
     ga4-audiences/       audience CRUD
     ga4-custom-defs/     custom dimension / metric CRUD
@@ -322,6 +318,11 @@ google-analytics-agent/
   GEMINI.md              Gemini CLI instructions
   CLAUDE.md              Claude Code instructions (also points here)
 ```
+
+The `conversions`, `attribution`, `quality`, and `property` read commands
+are routed directly by the `ga4` router (which spawns the matching agent in
+`agents/`); they no longer have separate skill directories. Every
+`/ga4 <command>` invocation is unchanged.
 
 ## Funnels
 
