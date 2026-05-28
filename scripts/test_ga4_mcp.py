@@ -1,5 +1,7 @@
 from unittest import mock
 
+import pytest
+
 import ga4_auth
 import ga4_mcp
 
@@ -106,3 +108,42 @@ def test_audit_surfaces_auth_error_as_structured_result():
         out = ga4_mcp.audit(property_id="123")
     assert out["error"] == "auth_required"
     assert "gcloud" in out["hint"]
+
+
+def test_expired_credentials_refresh_error_surfaces_as_auth_required():
+    from google.auth.exceptions import RefreshError
+
+    with mock.patch.object(
+        ga4_mcp.ga4_audit,
+        "orchestrate",
+        side_effect=RefreshError("Reauthentication is needed"),
+    ):
+        out = ga4_mcp.audit(property_id="123")
+    assert out["error"] == "auth_required"
+    assert "gcloud" in out["hint"]
+
+
+def test_reauth_api_error_surfaces_as_auth_required():
+    from google.api_core.exceptions import ServiceUnavailable
+
+    with mock.patch.object(
+        ga4_mcp.ga4_audit,
+        "orchestrate",
+        side_effect=ServiceUnavailable(
+            "Getting metadata from plugin failed with error: Reauthentication is needed."
+        ),
+    ):
+        out = ga4_mcp.audit(property_id="123")
+    assert out["error"] == "auth_required"
+    assert "gcloud" in out["hint"]
+
+
+def test_non_auth_error_is_not_swallowed():
+    with mock.patch.object(ga4_mcp.ga4_audit, "orchestrate", side_effect=ValueError("boom")):
+        with pytest.raises(ValueError):
+            ga4_mcp.audit(property_id="123")
+
+
+def test_server_reports_resolved_package_version():
+    assert ga4_mcp.mcp._mcp_server.version == ga4_mcp._resolve_version()
+    assert ga4_mcp.mcp._mcp_server.version  # non-empty
