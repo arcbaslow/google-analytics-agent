@@ -12,6 +12,10 @@ env/
 .ruff_cache/
 .mypy_cache/
 pytest-cache-files-*/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Credentials and cache (local-only, never committed)
 .secrets/
