@@ -110,6 +110,158 @@ def report(
     return ga4_data.run_report(property_id, metrics=metrics, dimensions=dimensions, days=days)
 
 
+def _preview(would_apply: Any) -> dict[str, Any]:
+    return {
+        "preview": True,
+        "applied": False,
+        "would_apply": would_apply,
+        "note": "Dry run. No API call made. Re-invoke with confirm=true to apply.",
+    }
+
+
+def _applied(result: Any) -> dict[str, Any]:
+    return {"preview": False, "applied": True, "result": result}
+
+
+@mcp.tool()
+def add_key_event(
+    property_id: str,
+    event_name: str,
+    counting_method: str = "ONCE_PER_EVENT",
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Create a key event (conversion). Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"event_name": event_name, "counting_method": counting_method})
+    return _applied(
+        ga4_admin.create_key_event(property_id, event_name, counting_method=counting_method)
+    )
+
+
+@mcp.tool()
+def delete_key_event(name: str, confirm: bool = False) -> dict[str, Any]:
+    """Delete a key event by full resource name. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"name": name})
+    return _applied(ga4_admin.delete_key_event(name))
+
+
+@mcp.tool()
+def create_audience(
+    property_id: str, definition: dict[str, Any], confirm: bool = False
+) -> dict[str, Any]:
+    """Create an audience from a definition dict. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview(definition)
+    return _applied(ga4_admin.create_audience(property_id, definition))
+
+
+@mcp.tool()
+def archive_audience(audience_name: str, confirm: bool = False) -> dict[str, Any]:
+    """Archive an audience by full resource name. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"audience_name": audience_name})
+    return _applied(ga4_admin.archive_audience(audience_name))
+
+
+@mcp.tool()
+def add_custom_dimension(
+    property_id: str,
+    parameter_name: str,
+    display_name: str,
+    scope: str = "EVENT",
+    description: str = "",
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Create a custom dimension. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview(
+            {
+                "parameter_name": parameter_name,
+                "display_name": display_name,
+                "scope": scope,
+                "description": description,
+            }
+        )
+    return _applied(
+        ga4_admin.create_custom_dimension(
+            property_id, parameter_name, display_name, scope, description
+        )
+    )
+
+
+@mcp.tool()
+def add_custom_metric(
+    property_id: str,
+    parameter_name: str,
+    display_name: str,
+    measurement_unit: str,
+    scope: str = "EVENT",
+    description: str = "",
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Create a custom metric. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview(
+            {
+                "parameter_name": parameter_name,
+                "display_name": display_name,
+                "measurement_unit": measurement_unit,
+                "scope": scope,
+                "description": description,
+            }
+        )
+    return _applied(
+        ga4_admin.create_custom_metric(
+            property_id, parameter_name, display_name, measurement_unit, scope, description
+        )
+    )
+
+
+@mcp.tool()
+def archive_custom_dimension(name: str, confirm: bool = False) -> dict[str, Any]:
+    """Archive a custom dimension by full resource name. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"name": name})
+    return _applied(ga4_admin.archive_custom_dimension(name))
+
+
+@mcp.tool()
+def archive_custom_metric(name: str, confirm: bool = False) -> dict[str, Any]:
+    """Archive a custom metric by full resource name. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"name": name})
+    return _applied(ga4_admin.archive_custom_metric(name))
+
+
+@mcp.tool()
+def add_event_edit_rule(
+    property_id: str, stream_id: str, definition: dict[str, Any], confirm: bool = False
+) -> dict[str, Any]:
+    """Create an event edit rule on a data stream. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"stream_id": stream_id, "definition": definition})
+    return _applied(ga4_admin.create_event_edit_rule(property_id, stream_id, definition))
+
+
+@mcp.tool()
+def add_event_create_rule(
+    property_id: str, stream_id: str, definition: dict[str, Any], confirm: bool = False
+) -> dict[str, Any]:
+    """Create an event create rule on a data stream. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"stream_id": stream_id, "definition": definition})
+    return _applied(ga4_admin.create_event_create_rule(property_id, stream_id, definition))
+
+
+@mcp.tool()
+def delete_event_edit_rule(rule_name: str, confirm: bool = False) -> dict[str, Any]:
+    """Delete an event edit rule by full resource name. Dry-run unless confirm=true."""
+    if not confirm:
+        return _preview({"rule_name": rule_name})
+    return _applied(ga4_admin.delete_event_edit_rule(rule_name))
+
+
 def main() -> None:
     mcp.run()
 
