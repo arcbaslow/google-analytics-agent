@@ -1,8 +1,8 @@
 # google-analytics-agent
 
 [![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/google-analytics-agent.svg)](https://pypi.org/project/google-analytics-agent/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![version](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
 
 ## Quickstart
 
@@ -13,7 +13,7 @@ python scripts/ga4_auth.py --check
 python scripts/ga4_audit.py --property <id> --output audit.md
 ```
 
-Or run the MCP server in any MCP client: `uvx --from git+https://github.com/arcbaslow/google-analytics-agent ga4-mcp`
+Or run the MCP server in any MCP client: `uvx --from google-analytics-agent ga4-mcp`
 
 A multi-agent toolkit for Google Analytics 4. Talks to the GA4 Data API and
 Admin API, profiles the property's live website, runs specialist analysis
@@ -92,7 +92,20 @@ CLI as well as MCP.
 
 ## Install
 
-From inside the project directory.
+### From PyPI
+
+The package is published as
+[`google-analytics-agent`](https://pypi.org/project/google-analytics-agent/):
+
+```
+pip install google-analytics-agent        # or: uv pip install google-analytics-agent
+```
+
+This installs the `ga4-mcp` console entry point (the MCP server) without
+cloning the repo. Add the PDF extra with `pip install "google-analytics-agent[pdf]"`.
+
+The remaining options install from a working copy of the repo (run them from
+inside the project directory).
 
 ### Recommended: `uv`
 
@@ -210,7 +223,7 @@ client (Claude Desktop/Code, Cursor, Windsurf, n8n).
   "mcpServers": {
     "ga4": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/arcbaslow/google-analytics-agent", "ga4-mcp"]
+      "args": ["--from", "google-analytics-agent", "ga4-mcp"]
     }
   }
 }
@@ -388,10 +401,11 @@ every other finding inherits:
 
 ## Status
 
-v0.3.0 — context extraction, benchmark engine, and markdown audit
-renderer added. Read path is complete and works against live properties.
-Write path (event rules, audiences, custom defs, key events) is wired
-and unit-tested but not yet covered by integration tests against a live
+v0.4.1 — published to PyPI as `google-analytics-agent`, with an MCP server
+(`ga4-mcp`), packaging and CI hardening, and automated Trusted-Publishing
+releases. Read path is complete and works against live properties. Write
+path (event rules, audiences, custom defs, key events) is wired and
+unit-tested but not yet covered by integration tests against a live
 property. Local segment and custom-report stores are complete.
 
 ## Releasing

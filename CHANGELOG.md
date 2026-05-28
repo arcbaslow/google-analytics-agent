@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.1
+
+- Publish to PyPI as `google-analytics-agent` via an automated release
+  workflow (`.github/workflows/release.yml`) using PyPI Trusted Publishing
+  (OIDC, no stored token). A `release: published` event builds the sdist
+  and wheel, runs `twine check`, and publishes from the `pypi` environment;
+  `scripts/check_release_version.py` guards that the release tag matches the
+  packaged version. A `workflow_dispatch` trigger provides a manual fallback.
+- Widen the MCP server auth guard: expired or reauth-required credentials
+  (`RefreshError`, and API errors whose message requests reauthentication)
+  now surface as a structured `auth_required` response with a remediation
+  hint instead of an unhandled exception.
+- Report the installed package version in the MCP server handshake instead
+  of the underlying SDK version.
+
+## 0.4.0
+
+- Add an MCP server (`scripts/ga4_mcp.py`, console entry point `ga4-mcp`)
+  exposing 32 tools over stdio: the full read/analysis surface plus
+  read-only admin reads and saved-definition tools. Write tools follow a
+  dry-run-first contract — without `confirm=true` they return the exact
+  change and make no API call.
+- Package the project for distribution: console entry point, `[pdf]` and
+  `[dev]` extras, and `uvx`/`pip install` support.
+- Add CI and quality tooling: ruff lint + format check, mypy, and pytest
+  with coverage across a Python 3.10–3.13 matrix; pre-commit config and
+  Dependabot.
+- Consolidate the `conversions`, `attribution`, `quality`, and `property`
+  read commands into the `ga4` router (spawned directly, no separate skill
+  directories). Every `/ga4 <command>` invocation is unchanged.
+
 ## 0.3.0
 
 - Add `ga4-context` skill and `scripts/ga4_context.py`. Reads the
