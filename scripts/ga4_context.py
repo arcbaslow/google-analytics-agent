@@ -285,7 +285,7 @@ def _extract_canonical(html: str) -> str | None:
 
 
 def _extract_jsonld(html: str) -> list[dict[str, Any]]:
-    out = []
+    out: list[dict[str, Any]] = []
     for m in re.finditer(
         r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
         html,
