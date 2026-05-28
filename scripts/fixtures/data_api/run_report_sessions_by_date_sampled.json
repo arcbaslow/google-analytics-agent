@@ -1,0 +1,17 @@
+{
+  "dimensionHeaders": [{ "name": "date" }],
+  "metricHeaders": [{ "name": "sessions", "type": "TYPE_INTEGER" }],
+  "rows": [
+    { "dimensionValues": [{ "value": "20260101" }], "metricValues": [{ "value": "1200" }] },
+    { "dimensionValues": [{ "value": "20260102" }], "metricValues": [{ "value": "1380" }] }
+  ],
+  "rowCount": 2,
+  "metadata": {
+    "samplingMetadatas": [
+      { "samplesReadCount": "8400000", "samplingSpaceSize": "10000000" }
+    ],
+    "currencyCode": "USD",
+    "timeZone": "America/Los_Angeles",
+    "dataLossFromOtherRow": false
+  }
+}

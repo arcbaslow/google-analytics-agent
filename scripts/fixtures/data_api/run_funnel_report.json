@@ -1,0 +1,12 @@
+{
+  "funnelTable": {
+    "dimensionHeaders": [{ "name": "funnelStepName" }],
+    "metricHeaders": [{ "name": "activeUsers" }],
+    "rows": [
+      { "dimensionValues": [{ "value": "view_item" }], "metricValues": [{ "value": "10000" }] },
+      { "dimensionValues": [{ "value": "add_to_cart" }], "metricValues": [{ "value": "3000" }] },
+      { "dimensionValues": [{ "value": "begin_checkout" }], "metricValues": [{ "value": "1500" }] },
+      { "dimensionValues": [{ "value": "purchase" }], "metricValues": [{ "value": "600" }] }
+    ]
+  }
+}

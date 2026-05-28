@@ -1,0 +1,118 @@
+{
+  "context": {
+    "status": "ok",
+    "context": {
+      "property_id": "200002",
+      "site": {
+        "inferred": { "vertical": "ecommerce", "platform": "WooCommerce", "framework": "WordPress" },
+        "summary": "Leaky Shop | ecommerce | WooCommerce"
+      }
+    }
+  },
+  "run_report": {
+    "date": {
+      "dimensions": ["date"],
+      "metrics": ["sessions"],
+      "rows": [
+        { "date": "20260101", "sessions": "900" },
+        { "date": "20260102", "sessions": "1100" }
+      ],
+      "metadata": {
+        "sampling": [{ "sample_rate": 0.8 }],
+        "currency_code": "USD",
+        "time_zone": "America/New_York"
+      }
+    },
+    "sessionSource": {
+      "dimensions": ["sessionSource"],
+      "metrics": ["sessions"],
+      "rows": [
+        { "sessionSource": "(direct)", "sessions": "5500" },
+        { "sessionSource": "google", "sessions": "3000" },
+        { "sessionSource": "(not set)", "sessions": "1500" }
+      ]
+    },
+    "sessionDefaultChannelGroup": {
+      "dimensions": ["sessionDefaultChannelGroup"],
+      "metrics": ["eventCount"],
+      "rows": [
+        { "sessionDefaultChannelGroup": "Direct", "eventCount": "600" },
+        { "sessionDefaultChannelGroup": "Organic Search", "eventCount": "200" },
+        { "sessionDefaultChannelGroup": "Paid Search", "eventCount": "100" }
+      ]
+    }
+  },
+  "list_events": {
+    "rows": [
+      { "eventName": "view_item", "eventCount": "20000" },
+      { "eventName": "add_to_cart", "eventCount": "4000" },
+      { "eventName": "begin_checkout", "eventCount": "900" },
+      { "eventName": "purchase", "eventCount": "240" },
+      { "eventName": "scroll", "eventCount": "50000" }
+    ]
+  },
+  "event_params_coverage": {},
+  "build_funnel": {
+    "property_id": "200002",
+    "window_days": 28,
+    "steps": ["view_item", "add_to_cart", "begin_checkout", "purchase"],
+    "step_count": 4,
+    "rates": {
+      "aggregate": {
+        "overall_conversion_pct": 1.2,
+        "leakiest_step": {
+          "from": "view_item",
+          "to": "add_to_cart",
+          "users_dropped": 16000,
+          "share_of_total_loss_pct": 81
+        }
+      }
+    },
+    "warnings": ["Possible post-payment ordering issue: purchase fires before add_payment_info in 12% of sessions"]
+  },
+  "list_key_events": [
+    { "eventName": "purchase" },
+    { "eventName": "begin_checkout" },
+    { "eventName": "add_to_cart" },
+    { "eventName": "view_item" },
+    { "eventName": "view_item_list" },
+    { "eventName": "select_item" },
+    { "eventName": "add_to_wishlist" },
+    { "eventName": "remove_from_cart" },
+    { "eventName": "view_cart" },
+    { "eventName": "add_payment_info" },
+    { "eventName": "add_shipping_info" },
+    { "eventName": "generate_lead" },
+    { "eventName": "sign_up" },
+    { "eventName": "login" },
+    { "eventName": "search" },
+    { "eventName": "share" },
+    { "eventName": "select_promotion" },
+    { "eventName": "view_promotion" },
+    { "eventName": "scroll" },
+    { "eventName": "click" },
+    { "eventName": "file_download" },
+    { "eventName": "video_start" },
+    { "eventName": "video_complete" },
+    { "eventName": "newsletter_signup" },
+    { "eventName": "contact_form" },
+    { "eventName": "demo_request" },
+    { "eventName": "pricing_view" },
+    { "eventName": "faq_open" },
+    { "eventName": "chat_open" },
+    { "eventName": "coupon_apply" },
+    { "eventName": "review_submit" }
+  ],
+  "attribution_settings": { "reporting_attribution_model": "PAID_AND_ORGANIC_CHANNELS_LAST_CLICK" },
+  "property_details": {
+    "displayName": "Leaky Shop",
+    "dataRetentionSettings": { "eventDataRetention": "TWO_MONTHS" }
+  },
+  "data_streams": [
+    { "displayName": "Web", "webStreamData": { "defaultUri": "https://leaky.example" } }
+  ],
+  "data_filters": [
+    { "displayName": "Internal traffic", "filterState": "TEST" }
+  ],
+  "custom_defs": { "custom_dimensions": [{ "parameterName": "plan" }], "custom_metrics": [] }
+}
