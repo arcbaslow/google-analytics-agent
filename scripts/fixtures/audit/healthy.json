@@ -1,0 +1,92 @@
+{
+  "context": {
+    "status": "ok",
+    "context": {
+      "property_id": "100001",
+      "site": {
+        "inferred": { "vertical": "ecommerce", "platform": "Shopify", "framework": "Next.js" },
+        "summary": "Acme Store | ecommerce | Shopify"
+      }
+    }
+  },
+  "run_report": {
+    "date": {
+      "dimensions": ["date"],
+      "metrics": ["sessions"],
+      "rows": [
+        { "date": "20260101", "sessions": "1200" },
+        { "date": "20260102", "sessions": "1380" }
+      ],
+      "metadata": {
+        "sampling": [{ "sample_rate": 1.0 }],
+        "currency_code": "USD",
+        "time_zone": "America/Los_Angeles"
+      }
+    },
+    "sessionSource": {
+      "dimensions": ["sessionSource"],
+      "metrics": ["sessions"],
+      "rows": [
+        { "sessionSource": "google", "sessions": "6000" },
+        { "sessionSource": "(direct)", "sessions": "2000" },
+        { "sessionSource": "newsletter", "sessions": "1500" },
+        { "sessionSource": "(not set)", "sessions": "200" }
+      ]
+    },
+    "sessionDefaultChannelGroup": {
+      "dimensions": ["sessionDefaultChannelGroup"],
+      "metrics": ["eventCount"],
+      "rows": [
+        { "sessionDefaultChannelGroup": "Organic Search", "eventCount": "500" },
+        { "sessionDefaultChannelGroup": "Paid Search", "eventCount": "300" },
+        { "sessionDefaultChannelGroup": "Direct", "eventCount": "150" }
+      ]
+    }
+  },
+  "list_events": {
+    "rows": [
+      { "eventName": "view_item", "eventCount": "10000" },
+      { "eventName": "add_to_cart", "eventCount": "3000" },
+      { "eventName": "begin_checkout", "eventCount": "1500" },
+      { "eventName": "add_payment_info", "eventCount": "900" },
+      { "eventName": "purchase", "eventCount": "600" }
+    ]
+  },
+  "event_params_coverage": {
+    "purchase": { "event": "purchase", "coverage": { "currency": { "coverage_pct": 99 }, "value": { "coverage_pct": 100 } } },
+    "add_to_cart": { "event": "add_to_cart", "coverage": { "currency": { "coverage_pct": 98 }, "value": { "coverage_pct": 97 } } }
+  },
+  "build_funnel": {
+    "property_id": "100001",
+    "window_days": 28,
+    "steps": ["view_item", "add_to_cart", "begin_checkout", "add_payment_info", "purchase"],
+    "step_count": 5,
+    "rates": {
+      "aggregate": {
+        "overall_conversion_pct": 6.0,
+        "leakiest_step": {
+          "from": "view_item",
+          "to": "add_to_cart",
+          "users_dropped": 7000,
+          "share_of_total_loss_pct": 74
+        }
+      }
+    },
+    "warnings": []
+  },
+  "list_key_events": [
+    { "eventName": "purchase" },
+    { "eventName": "begin_checkout" },
+    { "eventName": "generate_lead" }
+  ],
+  "attribution_settings": { "reporting_attribution_model": "DATA_DRIVEN" },
+  "property_details": {
+    "displayName": "Acme Store",
+    "dataRetentionSettings": { "eventDataRetention": "FOURTEEN_MONTHS" }
+  },
+  "data_streams": [
+    { "displayName": "Web", "webStreamData": { "defaultUri": "https://acme.example" } }
+  ],
+  "data_filters": [],
+  "custom_defs": { "custom_dimensions": [{ "parameterName": "plan" }], "custom_metrics": [] }
+}

@@ -1,0 +1,10 @@
+{
+  "dimensionHeaders": [{ "name": "sessionSource" }],
+  "metricHeaders": [{ "name": "sessions", "type": "TYPE_INTEGER" }],
+  "rows": [
+    { "dimensionValues": [{ "value": "(direct)" }], "metricValues": [{ "value": "4200" }] },
+    { "dimensionValues": [{ "value": "google" }], "metricValues": [{ "value": "5000" }] },
+    { "dimensionValues": [{ "value": "(not set)" }], "metricValues": [{ "value": "800" }] }
+  ],
+  "rowCount": 3
+}

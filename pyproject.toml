@@ -67,3 +67,7 @@ python_version = "3.10"
 files = ["scripts"]
 ignore_missing_imports = true
 exclude = "scripts/test_.*\\.py$|scripts/conftest\\.py$"
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
