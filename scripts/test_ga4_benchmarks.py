@@ -7,6 +7,7 @@ import ga4_benchmarks
 
 # ---------- Vertical normalization ----------
 
+
 def test_list_verticals_includes_other():
     verticals = ga4_benchmarks.list_verticals()
     assert "other" in verticals
@@ -33,6 +34,7 @@ def test_benchmarks_for_returns_table():
 
 
 # ---------- compare() — happy paths ----------
+
 
 def test_compare_bounce_rate_above_p75_is_critical_for_ecomm():
     result = ga4_benchmarks.compare("bounce_rate", 0.80, "ecommerce")
@@ -91,10 +93,10 @@ def test_compare_delta_vs_median_pct():
 
 # ---------- enrich_findings ----------
 
+
 def test_enrich_findings_attaches_benchmark_to_matching_finding():
     findings = [
-        {"severity": "High", "title": "Bounce high",
-         "metric": "bounce_rate", "metric_value": 0.78},
+        {"severity": "High", "title": "Bounce high", "metric": "bounce_rate", "metric_value": 0.78},
         {"severity": "Low", "title": "No metric here"},
     ]
     out = ga4_benchmarks.enrich_findings(findings, "ecommerce")

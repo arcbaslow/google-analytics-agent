@@ -34,7 +34,9 @@ REQUIRED_PARAMS = {
 
 def list_events(property_id, days=7):
     """Distinct event names with counts."""
-    return run_report(property_id=property_id, metrics=["eventCount"], dimensions=["eventName"], days=days)
+    return run_report(
+        property_id=property_id, metrics=["eventCount"], dimensions=["eventName"], days=days
+    )
 
 
 def check_events(property_id, event_names, days=7):
@@ -172,7 +174,9 @@ def detect_postpayment_api(property_id, days=7):
         )
     elif ratio < 1.0:
         verdict = "ok_below_purchase"
-        explanation = "add_payment_info count below purchase count - unusual but tracking may be functional"
+        explanation = (
+            "add_payment_info count below purchase count - unusual but tracking may be functional"
+        )
     else:
         verdict = "ok"
         explanation = "add_payment_info count exceeds purchase count - normal funnel behavior"
@@ -205,9 +209,17 @@ def main():
             names = [n.strip() for n in args.check_events.split(",") if n.strip()]
             print(json.dumps(check_events(args.property, names, args.days), indent=2, default=str))
         elif args.event_params:
-            print(json.dumps(event_params_coverage(args.property, args.event_params, args.days), indent=2, default=str))
+            print(
+                json.dumps(
+                    event_params_coverage(args.property, args.event_params, args.days),
+                    indent=2,
+                    default=str,
+                )
+            )
         elif args.detect_postpayment_api:
-            print(json.dumps(detect_postpayment_api(args.property, args.days), indent=2, default=str))
+            print(
+                json.dumps(detect_postpayment_api(args.property, args.days), indent=2, default=str)
+            )
         else:
             parser.print_help()
             return 1

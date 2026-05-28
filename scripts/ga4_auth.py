@@ -58,13 +58,11 @@ def scopes_for(write: bool) -> list[str]:
 def adc_command(write: bool) -> str:
     """Exact gcloud command the user needs to run for the requested scopes."""
     scopes = scopes_for(write) + [CLOUD_PLATFORM]
-    return (
-        "gcloud auth application-default login --scopes="
-        + ",".join(scopes)
-    )
+    return "gcloud auth application-default login --scopes=" + ",".join(scopes)
 
 
 # ---------- legacy OAuth installed-app flow ----------
+
 
 def _ensure_creds_dir() -> None:
     CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -146,6 +144,7 @@ def run_oauth_flow(client_secret_file: str, write: bool = False) -> dict[str, An
 
 # ---------- unified resolver ----------
 
+
 def _legacy_credentials(write: bool):
     """Build a google.oauth2.credentials.Credentials from the legacy file."""
     from google.oauth2.credentials import Credentials
@@ -219,6 +218,7 @@ def credentials_source(creds) -> str:
 
 # ---------- ADC quota project ----------
 
+
 def set_quota_project(project_id: str) -> dict[str, Any]:
     """Run `gcloud auth application-default set-quota-project <id>`. Required for
     some Admin API calls under user ADC (cloud will otherwise return 'quota
@@ -234,6 +234,7 @@ def set_quota_project(project_id: str) -> dict[str, Any]:
 
 
 # ---------- CLI ----------
+
 
 def check_auth() -> bool:
     """Verify credentials resolve. Print which path was used."""
@@ -281,7 +282,9 @@ def main() -> int:
     parser.add_argument("--quota-project", help="Set ADC quota project")
     parser.add_argument("--properties", action="store_true", help="List accessible properties")
     parser.add_argument("--oauth", action="store_true", help="Fallback OAuth installed-app flow")
-    parser.add_argument("--client-secret-file", help="Path to OAuth client_secret JSON (with --oauth)")
+    parser.add_argument(
+        "--client-secret-file", help="Path to OAuth client_secret JSON (with --oauth)"
+    )
     args = parser.parse_args()
 
     if args.adc:

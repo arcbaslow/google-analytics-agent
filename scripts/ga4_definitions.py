@@ -54,6 +54,7 @@ def _ensure_dirs():
 
 # ---------- segments ----------
 
+
 def save_segment(name: str, filter_expression: dict[str, Any], description: str = "") -> Path:
     """Persist a segment under SEGMENTS_DIR. Overwrites if the slug collides."""
     _ensure_dirs()
@@ -75,7 +76,9 @@ def list_segments() -> list[dict[str, Any]]:
             data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
-        out.append({"slug": p.stem, "name": data.get("name"), "description": data.get("description", "")})
+        out.append(
+            {"slug": p.stem, "name": data.get("name"), "description": data.get("description", "")}
+        )
     return out
 
 
@@ -105,10 +108,12 @@ def build_filter_from_definition(filter_expression: dict[str, Any]):
         or_group, not_expression, filter); passed through ParseDict.
     """
     from ga4_data import _build_filter_expression
+
     if {"field", "op"} <= set(filter_expression.keys()):
         return _build_filter_expression(filter_expression)
     from google.analytics.data_v1beta.types import FilterExpression
     from google.protobuf.json_format import ParseDict
+
     return ParseDict(filter_expression, FilterExpression(), ignore_unknown_fields=True)
 
 
@@ -136,13 +141,15 @@ def list_report_defs() -> list[dict[str, Any]]:
             data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
-        out.append({
-            "slug": p.stem,
-            "name": data.get("name"),
-            "description": data.get("description", ""),
-            "metrics": data.get("metrics", []),
-            "dimensions": data.get("dimensions", []),
-        })
+        out.append(
+            {
+                "slug": p.stem,
+                "name": data.get("name"),
+                "description": data.get("description", ""),
+                "metrics": data.get("metrics", []),
+                "dimensions": data.get("dimensions", []),
+            }
+        )
     return out
 
 
@@ -161,8 +168,13 @@ def delete_report_def(name: str) -> dict[str, Any]:
     return {"status": "deleted", "name": name}
 
 
-def run_report_def(name: str, property_id: str, days_override: int | None = None,
-                   format: str = "json", segment: str | None = None) -> Any:
+def run_report_def(
+    name: str,
+    property_id: str,
+    days_override: int | None = None,
+    format: str = "json",
+    segment: str | None = None,
+) -> Any:
     """Execute a saved report definition. Returns rows for json/csv, rendered
     string for html, file bytes for pdf (caller must write to disk)."""
     if format not in REPORT_FORMATS:
@@ -171,6 +183,7 @@ def run_report_def(name: str, property_id: str, days_override: int | None = None
     days = days_override or defn.get("default_days", 28)
 
     from ga4_data import run_report
+
     rows = run_report(
         property_id=property_id,
         metrics=defn["metrics"],
@@ -191,12 +204,15 @@ def run_report_def(name: str, property_id: str, days_override: int | None = None
         return _to_csv(rows)
     if format == "md":
         from ga4_report import render_custom_report_markdown
+
         return render_custom_report_markdown(defn, rows)
     if format == "html":
         from ga4_report import render_custom_report_html
+
         return render_custom_report_html(defn, rows)
     if format == "pdf":
         from ga4_report import render_custom_report_html, render_pdf_bytes
+
         html = render_custom_report_html(defn, rows)
         return render_pdf_bytes(html)
     return rows
@@ -205,9 +221,13 @@ def run_report_def(name: str, property_id: str, days_override: int | None = None
 def _apply_segment_and_rerun(property_id, defn, days, filter_expression):
     """runReport with a segment's filter applied as dimension_filter."""
     from google.analytics.data_v1beta.types import (
-        DateRange, Dimension, Metric, RunReportRequest,
+        DateRange,
+        Dimension,
+        Metric,
+        RunReportRequest,
     )
     from ga4_data import _get_data_client, _serialize_run_report, date_range
+
     start, end = date_range(days)
     req = RunReportRequest(
         property=f"properties/{property_id}",
@@ -235,25 +255,37 @@ def _to_csv(report_payload) -> str:
 
 # ---------- CLI ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Stored GA4 segments and custom reports")
 
     # segment commands
-    parser.add_argument("--save-segment", metavar="NAME",
-                        help="Save a shorthand segment (needs --field --op --value or --values)")
+    parser.add_argument(
+        "--save-segment",
+        metavar="NAME",
+        help="Save a shorthand segment (needs --field --op --value or --values)",
+    )
     parser.add_argument("--field")
     parser.add_argument("--op")
     parser.add_argument("--value")
     parser.add_argument("--values", help="Comma-separated list for IN_LIST op")
     parser.add_argument("--description", default="")
-    parser.add_argument("--save-segment-json", nargs=2, metavar=("NAME", "PATH"),
-                        help="Save a segment from a raw FilterExpression JSON file")
+    parser.add_argument(
+        "--save-segment-json",
+        nargs=2,
+        metavar=("NAME", "PATH"),
+        help="Save a segment from a raw FilterExpression JSON file",
+    )
     parser.add_argument("--list-segments", action="store_true")
     parser.add_argument("--delete-segment", metavar="NAME")
 
     # report commands
-    parser.add_argument("--save-report", nargs=2, metavar=("NAME", "PATH"),
-                        help="Save a custom report definition from a JSON file")
+    parser.add_argument(
+        "--save-report",
+        nargs=2,
+        metavar=("NAME", "PATH"),
+        help="Save a custom report definition from a JSON file",
+    )
     parser.add_argument("--list-reports", action="store_true")
     parser.add_argument("--delete-report", metavar="NAME")
     parser.add_argument("--run-report", metavar="NAME")
@@ -280,8 +312,11 @@ def main():
 def _dispatch(args):
     if args.save_segment:
         if args.values:
-            fe = {"field": args.field, "op": "IN_LIST",
-                  "values": [v.strip() for v in args.values.split(",") if v.strip()]}
+            fe = {
+                "field": args.field,
+                "op": "IN_LIST",
+                "values": [v.strip() for v in args.values.split(",") if v.strip()],
+            }
         elif args.field and args.op and args.value is not None:
             fe = {"field": args.field, "op": args.op.upper(), "value": args.value}
         else:
@@ -308,8 +343,11 @@ def _dispatch(args):
         if not args.property:
             raise ValueError("--run-report requires --property")
         return run_report_def(
-            args.run_report, args.property, days_override=args.days,
-            format=args.format, segment=args.segment,
+            args.run_report,
+            args.property,
+            days_override=args.days,
+            format=args.format,
+            segment=args.segment,
         )
     return None
 

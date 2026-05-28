@@ -83,12 +83,12 @@ def _severity_class(s):
 
 
 def _esc(s):
-    return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _render_findings(findings):
     if not findings:
-        return '<li><em>No findings.</em></li>'
+        return "<li><em>No findings.</em></li>"
     sorted_f = sorted(findings, key=lambda f: SEVERITY_ORDER.get(f.get("severity", "Low"), 4))
     parts = []
     for f in sorted_f:
@@ -97,7 +97,9 @@ def _render_findings(findings):
         title = _esc(f.get("title", "(no title)"))
         detail = _esc(f.get("detail", ""))
         source = _esc(f.get("source", ""))
-        source_html = f' <span style="color:#888;font-size:12px;">[{source}]</span>' if source else ""
+        source_html = (
+            f' <span style="color:#888;font-size:12px;">[{source}]</span>' if source else ""
+        )
         parts.append(
             f'<li class="{cls}"><span class="sev {cls}">{sev}</span><strong>{title}</strong>{source_html}'
             f'<div style="margin-top:6px;font-size:14px;color:#404040;">{detail}</div></li>'
@@ -114,7 +116,7 @@ def _render_per_agent(agents_output):
         data_pretty = _esc(json.dumps(data, indent=2, default=str))
         parts.append(
             f'<h3>{name}</h3><div class="summary-block">{summary}</div>'
-            f'<details><summary>raw output</summary><pre>{data_pretty}</pre></details>'
+            f"<details><summary>raw output</summary><pre>{data_pretty}</pre></details>"
         )
     return "".join(parts)
 
@@ -129,12 +131,14 @@ def render_html(property_id, agents_output, confidence="medium"):
             ff["source"] = ao.get("agent", "")
             all_findings.append(ff)
         if ao.get("summary"):
-            summaries.append(f"<strong>{_esc(ao.get('agent', ''))}:</strong> {_esc(ao.get('summary'))}")
+            summaries.append(
+                f"<strong>{_esc(ao.get('agent', ''))}:</strong> {_esc(ao.get('summary'))}"
+            )
 
     exec_html = "<br />".join(summaries) if summaries else "(no agent summaries)"
 
-    return (HTML_TEMPLATE
-        .replace("__PROPERTY_ID__", _esc(property_id))
+    return (
+        HTML_TEMPLATE.replace("__PROPERTY_ID__", _esc(property_id))
         .replace("__GENERATED_AT__", datetime.now().strftime("%Y-%m-%d %H:%M"))
         .replace("__CONFIDENCE_CLASS__", _esc(confidence))
         .replace("__CONFIDENCE__", _esc(confidence))
@@ -147,12 +151,14 @@ def render_html(property_id, agents_output, confidence="medium"):
 def render_pdf(html, output_path):
     """Render HTML to PDF via WeasyPrint."""
     from weasyprint import HTML
+
     HTML(string=html).write_pdf(output_path)
 
 
 def render_pdf_bytes(html) -> bytes:
     """Render HTML to PDF and return the bytes (no filesystem write)."""
     from weasyprint import HTML
+
     return HTML(string=html).write_pdf()
 
 
@@ -195,11 +201,15 @@ def render_custom_report_markdown(definition, report_payload):
     """Render a single saved-report run as plain markdown (no emoji)."""
     name = definition.get("name", "untitled")
     desc = definition.get("description", "")
-    payload = report_payload.get("result", report_payload) if isinstance(report_payload, dict) else {}
+    payload = (
+        report_payload.get("result", report_payload) if isinstance(report_payload, dict) else {}
+    )
     rows = payload.get("rows", []) if isinstance(payload, dict) else []
     metric_names = set(payload.get("metrics") or definition.get("metrics") or [])
-    headers = list(rows[0].keys()) if rows else (
-        list(definition.get("dimensions", [])) + list(definition.get("metrics", []))
+    headers = (
+        list(rows[0].keys())
+        if rows
+        else (list(definition.get("dimensions", [])) + list(definition.get("metrics", [])))
     )
 
     out = []
@@ -246,11 +256,15 @@ def render_custom_report_html(definition, report_payload):
     desc = definition.get("description", "")
     desc_html = f'<div class="description">{_esc(desc)}</div>' if desc else ""
 
-    payload = report_payload.get("result", report_payload) if isinstance(report_payload, dict) else {}
+    payload = (
+        report_payload.get("result", report_payload) if isinstance(report_payload, dict) else {}
+    )
     rows = payload.get("rows", []) if isinstance(payload, dict) else []
     metric_names = set(payload.get("metrics") or definition.get("metrics") or [])
-    headers = list(rows[0].keys()) if rows else (
-        list(definition.get("dimensions", [])) + list(definition.get("metrics", []))
+    headers = (
+        list(rows[0].keys())
+        if rows
+        else (list(definition.get("dimensions", [])) + list(definition.get("metrics", [])))
     )
 
     header_html = "".join(f"<th>{_esc(h)}</th>" for h in headers)
@@ -268,8 +282,8 @@ def render_custom_report_html(definition, report_payload):
     if md and md.get("time_zone"):
         window = _esc(md.get("time_zone"))
 
-    return (CUSTOM_REPORT_TEMPLATE
-        .replace("__REPORT_NAME__", name)
+    return (
+        CUSTOM_REPORT_TEMPLATE.replace("__REPORT_NAME__", name)
         .replace("__GENERATED_AT__", datetime.now().strftime("%Y-%m-%d %H:%M"))
         .replace("__ROWS__", str(len(rows)))
         .replace("__WINDOW__", window or "—")
@@ -285,6 +299,7 @@ def _load_property_context(property_id):
     present."""
     try:
         from ga4_context import load_context
+
         return load_context(str(property_id))
     except Exception:
         return None
@@ -322,7 +337,9 @@ def render_property_context_md(context):
     pc = context
     if "primary_stream" in pc:
         ps = pc["primary_stream"]
-        lines.append(f"- Primary web stream: `{ps.get('stream_name', '-')}` (`{ps.get('stream_id', '-')}`)")
+        lines.append(
+            f"- Primary web stream: `{ps.get('stream_name', '-')}` (`{ps.get('stream_id', '-')}`)"
+        )
         lines.append(f"- URL: {ps.get('default_uri', '-')}")
     additional = pc.get("additional_streams") or []
     if additional:
@@ -385,11 +402,14 @@ def render_markdown(property_id, agents_output, confidence="medium", context=Non
     if vertical:
         try:
             from ga4_benchmarks import enrich_findings
+
             all_findings = enrich_findings(all_findings, vertical)
         except Exception:
             pass
 
-    sorted_findings = sorted(all_findings, key=lambda f: SEVERITY_ORDER.get(f.get("severity", "Low"), 4))
+    sorted_findings = sorted(
+        all_findings, key=lambda f: SEVERITY_ORDER.get(f.get("severity", "Low"), 4)
+    )
 
     lines = []
     lines.append(f"# GA4 Audit — property {property_id}")
@@ -466,11 +486,15 @@ def render_markdown(property_id, agents_output, confidence="medium", context=Non
 def main():
     parser = argparse.ArgumentParser(description="GA4 audit report generator")
     parser.add_argument("--property", required=True)
-    parser.add_argument("--inputs", required=True, help="Comma-separated paths to agent JSON outputs")
+    parser.add_argument(
+        "--inputs", required=True, help="Comma-separated paths to agent JSON outputs"
+    )
     parser.add_argument("--format", choices=["html", "pdf", "md"], default="html")
     parser.add_argument("--output", required=True)
     parser.add_argument("--confidence", default="medium")
-    parser.add_argument("--vertical", help="Override the benchmark vertical (else inferred from context)")
+    parser.add_argument(
+        "--vertical", help="Override the benchmark vertical (else inferred from context)"
+    )
     args = parser.parse_args()
 
     inputs = []

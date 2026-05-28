@@ -60,26 +60,44 @@ def date_range(days):
 
 def _get_data_client():
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
+
     return BetaAnalyticsDataClient(credentials=get_credentials())
 
 
 def _get_data_alpha_client():
     from google.analytics.data_v1alpha import AlphaAnalyticsDataClient
+
     return AlphaAnalyticsDataClient(credentials=get_credentials())
 
 
 def _build_filter_expression(parsed):
     from google.analytics.data_v1beta.types import Filter, FilterExpression
+
     op = parsed["op"]
     field = parsed["field"]
     if op == "IN_LIST":
         f = Filter(field_name=field, in_list_filter=Filter.InListFilter(values=parsed["values"]))
     elif op == "EXACT":
-        f = Filter(field_name=field, string_filter=Filter.StringFilter(value=parsed["value"], match_type=Filter.StringFilter.MatchType.EXACT))
+        f = Filter(
+            field_name=field,
+            string_filter=Filter.StringFilter(
+                value=parsed["value"], match_type=Filter.StringFilter.MatchType.EXACT
+            ),
+        )
     elif op == "CONTAINS":
-        f = Filter(field_name=field, string_filter=Filter.StringFilter(value=parsed["value"], match_type=Filter.StringFilter.MatchType.CONTAINS))
+        f = Filter(
+            field_name=field,
+            string_filter=Filter.StringFilter(
+                value=parsed["value"], match_type=Filter.StringFilter.MatchType.CONTAINS
+            ),
+        )
     elif op == "BEGINS_WITH":
-        f = Filter(field_name=field, string_filter=Filter.StringFilter(value=parsed["value"], match_type=Filter.StringFilter.MatchType.BEGINS_WITH))
+        f = Filter(
+            field_name=field,
+            string_filter=Filter.StringFilter(
+                value=parsed["value"], match_type=Filter.StringFilter.MatchType.BEGINS_WITH
+            ),
+        )
     else:
         raise ValueError(f"Unsupported filter op: {op}")
     expr = FilterExpression(filter=f)
@@ -88,7 +106,16 @@ def _build_filter_expression(parsed):
     return expr
 
 
-def run_report(property_id, metrics, dimensions, filter_expr=None, days=28, daily=False, include_metadata=False, use_cache=True):
+def run_report(
+    property_id,
+    metrics,
+    dimensions,
+    filter_expr=None,
+    days=28,
+    daily=False,
+    include_metadata=False,
+    use_cache=True,
+):
     """Run a Data API report. Returns dict with rows + optional metadata."""
     from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
 
@@ -96,7 +123,16 @@ def run_report(property_id, metrics, dimensions, filter_expr=None, days=28, dail
         dimensions = ["date", *dimensions]
 
     start, end = date_range(days)
-    cache_args = ("run_report", property_id, tuple(sorted(metrics)), tuple(sorted(dimensions)), filter_expr, start, end, include_metadata)
+    cache_args = (
+        "run_report",
+        property_id,
+        tuple(sorted(metrics)),
+        tuple(sorted(dimensions)),
+        filter_expr,
+        start,
+        end,
+        include_metadata,
+    )
     if use_cache:
         cached = cache_get(*cache_args)
         if cached:
@@ -144,11 +180,17 @@ def _serialize_run_report(response, include_metadata=False):
     if include_metadata:
         sampling = []
         for sm in response.metadata.sampling_metadatas or []:
-            sampling.append({
-                "samples_read_count": sm.samples_read_count,
-                "sampling_space_size": sm.sampling_space_size,
-                "sample_rate": (sm.samples_read_count / sm.sampling_space_size if sm.sampling_space_size else 1.0),
-            })
+            sampling.append(
+                {
+                    "samples_read_count": sm.samples_read_count,
+                    "sampling_space_size": sm.sampling_space_size,
+                    "sample_rate": (
+                        sm.samples_read_count / sm.sampling_space_size
+                        if sm.sampling_space_size
+                        else 1.0
+                    ),
+                }
+            )
         out["metadata"] = {
             "sampling": sampling,
             "data_loss_from_other_row": response.metadata.data_loss_from_other_row,
@@ -168,8 +210,14 @@ def _serialize_run_report(response, include_metadata=False):
 def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use_cache=True):
     """Run a v1alpha funnel report keyed on eventName per step."""
     from google.analytics.data_v1alpha.types import (
-        DateRange, Dimension, Funnel, FunnelBreakdown, FunnelEventFilter,
-        FunnelFilterExpression, FunnelStep, RunFunnelReportRequest,
+        DateRange,
+        Dimension,
+        Funnel,
+        FunnelBreakdown,
+        FunnelEventFilter,
+        FunnelFilterExpression,
+        FunnelStep,
+        RunFunnelReportRequest,
     )
 
     start, end = date_range(days)
@@ -181,7 +229,9 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
 
     funnel_steps = []
     for event_name in steps:
-        step_filter = FunnelFilterExpression(funnel_event_filter=FunnelEventFilter(event_name=event_name))
+        step_filter = FunnelFilterExpression(
+            funnel_event_filter=FunnelEventFilter(event_name=event_name)
+        )
         funnel_steps.append(FunnelStep(name=event_name, filter_expression=step_filter))
 
     funnel = Funnel(steps=funnel_steps)
@@ -191,7 +241,9 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
         "date_ranges": [DateRange(start_date=start, end_date=end)],
     }
     if breakdown_dimension:
-        req_kwargs["funnel_breakdown"] = FunnelBreakdown(breakdown_dimension=Dimension(name=breakdown_dimension))
+        req_kwargs["funnel_breakdown"] = FunnelBreakdown(
+            breakdown_dimension=Dimension(name=breakdown_dimension)
+        )
 
     client = _get_data_alpha_client()
     response = client.run_funnel_report(RunFunnelReportRequest(**req_kwargs))
@@ -241,14 +293,29 @@ def main():
                 print("ERROR: --steps required with --funnel-report", file=sys.stderr)
                 return 1
             steps = [s.strip() for s in args.steps.split(",") if s.strip()]
-            result = run_funnel_report(args.property, steps, days=args.days, breakdown_dimension=args.breakdown, use_cache=use_cache)
+            result = run_funnel_report(
+                args.property,
+                steps,
+                days=args.days,
+                breakdown_dimension=args.breakdown,
+                use_cache=use_cache,
+            )
         else:
             if not args.report:
                 print("ERROR: --report required (or use --funnel-report)", file=sys.stderr)
                 return 1
             metrics = [m.strip() for m in args.report.split(",") if m.strip()]
             dimensions = [d.strip() for d in (args.dimensions or "").split(",") if d.strip()]
-            result = run_report(args.property, metrics, dimensions, filter_expr=args.filter, days=args.days, daily=args.daily, include_metadata=args.include_metadata, use_cache=use_cache)
+            result = run_report(
+                args.property,
+                metrics,
+                dimensions,
+                filter_expr=args.filter,
+                days=args.days,
+                daily=args.daily,
+                include_metadata=args.include_metadata,
+                use_cache=use_cache,
+            )
     except Exception as e:
         print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
         return 1

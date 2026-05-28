@@ -10,6 +10,7 @@ import ga4_data
 
 # ---------- Filter parser ----------
 
+
 def test_parse_filter_equality():
     out = ga4_data.parse_filter("eventName = 'purchase'")
     assert out == {"field": "eventName", "op": "EXACT", "value": "purchase"}
@@ -60,6 +61,7 @@ def test_parse_filter_case_insensitive_op():
 
 # ---------- Date range ----------
 
+
 def test_date_range_28_days():
     start, end = ga4_data.date_range(28)
     yesterday = date.today() - timedelta(days=1)
@@ -74,6 +76,7 @@ def test_date_range_1_day():
 
 
 # ---------- Report serialization ----------
+
 
 def _mock_run_report_response():
     response = MagicMock()
@@ -127,10 +130,13 @@ def test_run_report_uses_cache(fake_creds, monkeypatch):
     monkeypatch.setattr(ga4_data, "_get_data_client", lambda: mock_client)
 
     # Mock the SDK type imports inside run_report
-    with patch.dict("sys.modules", {
-        "google.analytics.data_v1beta": MagicMock(),
-        "google.analytics.data_v1beta.types": MagicMock(),
-    }):
+    with patch.dict(
+        "sys.modules",
+        {
+            "google.analytics.data_v1beta": MagicMock(),
+            "google.analytics.data_v1beta.types": MagicMock(),
+        },
+    ):
         out1 = ga4_data.run_report("123", ["eventCount"], ["eventName"], days=7)
         out2 = ga4_data.run_report("123", ["eventCount"], ["eventName"], days=7)
 

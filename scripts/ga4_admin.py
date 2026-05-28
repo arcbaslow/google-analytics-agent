@@ -29,22 +29,26 @@ KEY_EVENT_LIMIT = 30
 
 def _get_admin_client(write: bool = False):
     from google.analytics.admin import AnalyticsAdminServiceClient
+
     return AnalyticsAdminServiceClient(credentials=get_credentials(write=write))
 
 
 def _get_admin_alpha_client(write: bool = False):
     from google.analytics.admin_v1alpha import AnalyticsAdminServiceClient as AlphaClient
+
     return AlphaClient(credentials=get_credentials(write=write))
 
 
 def _proto_to_dict(msg):
     from google.protobuf.json_format import MessageToDict
+
     return MessageToDict(msg._pb if hasattr(msg, "_pb") else msg, preserving_proto_field_name=True)
 
 
 def _dict_to_proto(d, proto_cls):
     """Reverse of _proto_to_dict. Used to load JSON definitions from disk."""
     from google.protobuf.json_format import ParseDict
+
     return ParseDict(d, proto_cls(), ignore_unknown_fields=True)
 
 
@@ -53,6 +57,7 @@ def _read_json_file(path: str):
 
 
 # ---------- reads ----------
+
 
 def get_property_details(property_id):
     cached = cache_get("property_details", property_id)
@@ -70,7 +75,9 @@ def list_data_streams(property_id):
     if cached:
         return cached
     client = _get_admin_client()
-    streams = [_proto_to_dict(s) for s in client.list_data_streams(parent=f"properties/{property_id}")]
+    streams = [
+        _proto_to_dict(s) for s in client.list_data_streams(parent=f"properties/{property_id}")
+    ]
     cache_set(streams, "data_streams", property_id)
     return streams
 
@@ -85,7 +92,9 @@ def get_enhanced_measurement(property_id):
         stream_d = _proto_to_dict(s)
         if "webStreamData" in stream_d or stream_d.get("type_") == "WEB_DATA_STREAM":
             try:
-                em = client.get_enhanced_measurement_settings(name=f"{s.name}/enhancedMeasurementSettings")
+                em = client.get_enhanced_measurement_settings(
+                    name=f"{s.name}/enhancedMeasurementSettings"
+                )
                 stream_d["enhanced_measurement"] = _proto_to_dict(em)
             except Exception as e:
                 stream_d["enhanced_measurement_error"] = str(e)
@@ -100,7 +109,9 @@ def list_data_filters(property_id):
         return cached
     client = _get_admin_alpha_client()
     try:
-        filters = [_proto_to_dict(f) for f in client.list_data_filters(parent=f"properties/{property_id}")]
+        filters = [
+            _proto_to_dict(f) for f in client.list_data_filters(parent=f"properties/{property_id}")
+        ]
     except Exception as e:
         filters = [{"error": str(e)}]
     cache_set(filters, "data_filters", property_id)
@@ -112,8 +123,12 @@ def list_custom_defs(property_id):
     if cached:
         return cached
     client = _get_admin_client()
-    dims = [_proto_to_dict(d) for d in client.list_custom_dimensions(parent=f"properties/{property_id}")]
-    mets = [_proto_to_dict(m) for m in client.list_custom_metrics(parent=f"properties/{property_id}")]
+    dims = [
+        _proto_to_dict(d) for d in client.list_custom_dimensions(parent=f"properties/{property_id}")
+    ]
+    mets = [
+        _proto_to_dict(m) for m in client.list_custom_metrics(parent=f"properties/{property_id}")
+    ]
     out = {"custom_dimensions": dims, "custom_metrics": mets}
     cache_set(out, "custom_defs", property_id)
     return out
@@ -163,17 +178,29 @@ def list_platform_links(property_id):
         except Exception as e:
             out[name] = [{"error": str(e)}]
 
-    _try("google_ads_links", lambda: client.list_google_ads_links(parent=f"properties/{property_id}"))
-    _try("search_ads_360_links", lambda: client.list_search_ads360_links(parent=f"properties/{property_id}"))
-    _try("display_video_360_advertiser_links", lambda: client.list_display_video360_advertiser_links(parent=f"properties/{property_id}"))
+    _try(
+        "google_ads_links", lambda: client.list_google_ads_links(parent=f"properties/{property_id}")
+    )
+    _try(
+        "search_ads_360_links",
+        lambda: client.list_search_ads360_links(parent=f"properties/{property_id}"),
+    )
+    _try(
+        "display_video_360_advertiser_links",
+        lambda: client.list_display_video360_advertiser_links(parent=f"properties/{property_id}"),
+    )
     _try("bigquery_links", lambda: alpha.list_big_query_links(parent=f"properties/{property_id}"))
-    _try("search_console_links", lambda: alpha.list_search_console_links(parent=f"properties/{property_id}"))
+    _try(
+        "search_console_links",
+        lambda: alpha.list_search_console_links(parent=f"properties/{property_id}"),
+    )
 
     cache_set(out, "platform_links", property_id)
     return out
 
 
 # ---------- event create / edit rules (v1alpha, per data stream) ----------
+
 
 def list_event_rules(property_id, stream_id):
     """List both edit rules and create rules for one data stream."""
@@ -186,6 +213,7 @@ def list_event_rules(property_id, stream_id):
 
 def create_event_edit_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
+
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     rule = _dict_to_proto(definition, EventEditRule)
@@ -196,6 +224,7 @@ def create_event_edit_rule(property_id, stream_id, definition):
 def update_event_edit_rule(rule_name, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
     from google.protobuf.field_mask_pb2 import FieldMask
+
     client = _get_admin_alpha_client(write=True)
     rule = _dict_to_proto({**definition, "name": rule_name}, EventEditRule)
     mask = FieldMask(paths=list(definition.keys()))
@@ -218,6 +247,7 @@ def reorder_event_edit_rules(property_id, stream_id, ordered_names):
 
 def create_event_create_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventCreateRule
+
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     rule = _dict_to_proto(definition, EventCreateRule)
@@ -233,6 +263,7 @@ def delete_event_create_rule(rule_name):
 
 # ---------- audiences (v1alpha) ----------
 
+
 def list_audiences(property_id):
     client = _get_admin_alpha_client()
     return [_proto_to_dict(a) for a in client.list_audiences(parent=f"properties/{property_id}")]
@@ -245,10 +276,9 @@ def get_audience(audience_name):
 
 def create_audience(property_id, definition):
     from google.analytics.admin_v1alpha.types import Audience
+
     if definition.get("membership_duration_days", 0) > AUDIENCE_DURATION_MAX_DAYS:
-        raise ValueError(
-            f"membership_duration_days must be <= {AUDIENCE_DURATION_MAX_DAYS}"
-        )
+        raise ValueError(f"membership_duration_days must be <= {AUDIENCE_DURATION_MAX_DAYS}")
     client = _get_admin_alpha_client(write=True)
     audience = _dict_to_proto(definition, Audience)
     created = client.create_audience(parent=f"properties/{property_id}", audience=audience)
@@ -260,6 +290,7 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
     cannot be edited — archive and recreate to change them."""
     from google.analytics.admin_v1alpha.types import Audience
     from google.protobuf.field_mask_pb2 import FieldMask
+
     fields = {}
     if display_name is not None:
         fields["display_name"] = display_name
@@ -300,6 +331,7 @@ def _validate_parameter_name(parameter_name, scope):
 
 def create_custom_dimension(property_id, parameter_name, display_name, scope, description=""):
     from google.analytics.admin_v1beta.types import CustomDimension
+
     _validate_parameter_name(parameter_name, scope)
     client = _get_admin_client(write=True)
     dim = CustomDimension(
@@ -308,7 +340,9 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
         description=description,
         scope=CustomDimension.DimensionScope[scope.upper()],
     )
-    created = client.create_custom_dimension(parent=f"properties/{property_id}", custom_dimension=dim)
+    created = client.create_custom_dimension(
+        parent=f"properties/{property_id}", custom_dimension=dim
+    )
     return _proto_to_dict(created)
 
 
@@ -318,8 +352,11 @@ def archive_custom_dimension(name):
     return {"status": "archived", "name": name}
 
 
-def create_custom_metric(property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""):
+def create_custom_metric(
+    property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""
+):
     from google.analytics.admin_v1beta.types import CustomMetric
+
     _validate_parameter_name(parameter_name, scope)
     client = _get_admin_client(write=True)
     metric = CustomMetric(
@@ -341,8 +378,10 @@ def archive_custom_metric(name):
 
 # ---------- key events (v1beta) ----------
 
+
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     from google.analytics.admin_v1beta.types import KeyEvent
+
     existing = list_key_events(property_id)
     if len(existing) >= KEY_EVENT_LIMIT:
         raise ValueError(
@@ -365,6 +404,7 @@ def delete_key_event(name):
 
 
 # ---------- CLI ----------
+
 
 def main():
     parser = argparse.ArgumentParser(description="GA4 Admin API wrapper")
@@ -392,10 +432,16 @@ def main():
     parser.add_argument("--create-audience", metavar="JSON_PATH")
     parser.add_argument("--audience-name", help="Full resource name for audience ops")
     parser.add_argument("--archive-audience", action="store_true")
-    parser.add_argument("--add-custom-dim", action="store_true",
-                        help="needs --parameter-name --display-name --scope")
-    parser.add_argument("--add-custom-metric", action="store_true",
-                        help="needs --parameter-name --display-name --measurement-unit")
+    parser.add_argument(
+        "--add-custom-dim",
+        action="store_true",
+        help="needs --parameter-name --display-name --scope",
+    )
+    parser.add_argument(
+        "--add-custom-metric",
+        action="store_true",
+        help="needs --parameter-name --display-name --measurement-unit",
+    )
     parser.add_argument("--parameter-name")
     parser.add_argument("--display-name")
     parser.add_argument("--scope", default="EVENT")
@@ -445,9 +491,13 @@ def _dispatch(args):
     if args.list_audiences:
         return list_audiences(args.property)
     if args.add_edit_rule:
-        return create_event_edit_rule(args.property, args.stream, _read_json_file(args.add_edit_rule))
+        return create_event_edit_rule(
+            args.property, args.stream, _read_json_file(args.add_edit_rule)
+        )
     if args.add_create_rule:
-        return create_event_create_rule(args.property, args.stream, _read_json_file(args.add_create_rule))
+        return create_event_create_rule(
+            args.property, args.stream, _read_json_file(args.add_create_rule)
+        )
     if args.delete_edit_rule:
         return delete_event_edit_rule(args.rule_name)
     if args.delete_create_rule:
@@ -464,8 +514,12 @@ def _dispatch(args):
         return archive_custom_dimension(args.archive_custom_dim)
     if args.add_custom_metric:
         return create_custom_metric(
-            args.property, args.parameter_name, args.display_name,
-            args.measurement_unit, args.scope, args.description,
+            args.property,
+            args.parameter_name,
+            args.display_name,
+            args.measurement_unit,
+            args.scope,
+            args.description,
         )
     if args.archive_custom_metric:
         return archive_custom_metric(args.archive_custom_metric)
