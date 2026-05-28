@@ -410,6 +410,17 @@ sdist and wheel, runs `twine check`, and publishes to PyPI from the `pypi`
 environment. The tag/version guard (`scripts/check_release_version.py`) fails
 the build if the Release tag and `pyproject.toml` version disagree.
 
+If the `release: published` event fails to trigger the workflow (GitHub
+occasionally drops it when the workflow was only just added to the default
+branch), trigger it manually against an existing tag:
+
+```
+gh workflow run release.yml -f tag=vX.Y.Z
+```
+
+The manual run checks out the given tag and follows the same build, verify,
+and publish path.
+
 One-time setup (already done for this repo, listed for forks):
 
 - On PyPI, register a Trusted Publisher for the project: owner, repo,

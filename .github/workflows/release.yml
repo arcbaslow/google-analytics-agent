@@ -3,6 +3,11 @@ name: release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and publish (e.g. v0.4.1)"
+        required: true
 
 permissions:
   contents: read
@@ -12,11 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Verify version matches release tag
-        run: python scripts/check_release_version.py "${{ github.event.release.tag_name }}"
+        run: python scripts/check_release_version.py "${{ github.event.release.tag_name || github.event.inputs.tag }}"
       - name: Build sdist and wheel
         run: |
           python -m pip install --upgrade build
