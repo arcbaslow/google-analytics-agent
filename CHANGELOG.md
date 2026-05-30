@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.2
 
 - Fix the Admin API write path: `_dict_to_proto` called
   `json_format.ParseDict` directly on a proto-plus message, which raises
