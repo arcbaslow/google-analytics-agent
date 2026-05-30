@@ -106,6 +106,24 @@ def _build_filter_expression(parsed):
     return expr
 
 
+def build_dimension_filter(filter_dict):
+    """Build a Data API FilterExpression from a stored filter dict.
+
+    Accepts the shorthand shape parse_filter() emits
+    ({"field","op","value"|"values", optional "not"}) and the raw
+    FilterExpression schema (and_group / or_group / not_expression / filter).
+    FilterExpression is a proto-plus wrapper, so the raw path parses into the
+    underlying protobuf via .pb() and wraps the result (ParseDict cannot target
+    a proto-plus message directly)."""
+    if {"field", "op"} <= set(filter_dict.keys()):
+        return _build_filter_expression(filter_dict)
+    from google.analytics.data_v1beta.types import FilterExpression
+    from google.protobuf.json_format import ParseDict
+
+    pb = ParseDict(filter_dict, FilterExpression.pb(FilterExpression()), ignore_unknown_fields=True)
+    return FilterExpression.wrap(pb)
+
+
 def run_report(
     property_id,
     metrics,

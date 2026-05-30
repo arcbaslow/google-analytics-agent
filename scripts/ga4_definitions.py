@@ -103,24 +103,13 @@ def build_filter_from_definition(filter_expression: dict[str, Any]):
     Two shapes are accepted:
       - shorthand: {"field": "eventName", "op": "EXACT", "value": "purchase"} or
                    {"field": "eventName", "op": "IN_LIST", "values": [...]}
-        — same dict shape parse_filter() in ga4_data.py emits.
       - raw: a dict matching the Data API FilterExpression schema (and_group,
-        or_group, not_expression, filter); passed through ParseDict.
-    """
-    from ga4_data import _build_filter_expression
+        or_group, not_expression, filter).
 
-    if {"field", "op"} <= set(filter_expression.keys()):
-        return _build_filter_expression(filter_expression)
-    from google.analytics.data_v1beta.types import FilterExpression
-    from google.protobuf.json_format import ParseDict
+    Delegates to ga4_data.build_dimension_filter (the single builder)."""
+    from ga4_data import build_dimension_filter
 
-    # FilterExpression is a proto-plus wrapper; json_format.ParseDict cannot
-    # populate it directly (it probes for a DESCRIPTOR attribute the wrapper
-    # does not expose). Parse into the underlying protobuf via .pb() and wrap.
-    pb = ParseDict(
-        filter_expression, FilterExpression.pb(FilterExpression()), ignore_unknown_fields=True
-    )
-    return FilterExpression.wrap(pb)
+    return build_dimension_filter(filter_expression)
 
 
 # ---------- custom reports ----------
