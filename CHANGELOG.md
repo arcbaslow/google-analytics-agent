@@ -16,7 +16,10 @@
   against healthy and problem scenarios, and the Admin API write path through
   the real proto-plus round-trip. The write-path tests cover the regression
   above.
-- Raise the CI coverage floor to 74% (total is now ~76%) and enable the
+- Cover the MCP server's dry-run/confirm contract for every write tool: a
+  write tool must make no Admin API call without `confirm=true`, and must
+  dispatch to the right adapter when confirmed.
+- Raise the CI coverage floor to 75% (total is now ~77%) and enable the
   `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
   `warn_unused_configs` mypy checks.
 
