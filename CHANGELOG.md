@@ -28,7 +28,10 @@
   (`ga4_events.event_params_coverage`) and the saved-report runner
   (`ga4_definitions.run_report_def` format dispatch, segment application, and
   filter building).
-- Raise the CI coverage floor to 78% (total is now ~80%) and enable the
+- Add coverage for the auth resolver (`ga4_auth`): ADC source tagging, token
+  expiry math, legacy-credential IO and refresh, the OAuth fallback, quota
+  project setting, `check_auth`, and `list_properties`.
+- Raise the CI coverage floor to 80% (total is now ~82%) and enable the
   `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
   `warn_unused_configs` mypy checks.
 
