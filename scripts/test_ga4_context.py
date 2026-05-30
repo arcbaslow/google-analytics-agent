@@ -1,9 +1,11 @@
 """Tests for ga4_context: storage, URL extraction, signature heuristics, sitemap parsing."""
 
+import urllib.error
 from pathlib import Path
 
 import pytest
 
+import ga4_admin
 import ga4_context
 
 
@@ -237,3 +239,175 @@ def test_build_property_context_uses_cache(monkeypatch):
     ga4_context.save_context("123", {"site": {"summary": "cached"}})
     out = ga4_context.build_property_context("123")
     assert out["status"] == "cached"
+
+
+# ---------- extract_property_urls ----------
+
+
+def test_extract_property_urls_maps_camel_and_snake_fields(monkeypatch):
+    streams = [
+        {
+            "name": "properties/123/dataStreams/9",
+            "displayName": "Web",
+            "type_": "WEB_DATA_STREAM",
+            "webStreamData": {"defaultUri": "https://acme.example"},
+        },
+        {
+            "name": "properties/123/dataStreams/10",
+            "display_name": "iOS",
+            "type": "IOS_APP_DATA_STREAM",
+        },
+    ]
+    monkeypatch.setattr(ga4_admin, "list_data_streams", lambda pid: streams)
+
+    out = ga4_context.extract_property_urls("123")
+    assert out[0]["stream_id"] == "9"
+    assert out[0]["stream_name"] == "Web"
+    assert out[0]["default_uri"] == "https://acme.example"
+    assert out[0]["type"] == "WEB_DATA_STREAM"
+    assert out[1]["stream_id"] == "10"
+    assert out[1]["default_uri"] is None
+    assert out[1]["type"] == "IOS_APP_DATA_STREAM"
+
+
+# ---------- _fetch (never raises) ----------
+
+
+class _FakeResp:
+    def __init__(self, status, headers, body):
+        self.status = status
+        self.headers = headers
+        self._body = body
+
+    def read(self, n=None):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_fetch_success_decodes_with_charset(monkeypatch):
+    resp = _FakeResp(
+        200, {"Content-Type": "text/html; charset=utf-8", "Server": "nginx"}, b"<html>hi</html>"
+    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout=None: resp)
+
+    status, headers, body = ga4_context._fetch("https://example.com")
+    assert status == 200
+    assert "hi" in body
+    assert headers["server"] == "nginx"
+
+
+def test_fetch_http_error_returns_code_and_empty_body(monkeypatch):
+    def _raise(req, timeout=None):
+        raise urllib.error.HTTPError("https://x", 404, "Not Found", {"X-Test": "y"}, None)
+
+    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    status, _headers, body = ga4_context._fetch("https://x")
+    assert status == 404
+    assert body == ""
+
+
+def test_fetch_url_error_returns_minus_one(monkeypatch):
+    def _raise(req, timeout=None):
+        raise urllib.error.URLError("boom")
+
+    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    status, _headers, body = ga4_context._fetch("https://x")
+    assert status == -1
+    assert "fetch_error" in body
+
+
+def test_fetch_safely_returns_none_on_non_200(monkeypatch):
+    monkeypatch.setattr(ga4_context, "_fetch", lambda url, **k: (404, {}, ""))
+    assert ga4_context._fetch_safely("https://x/robots.txt") is None
+
+
+# ---------- extractor edge branches ----------
+
+
+def test_extract_meta_handles_reversed_attribute_order():
+    html = '<meta content="WordPress 6.4" name="generator">'
+    assert ga4_context._extract_meta(html, "generator") == "WordPress 6.4"
+
+
+def test_extract_jsonld_skips_malformed_blocks():
+    html = (
+        '<script type="application/ld+json">{ not valid json }</script>'
+        '<script type="application/ld+json">{"@type":"Organization"}</script>'
+    )
+    assert ga4_context._extract_jsonld(html) == [{"@type": "Organization"}]
+
+
+# ---------- _make_summary ----------
+
+
+def test_make_summary_includes_all_pieces():
+    s = ga4_context._make_summary(
+        {"title": "Acme", "lang": "en"}, "ecommerce", "shopify", "nextjs", True
+    )
+    assert "Acme" in s
+    assert "vertical: ecommerce" in s
+    assert "platform: shopify" in s
+    assert "framework: nextjs" in s
+    assert "SPA" in s
+    assert "lang=en" in s
+
+
+def test_make_summary_omits_other_vertical_and_marks_mpa():
+    s = ga4_context._make_summary({}, "other", None, None, False)
+    assert "vertical" not in s
+    assert "MPA" in s
+
+
+# ---------- analyze_website edge branches ----------
+
+
+def test_analyze_website_normalizes_schemeless_url(monkeypatch):
+    monkeypatch.setattr(
+        ga4_context,
+        "_fetch",
+        lambda url, **k: (200, {"content-type": "text/html"}, "<html><body>x</body></html>"),
+    )
+    out = ga4_context.analyze_website("example.com")
+    assert out["url"].startswith("https://example.com")
+    assert out["origin"] == "https://example.com"
+
+
+def test_analyze_website_collects_jsonld_type_list(monkeypatch):
+    html = (
+        '<html><body><script type="application/ld+json">'
+        '{"@type":["Product","Offer"]}</script></body></html>'
+    )
+
+    def fake_fetch(url, **k):
+        if url.endswith("/robots.txt") or "sitemap" in url:
+            return 404, {}, ""
+        return 200, {"content-type": "text/html"}, html
+
+    monkeypatch.setattr(ga4_context, "_fetch", fake_fetch)
+    out = ga4_context.analyze_website("https://example.com")
+    assert set(out["jsonld_types"]) == {"Product", "Offer"}
+    assert out["sitemap"] is None  # both robots and sitemap fell through to None
+
+
+def test_analyze_website_falls_back_to_default_sitemap(monkeypatch):
+    def fake_fetch(url, **k):
+        if url.endswith("/robots.txt"):
+            return 200, {"content-type": "text/plain"}, "User-agent: *\nDisallow: /admin\n"
+        if url.endswith("/sitemap.xml"):
+            return (
+                200,
+                {"content-type": "application/xml"},
+                "<urlset><url><loc>https://example.com/pricing</loc></url></urlset>",
+            )
+        return 200, {"content-type": "text/html"}, "<html><body>x</body></html>"
+
+    monkeypatch.setattr(ga4_context, "_fetch", fake_fetch)
+    out = ga4_context.analyze_website("https://example.com")
+    # robots.txt had no Sitemap: line, so analyze falls back to /sitemap.xml
+    assert out["sitemap_url"].endswith("/sitemap.xml")
+    assert out["sitemap"]["page_types"]["pricing"] == 1
