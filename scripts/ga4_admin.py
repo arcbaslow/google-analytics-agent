@@ -46,10 +46,19 @@ def _proto_to_dict(msg):
 
 
 def _dict_to_proto(d, proto_cls):
-    """Reverse of _proto_to_dict. Used to load JSON definitions from disk."""
+    """Reverse of _proto_to_dict. Used to load JSON definitions from disk.
+
+    The Admin API types are proto-plus wrappers. json_format.ParseDict cannot
+    populate a proto-plus message directly — it probes for a DESCRIPTOR
+    attribute the wrapper does not expose and raises
+    "Unknown field ... DESCRIPTOR". Parse into the underlying protobuf message
+    obtained via proto_cls.pb(...) and wrap the result back into the proto-plus
+    type. Accepts both camelCase and snake_case keys and ignores unknown
+    fields, matching the previous call's semantics."""
     from google.protobuf.json_format import ParseDict
 
-    return ParseDict(d, proto_cls(), ignore_unknown_fields=True)
+    pb = ParseDict(d, proto_cls.pb(proto_cls()), ignore_unknown_fields=True)
+    return proto_cls.wrap(pb)
 
 
 def _read_json_file(path: str):

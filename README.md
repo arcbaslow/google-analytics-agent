@@ -404,9 +404,10 @@ every other finding inherits:
 v0.4.1 — published to PyPI as `google-analytics-agent`, with an MCP server
 (`ga4-mcp`), packaging and CI hardening, and automated Trusted-Publishing
 releases. Read path is complete and works against live properties. Write
-path (event rules, audiences, custom defs, key events) is wired and
-unit-tested but not yet covered by integration tests against a live
-property. Local segment and custom-report stores are complete.
+path (event rules, audiences, custom defs, key events) is wired and covered
+by offline integration tests that exercise the real proto round-trip
+(recorded API responses, mocked transport); it has not yet been smoke-tested
+against a live property. Local segment and custom-report stores are complete.
 
 ## Releasing
 

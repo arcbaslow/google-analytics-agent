@@ -1,0 +1,20 @@
+{
+  "name": "properties/123/audiences/77",
+  "displayName": "Cart abandoners (7d)",
+  "description": "Added to cart, did not purchase within 7 days",
+  "membershipDurationDays": 7,
+  "filterClauses": [
+    {
+      "clauseType": "INCLUDE",
+      "simpleFilter": {
+        "scope": "AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS",
+        "filterExpression": {
+          "dimensionOrMetricFilter": {
+            "fieldName": "eventName",
+            "stringFilter": { "matchType": "EXACT", "value": "add_to_cart" }
+          }
+        }
+      }
+    }
+  ]
+}
