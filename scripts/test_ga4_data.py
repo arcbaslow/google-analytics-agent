@@ -143,3 +143,30 @@ def test_run_report_uses_cache(fake_creds, monkeypatch):
     assert out1 == out2
     # Client should only be called once - second call hits cache
     assert mock_client.run_report.call_count == 1
+
+
+# ---------- Dimension filter builder ----------
+
+
+def test_build_dimension_filter_shorthand():
+    from google.analytics.data_v1beta.types import FilterExpression
+
+    fe = ga4_data.build_dimension_filter({"field": "eventName", "op": "EXACT", "value": "purchase"})
+    assert isinstance(fe, FilterExpression)
+    assert fe.filter.field_name == "eventName"
+    assert fe.filter.string_filter.value == "purchase"
+
+
+def test_build_dimension_filter_raw_proto_plus():
+    from google.analytics.data_v1beta.types import FilterExpression
+
+    fe = ga4_data.build_dimension_filter(
+        {
+            "filter": {
+                "field_name": "country",
+                "string_filter": {"match_type": "EXACT", "value": "US"},
+            }
+        }
+    )
+    assert isinstance(fe, FilterExpression)
+    assert fe.filter.field_name == "country"
