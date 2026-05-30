@@ -577,6 +577,120 @@ def run_segments_stub():
     )
 
 
+SEGMENT_COHORT_DIMENSIONS = ["deviceCategory", "newVsReturning", "sessionDefaultChannelGroup"]
+SEGMENT_MIN_SHARE = 0.10
+SEGMENT_UNDERPERF_FACTOR = 0.5
+SEGMENT_HIGH_FACTOR = 0.4
+SEGMENT_HIGH_SHARE = 0.25
+
+
+def _cohort_rate(row, mode):
+    sessions = _safe_int(row.get("sessions"))
+    if mode == "conversion":
+        return (_safe_int(row.get("keyEvents")) / sessions) if sessions else 0.0, sessions
+    return _safe_float(row.get("engagementRate")), sessions
+
+
+def _cohort_rows(report, mode):
+    dim = report["dimensions"][0]
+    rows = []
+    for r in report["rows"]:
+        rate, sessions = _cohort_rate(r, mode)
+        rows.append({"cohort": r.get(dim), "sessions": sessions, "rate": rate})
+    return rows
+
+
+def _weighted_avg(rows):
+    total = sum(c["sessions"] for c in rows)
+    if not total:
+        return 0.0, 0
+    return sum(c["sessions"] * c["rate"] for c in rows) / total, total
+
+
+def _underperf_finding(label, name, rate, avg, share, metric_label):
+    """Return a finding dict if `rate` is materially below `avg`, else None."""
+    if avg <= 0 or rate > SEGMENT_UNDERPERF_FACTOR * avg:
+        return None
+    high = rate <= SEGMENT_HIGH_FACTOR * avg and share >= SEGMENT_HIGH_SHARE
+    return {
+        "severity": "High" if high else "Medium",
+        "title": f"Underperforming {label}: {name}",
+        "detail": (
+            f"{name} sits at {rate:.2%} vs the property average {avg:.2%} "
+            f"({share:.0%} of sessions on this breakdown). Investigate for "
+            "tracking gaps or UX friction."
+        ),
+        "metric": metric_label,
+        "metric_value": round(rate, 5),
+    }
+
+
+def run_segments(property_id, days=28):
+    findings = []
+    data = {"cohorts": {}}
+
+    mode = "conversion"
+    metrics = ["sessions", "keyEvents"]
+    probe = None
+    try:
+        probe = ga4_data.run_report(
+            property_id=property_id,
+            metrics=metrics,
+            dimensions=[SEGMENT_COHORT_DIMENSIONS[0]],
+            days=days,
+        )
+        if sum(_safe_int(r.get("keyEvents")) for r in probe["rows"]) == 0:
+            mode = "engagement"
+    except Exception:
+        mode = "engagement"
+
+    if mode == "engagement":
+        metrics = ["sessions", "engagementRate"]
+        probe = None
+    metric_label = "conversion_rate" if mode == "conversion" else "engagement_rate"
+    data["mode"] = mode
+    baseline = None
+
+    for i, dim in enumerate(SEGMENT_COHORT_DIMENSIONS):
+        report = (
+            probe
+            if (i == 0 and probe is not None)
+            else ga4_data.run_report(
+                property_id=property_id, metrics=metrics, dimensions=[dim], days=days
+            )
+        )
+        rows = _cohort_rows(report, mode)
+        avg, total = _weighted_avg(rows)
+        data["cohorts"][dim] = {"property_avg": round(avg, 5), "rows": rows}
+        if dim == "deviceCategory":
+            baseline = avg if total else None
+        if not total or avg <= 0:
+            continue
+        material = [c for c in rows if c["sessions"] / total >= SEGMENT_MIN_SHARE]
+        if not material:
+            continue
+        worst = min(material, key=lambda c: c["rate"])
+        f = _underperf_finding(
+            dim,
+            f"{dim} = {worst['cohort']}",
+            worst["rate"],
+            avg,
+            worst["sessions"] / total,
+            metric_label,
+        )
+        if f:
+            findings.append(f)
+
+    data["property_baseline"] = round(baseline, 5) if baseline is not None else None
+    data["saved_segments"] = []
+    return _ok(
+        "ga4-segments",
+        f"cohort scan ({mode} mode): {len(findings)} finding(s)",
+        findings,
+        data,
+    )
+
+
 # ---------- Orchestrator ----------
 
 PARALLEL_GATE_AGENTS = ("context", "quality", "property")
