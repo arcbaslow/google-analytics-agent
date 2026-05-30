@@ -35,7 +35,11 @@
   short-circuiting, the `list_key_events`/`list_conversion_events` fallback,
   enhanced-measurement attachment and error capture, per-call error wrapping,
   and platform-link aggregation.
-- Raise the CI coverage floor to 83% (total is now ~85%) and enable the
+- Add coverage for the site profiler (`ga4_context`): stream-URL extraction,
+  the never-raising `_fetch` (HTTP/URL error branches), meta/JSON-LD extractor
+  edges, summary building, and `analyze_website` branches (scheme-less URL,
+  JSON-LD `@type` lists, sitemap fallback).
+- Raise the CI coverage floor to 85% (total is now ~86%) and enable the
   `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
   `warn_unused_configs` mypy checks.
 
