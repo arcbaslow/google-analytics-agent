@@ -1,0 +1,8 @@
+{
+  "name": "properties/123/dataStreams/9/eventCreateRules/2",
+  "destinationEvent": "generate_lead",
+  "eventConditions": [
+    { "field": "event_name", "comparisonType": "EQUALS", "value": "contact_submit" }
+  ],
+  "sourceCopyParameters": true
+}

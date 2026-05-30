@@ -1,0 +1,10 @@
+{
+  "name": "properties/123/dataStreams/9/eventEditRules/5",
+  "displayName": "Normalize purchase",
+  "eventConditions": [
+    { "field": "event_name", "comparisonType": "EQUALS", "value": "purchase" }
+  ],
+  "parameterMutations": [
+    { "parameter": "currency", "parameterValue": "USD" }
+  ]
+}

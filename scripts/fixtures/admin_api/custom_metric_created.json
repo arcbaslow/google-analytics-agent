@@ -1,0 +1,8 @@
+{
+  "name": "properties/123/customMetrics/12",
+  "parameterName": "shipping_cost",
+  "displayName": "Shipping cost",
+  "description": "Shipping charged at checkout",
+  "measurementUnit": "CURRENCY",
+  "scope": "EVENT"
+}

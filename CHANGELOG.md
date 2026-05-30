@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- Fix the Admin API write path: `_dict_to_proto` called
+  `json_format.ParseDict` directly on a proto-plus message, which raises
+  `AttributeError: Unknown field ... DESCRIPTOR`. Every definition-loading
+  write (`create_event_edit_rule`, `update_event_edit_rule`,
+  `create_event_create_rule`, `create_audience`, `update_audience_metadata`)
+  failed at runtime. Parse into the underlying protobuf via `proto_cls.pb()`
+  and wrap the result; camelCase/snake_case input and unknown-field tolerance
+  are preserved.
+- Add offline integration tests that replay recorded API payloads through the
+  real client code with only the gRPC client mocked: the Data API read path
+  (`run_report` / `run_funnel_report`), the audit orchestrator end-to-end
+  against healthy and problem scenarios, and the Admin API write path through
+  the real proto-plus round-trip. The write-path tests cover the regression
+  above.
+- Raise the CI coverage floor to 74% (total is now ~76%) and enable the
+  `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
+  `warn_unused_configs` mypy checks.
+
 ## 0.4.1
 
 - Publish to PyPI as `google-analytics-agent` via an automated release

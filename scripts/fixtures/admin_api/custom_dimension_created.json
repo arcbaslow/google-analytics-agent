@@ -1,0 +1,7 @@
+{
+  "name": "properties/123/customDimensions/41",
+  "parameterName": "membership_tier",
+  "displayName": "Membership tier",
+  "description": "Loyalty tier at event time",
+  "scope": "EVENT"
+}
