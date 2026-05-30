@@ -170,3 +170,48 @@ def test_build_dimension_filter_raw_proto_plus():
     )
     assert isinstance(fe, FilterExpression)
     assert fe.filter.field_name == "country"
+
+
+# ---------- run_report filter_dict ----------
+
+
+def _fake_data_client():
+    client = MagicMock()
+    resp = MagicMock()
+    resp.dimension_headers = []
+    resp.metric_headers = []
+    resp.rows = []
+    resp.row_count = 0
+    client.run_report.return_value = resp
+    return client
+
+
+def test_run_report_filter_dict_builds_dimension_filter(monkeypatch):
+    client = _fake_data_client()
+    monkeypatch.setattr(ga4_data, "_get_data_client", lambda: client)
+
+    ga4_data.run_report(
+        "123",
+        ["sessions"],
+        ["deviceCategory"],
+        filter_dict={"field": "eventName", "op": "EXACT", "value": "purchase"},
+        days=28,
+        use_cache=False,
+    )
+    sent = client.run_report.call_args.args[0]
+    assert sent.dimension_filter is not None
+
+
+def test_run_report_filter_dict_has_distinct_cache_key(monkeypatch):
+    client = _fake_data_client()
+    monkeypatch.setattr(ga4_data, "_get_data_client", lambda: client)
+
+    ga4_data.run_report("123", ["sessions"], ["deviceCategory"], days=28)
+    ga4_data.run_report(
+        "123",
+        ["sessions"],
+        ["deviceCategory"],
+        filter_dict={"field": "eventName", "op": "EXACT", "value": "purchase"},
+        days=28,
+    )
+    assert client.run_report.call_count == 2

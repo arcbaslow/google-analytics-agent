@@ -129,12 +129,16 @@ def run_report(
     metrics,
     dimensions,
     filter_expr=None,
+    filter_dict=None,
     days=28,
     daily=False,
     include_metadata=False,
     use_cache=True,
 ):
-    """Run a Data API report. Returns dict with rows + optional metadata."""
+    """Run a Data API report. Returns dict with rows + optional metadata.
+
+    When both are supplied, filter_dict (a prebuilt filter dict) wins over
+    filter_expr (a 'dim OP value' string)."""
     from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
 
     if daily and "date" not in dimensions:
@@ -147,6 +151,7 @@ def run_report(
         tuple(sorted(metrics)),
         tuple(sorted(dimensions)),
         filter_expr,
+        json.dumps(filter_dict, sort_keys=True) if filter_dict else None,
         start,
         end,
         include_metadata,
@@ -164,7 +169,9 @@ def run_report(
         "date_ranges": [DateRange(start_date=start, end_date=end)],
         "return_property_quota": include_metadata,
     }
-    if filter_expr:
+    if filter_dict:
+        req_kwargs["dimension_filter"] = build_dimension_filter(filter_dict)
+    elif filter_expr:
         parsed = parse_filter(filter_expr)
         if parsed:
             req_kwargs["dimension_filter"] = _build_filter_expression(parsed)
