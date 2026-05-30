@@ -121,3 +121,56 @@ def test_cohorts_below_min_share_are_ignored(monkeypatch):
     _wire(monkeypatch, by_dim)
     out = ga4_audit.run_segments("123", days=28)
     assert not any("smarttv" in f["title"] for f in out["findings"])
+
+
+def _eng(dim, rows):
+    return {"dimensions": [dim], "metrics": ["sessions", "engagementRate"], "rows": rows}
+
+
+def test_engagement_fallback_when_no_key_events(monkeypatch):
+    # probe returns keyEvents total 0 -> engagement mode; cohorts then carry engagementRate
+    probe_zero = {
+        "dimensions": ["deviceCategory"],
+        "metrics": ["sessions", "keyEvents"],
+        "rows": [{"deviceCategory": "mobile", "sessions": "5000", "keyEvents": "0"}],
+    }
+    eng_by_dim = {
+        "deviceCategory": _eng(
+            "deviceCategory",
+            [
+                {"deviceCategory": "mobile", "sessions": "6000", "engagementRate": "0.20"},
+                {"deviceCategory": "desktop", "sessions": "4000", "engagementRate": "0.70"},
+            ],
+        ),
+        "newVsReturning": _eng(
+            "newVsReturning",
+            [
+                {"newVsReturning": "new", "sessions": "10000", "engagementRate": "0.55"},
+            ],
+        ),
+        "sessionDefaultChannelGroup": _eng(
+            "sessionDefaultChannelGroup",
+            [
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "engagementRate": "0.55",
+                },
+            ],
+        ),
+    }
+
+    def fake_run_report(*args, **kwargs):
+        dims = kwargs.get("dimensions") or []
+        metrics = kwargs.get("metrics") or []
+        if metrics[:2] == ["sessions", "keyEvents"]:
+            return probe_zero  # the probe
+        return eng_by_dim[dims[0]]
+
+    monkeypatch.setattr(ga4_data, "run_report", fake_run_report)
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [])
+
+    out = ga4_audit.run_segments("123", days=28)
+    assert out["data"]["mode"] == "engagement"
+    mobile = next(f for f in out["findings"] if "mobile" in f["title"])
+    assert mobile["metric"] == "engagement_rate"
