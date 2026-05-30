@@ -10,6 +10,11 @@
   failed at runtime. Parse into the underlying protobuf via `proto_cls.pb()`
   and wrap the result; camelCase/snake_case input and unknown-field tolerance
   are preserved.
+- Fix the same proto-plus `ParseDict` defect in
+  `ga4_definitions.build_filter_from_definition`: applying a saved segment
+  whose filter is a raw Data API `FilterExpression` (rather than the shorthand
+  field/op/value shape) to a custom report run raised the same
+  `DESCRIPTOR` error.
 - Add offline integration tests that replay recorded API payloads through the
   real client code with only the gRPC client mocked: the Data API read path
   (`run_report` / `run_funnel_report`), the audit orchestrator end-to-end
@@ -19,7 +24,11 @@
 - Cover the MCP server's dry-run/confirm contract for every write tool: a
   write tool must make no Admin API call without `confirm=true`, and must
   dispatch to the right adapter when confirmed.
-- Raise the CI coverage floor to 75% (total is now ~77%) and enable the
+- Add coverage for the event parameter-coverage validator
+  (`ga4_events.event_params_coverage`) and the saved-report runner
+  (`ga4_definitions.run_report_def` format dispatch, segment application, and
+  filter building).
+- Raise the CI coverage floor to 78% (total is now ~80%) and enable the
   `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
   `warn_unused_configs` mypy checks.
 
