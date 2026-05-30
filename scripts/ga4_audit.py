@@ -44,6 +44,7 @@ import ga4_admin
 import ga4_auth
 import ga4_context
 import ga4_data
+import ga4_definitions
 import ga4_events
 import ga4_funnel
 import ga4_report
@@ -608,17 +609,22 @@ def _weighted_avg(rows):
 
 
 def _underperf_finding(label, name, rate, avg, share, metric_label):
-    """Return a finding dict if `rate` is materially below `avg`, else None."""
+    """Return a finding dict if `rate` is materially below `avg`, else None.
+
+    `share` is the cohort's session share (0-1) for cohort breakdowns, or None
+    for saved segments (where a breakdown share is not meaningful). When None,
+    the detail omits the share clause and High severity keys only on the
+    underperformance factor."""
     if avg <= 0 or rate > SEGMENT_UNDERPERF_FACTOR * avg:
         return None
-    high = rate <= SEGMENT_HIGH_FACTOR * avg and share >= SEGMENT_HIGH_SHARE
+    high = rate <= SEGMENT_HIGH_FACTOR * avg and (share is None or share >= SEGMENT_HIGH_SHARE)
+    share_clause = f" ({share:.0%} of sessions on this breakdown)" if share is not None else ""
     return {
         "severity": "High" if high else "Medium",
         "title": f"Underperforming {label}: {name}",
         "detail": (
-            f"{name} sits at {rate:.2%} vs the property average {avg:.2%} "
-            f"({share:.0%} of sessions on this breakdown). Investigate for "
-            "tracking gaps or UX friction."
+            f"{name} sits at {rate:.2%} vs the property average {avg:.2%}"
+            f"{share_clause}. Investigate for tracking gaps or UX friction."
         ),
         "metric": metric_label,
         "metric_value": round(rate, 5),
@@ -682,10 +688,37 @@ def run_segments(property_id, days=28):
             findings.append(f)
 
     data["property_baseline"] = round(baseline, 5) if baseline is not None else None
-    data["saved_segments"] = []
+
+    saved = []
+    try:
+        segments = ga4_definitions.list_segments()
+    except Exception:
+        segments = []
+    for seg in segments:
+        name = seg.get("name") or seg.get("slug")
+        try:
+            full = ga4_definitions.load_segment(seg.get("slug") or name)
+            rep = ga4_data.run_report(
+                property_id=property_id,
+                metrics=metrics,
+                dimensions=[],
+                filter_dict=full["filter_expression"],
+                days=days,
+            )
+            row = rep["rows"][0] if rep.get("rows") else {}
+            rate, sessions = _cohort_rate(row, mode)
+            saved.append({"name": name, "sessions": sessions, "rate": round(rate, 5)})
+            if baseline and sessions:
+                f = _underperf_finding("saved segment", name, rate, baseline, None, metric_label)
+                if f:
+                    findings.append(f)
+        except Exception as e:
+            saved.append({"name": name, "error": str(e)})
+    data["saved_segments"] = saved
+
     return _ok(
         "ga4-segments",
-        f"cohort scan ({mode} mode): {len(findings)} finding(s)",
+        f"cohort scan ({mode} mode): {len(findings)} finding(s); {len(saved)} saved segment(s)",
         findings,
         data,
     )

@@ -174,3 +174,98 @@ def test_engagement_fallback_when_no_key_events(monkeypatch):
     assert out["data"]["mode"] == "engagement"
     mobile = next(f for f in out["findings"] if "mobile" in f["title"])
     assert mobile["metric"] == "engagement_rate"
+
+
+def test_saved_segment_underperformance_flagged(monkeypatch):
+    by_dim = {
+        "deviceCategory": _conv(
+            "deviceCategory",
+            [
+                {"deviceCategory": "desktop", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+        "newVsReturning": _conv(
+            "newVsReturning",
+            [
+                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+        "sessionDefaultChannelGroup": _conv(
+            "sessionDefaultChannelGroup",
+            [
+                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+    }
+    # site baseline = 200/10000 = 2%. Segment converts at 0.5% -> well under 0.5x.
+    seg_report = {
+        "dimensions": [],
+        "metrics": ["sessions", "keyEvents"],
+        "rows": [{"sessions": "2000", "keyEvents": "10"}],
+    }
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [{"name": "paid social"}])
+    monkeypatch.setattr(
+        ga4_definitions,
+        "load_segment",
+        lambda name: {
+            "name": name,
+            "filter_expression": {"field": "x", "op": "EXACT", "value": name},
+        },
+    )
+
+    def fake(*args, **kwargs):
+        if kwargs.get("filter_dict") is not None:
+            return seg_report
+        return by_dim[kwargs["dimensions"][0]]
+
+    monkeypatch.setattr(ga4_data, "run_report", fake)
+
+    out = ga4_audit.run_segments("123", days=28)
+    assert out["data"]["saved_segments"][0]["name"] == "paid social"
+    assert any("saved segment: paid social" in f["title"] for f in out["findings"])
+    seg_finding = next(f for f in out["findings"] if "saved segment: paid social" in f["title"])
+    assert "of sessions on this breakdown" not in seg_finding["detail"]
+
+
+def test_saved_segment_run_error_is_captured(monkeypatch):
+    by_dim = {
+        "deviceCategory": _conv(
+            "deviceCategory",
+            [
+                {"deviceCategory": "desktop", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+        "newVsReturning": _conv(
+            "newVsReturning",
+            [
+                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+        "sessionDefaultChannelGroup": _conv(
+            "sessionDefaultChannelGroup",
+            [
+                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "200"},
+            ],
+        ),
+    }
+
+    def fake(*args, **kwargs):
+        if kwargs.get("filter_dict") is not None:
+            raise RuntimeError("bad filter")
+        return by_dim[kwargs["dimensions"][0]]
+
+    monkeypatch.setattr(ga4_data, "run_report", fake)
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [{"name": "broken"}])
+    monkeypatch.setattr(
+        ga4_definitions,
+        "load_segment",
+        lambda name: {
+            "name": name,
+            "filter_expression": {"field": "x", "op": "EXACT", "value": "y"},
+        },
+    )
+
+    out = ga4_audit.run_segments("123", days=28)
+    entry = out["data"]["saved_segments"][0]
+    assert entry["name"] == "broken"
+    assert "error" in entry
