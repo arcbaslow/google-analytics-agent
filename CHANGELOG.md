@@ -31,7 +31,11 @@
 - Add coverage for the auth resolver (`ga4_auth`): ADC source tagging, token
   expiry math, legacy-credential IO and refresh, the OAuth fallback, quota
   project setting, `check_auth`, and `list_properties`.
-- Raise the CI coverage floor to 80% (total is now ~82%) and enable the
+- Add coverage for the Admin API read surfaces (`ga4_admin`): cache
+  short-circuiting, the `list_key_events`/`list_conversion_events` fallback,
+  enhanced-measurement attachment and error capture, per-call error wrapping,
+  and platform-link aggregation.
+- Raise the CI coverage floor to 83% (total is now ~85%) and enable the
   `no_implicit_optional`, `warn_redundant_casts`, `warn_unused_ignores`, and
   `warn_unused_configs` mypy checks.
 
