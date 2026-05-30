@@ -114,7 +114,13 @@ def build_filter_from_definition(filter_expression: dict[str, Any]):
     from google.analytics.data_v1beta.types import FilterExpression
     from google.protobuf.json_format import ParseDict
 
-    return ParseDict(filter_expression, FilterExpression(), ignore_unknown_fields=True)
+    # FilterExpression is a proto-plus wrapper; json_format.ParseDict cannot
+    # populate it directly (it probes for a DESCRIPTOR attribute the wrapper
+    # does not expose). Parse into the underlying protobuf via .pb() and wrap.
+    pb = ParseDict(
+        filter_expression, FilterExpression.pb(FilterExpression()), ignore_unknown_fields=True
+    )
+    return FilterExpression.wrap(pb)
 
 
 # ---------- custom reports ----------
