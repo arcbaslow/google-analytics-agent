@@ -257,6 +257,9 @@ def test_orchestrate_end_to_end(monkeypatch):
     monkeypatch.setattr(
         ga4_audit, "run_property", lambda pid: ga4_audit._ok("ga4-property", "ok", [], {})
     )
+    monkeypatch.setattr(
+        ga4_audit, "run_segments", lambda pid, days: ga4_audit._ok("ga4-segments", "ok", [], {})
+    )
 
     agents_out, context, vertical, confidence = ga4_audit.orchestrate(
         property_id="999",
@@ -306,6 +309,9 @@ def test_orchestrate_skips_attribution_without_key_events(monkeypatch):
         lambda pid: ga4_audit._ok("ga4-conversions", "no key events", [], {"key_event_count": 0}),
     )
     monkeypatch.setattr(ga4_audit, "run_property", lambda pid: ga4_audit._ok("ga4-property", "ok"))
+    monkeypatch.setattr(
+        ga4_audit, "run_segments", lambda pid, days: ga4_audit._ok("ga4-segments", "ok")
+    )
     called = {"attribution": False}
 
     def _attr(*a, **kw):
