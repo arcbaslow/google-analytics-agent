@@ -11,6 +11,8 @@
 - Centralize filter building in `ga4_data.build_dimension_filter` and let
   `run_report` apply a prebuilt `filter_dict` (used by the segments agent for
   saved segments; `ga4_definitions.build_filter_from_definition` now delegates).
+- Cover the CLI entry points (`main()` dispatch) of every script. Coverage is
+  now ~95% and the CI floor is raised to 93%.
 
 ## 0.4.2
 
