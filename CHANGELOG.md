@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Replace the deterministic audit's segments stub with a real `ga4-segments`
+  agent: per-cohort conversion-rate breakdowns across `deviceCategory`,
+  `newVsReturning`, and `sessionDefaultChannelGroup`, flagging cohorts that
+  convert materially below the property average (benchmarked), with an
+  engagement-rate fallback when no key events are configured, plus evaluation
+  of saved segment filters. The agent never raises out to the orchestrator.
+- Centralize filter building in `ga4_data.build_dimension_filter` and let
+  `run_report` apply a prebuilt `filter_dict` (used by the segments agent for
+  saved segments; `ga4_definitions.build_filter_from_definition` now delegates).
+
 ## 0.4.2
 
 - Fix the Admin API write path: `_dict_to_proto` called
