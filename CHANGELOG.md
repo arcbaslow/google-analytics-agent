@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - Replace the deterministic audit's segments stub with a real `ga4-segments`
   agent: per-cohort conversion-rate breakdowns across `deviceCategory`,
