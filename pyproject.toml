@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "google-analytics-agent"
-version = "0.4.2"
+version = "0.5.0"
 description = "Multi-agent toolkit for analyzing and managing Google Analytics 4 properties. Works with Claude Code, Codex, and Gemini CLI."
 readme = "README.md"
 requires-python = ">=3.10"
