@@ -109,9 +109,10 @@ def _build_filter_expression(parsed):
 def build_dimension_filter(filter_dict):
     """Build a Data API FilterExpression from a stored filter dict.
 
-    Accepts the shorthand shape parse_filter() emits
-    ({"field","op","value"|"values", optional "not"}) and the raw
-    FilterExpression schema (and_group / or_group / not_expression / filter).
+    Accepts the shorthand shape used for stored segments
+    ({"field","op","value"|"values", optional "not"} — the same dict
+    parse_filter() produces) and the raw FilterExpression schema
+    (and_group / or_group / not_expression / filter).
     FilterExpression is a proto-plus wrapper, so the raw path parses into the
     underlying protobuf via .pb() and wraps the result (ParseDict cannot target
     a proto-plus message directly)."""

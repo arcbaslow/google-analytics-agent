@@ -5,27 +5,17 @@ import ga4_data
 import ga4_definitions
 
 
-def _wire(monkeypatch, by_dim, segments=None, seg_reports=None):
-    """Mock run_report (dispatched by dimensions[0], or by filter_dict for
-    saved segments) and the segment store."""
+def _wire(monkeypatch, by_dim):
+    """Mock run_report (dispatched by dimensions[0]) and an empty segment store.
+
+    Saved-segment tests below set up their own run_report / list_segments mocks."""
 
     def fake_run_report(*args, **kwargs):
-        if kwargs.get("filter_dict") is not None:
-            name = kwargs.get("_seg_name")
-            return (seg_reports or {})[name]
         dims = kwargs.get("dimensions") or []
         return by_dim[dims[0]]
 
     monkeypatch.setattr(ga4_data, "run_report", fake_run_report)
-    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: segments or [])
-    monkeypatch.setattr(
-        ga4_definitions,
-        "load_segment",
-        lambda name: {
-            "name": name,
-            "filter_expression": {"field": "x", "op": "EXACT", "value": name},
-        },
-    )
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [])
 
 
 def _conv(dim, rows):
