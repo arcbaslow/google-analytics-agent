@@ -24,6 +24,7 @@ import ga4_admin
 import ga4_audit
 import ga4_context
 import ga4_data
+import ga4_definitions
 import ga4_events
 import ga4_funnel
 import ga4_report
@@ -44,10 +45,18 @@ def _wire(monkeypatch, scenario):
 
     def fake_run_report(*args, **kwargs):
         dims = kwargs.get("dimensions") or (args[2] if len(args) > 2 else [])
+        metrics = kwargs.get("metrics") or (args[1] if len(args) > 1 else [])
         key = dims[0] if dims else "date"
+        # The segments agent reads the channel breakdown with sessions/keyEvents,
+        # while attribution reads it with eventCount. Route them to distinct
+        # fixtures so each gets the metric shape it expects.
+        if key == "sessionDefaultChannelGroup" and "keyEvents" in metrics:
+            key = "sessionDefaultChannelGroup_segments"
         return scenario["run_report"][key]
 
     monkeypatch.setattr(ga4_data, "run_report", fake_run_report)
+    # No saved segments in these scenarios; the segments agent exercises cohorts only.
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [])
 
     monkeypatch.setattr(ga4_events, "list_events", lambda pid, days=7: scenario["list_events"])
     monkeypatch.setattr(
@@ -111,6 +120,12 @@ def test_healthy_audit_produces_no_critical_findings(monkeypatch):
     agents = {ao["agent"] for ao in agents_output}
     assert "ga4-attribution" in agents
 
+    # Segments ran in conversion mode with balanced cohorts -> no underperformers.
+    assert "ga4-segments" in agents
+    seg = next(ao for ao in agents_output if ao["agent"] == "ga4-segments")
+    assert seg["data"]["mode"] == "conversion"
+    assert not any(f["title"].startswith("Underperforming") for f in seg["findings"])
+
 
 def test_healthy_audit_markdown_carries_context_and_benchmarks(monkeypatch):
     _wire(monkeypatch, _load_scenario("healthy.json"))
@@ -173,6 +188,9 @@ def test_problem_audit_flags_every_agent(monkeypatch):
 
     # Attribution: direct share on the primary conversion is over 50% -> Critical.
     assert "Direct share on primary conversion above 30%" in crit
+
+    # Segments: the dominant mobile cohort converts far below the site average.
+    assert any(t.startswith("Underperforming") and "mobile" in t for t in high)
 
     assert len(crit) >= 3
 

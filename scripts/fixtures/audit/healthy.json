@@ -41,6 +41,30 @@
         { "sessionDefaultChannelGroup": "Paid Search", "eventCount": "300" },
         { "sessionDefaultChannelGroup": "Direct", "eventCount": "150" }
       ]
+    },
+    "deviceCategory": {
+      "dimensions": ["deviceCategory"],
+      "metrics": ["sessions", "keyEvents"],
+      "rows": [
+        { "deviceCategory": "mobile", "sessions": "6000", "keyEvents": "120" },
+        { "deviceCategory": "desktop", "sessions": "4000", "keyEvents": "90" }
+      ]
+    },
+    "newVsReturning": {
+      "dimensions": ["newVsReturning"],
+      "metrics": ["sessions", "keyEvents"],
+      "rows": [
+        { "newVsReturning": "new", "sessions": "7000", "keyEvents": "120" },
+        { "newVsReturning": "returning", "sessions": "3000", "keyEvents": "90" }
+      ]
+    },
+    "sessionDefaultChannelGroup_segments": {
+      "dimensions": ["sessionDefaultChannelGroup"],
+      "metrics": ["sessions", "keyEvents"],
+      "rows": [
+        { "sessionDefaultChannelGroup": "Organic Search", "sessions": "6000", "keyEvents": "120" },
+        { "sessionDefaultChannelGroup": "Direct", "sessions": "4000", "keyEvents": "80" }
+      ]
     }
   },
   "list_events": {
