@@ -566,16 +566,7 @@ def run_property(property_id):
     return _ok("ga4-property", "property configuration scan complete", findings, data)
 
 
-# ---------- Segments stub ----------
-
-
-def run_segments_stub():
-    return _ok(
-        "ga4-segments",
-        "stub — run `/ga4 segments <property-id>` (or the Claude Code skill) for cohort breakdowns",
-        [],
-        {"hint": "cohort analysis is LLM-driven in the full Claude skill; this driver omits it"},
-    )
+# ---------- Segments ----------
 
 
 SEGMENT_COHORT_DIMENSIONS = ["deviceCategory", "newVsReturning", "sessionDefaultChannelGroup"]
@@ -657,35 +648,43 @@ def run_segments(property_id, days=28):
     data["mode"] = mode
     baseline = None
 
-    for i, dim in enumerate(SEGMENT_COHORT_DIMENSIONS):
-        report = (
-            probe
-            if (i == 0 and probe is not None)
-            else ga4_data.run_report(
-                property_id=property_id, metrics=metrics, dimensions=[dim], days=days
+    try:
+        for i, dim in enumerate(SEGMENT_COHORT_DIMENSIONS):
+            report = (
+                probe
+                if (i == 0 and probe is not None)
+                else ga4_data.run_report(
+                    property_id=property_id, metrics=metrics, dimensions=[dim], days=days
+                )
             )
+            rows = _cohort_rows(report, mode)
+            avg, total = _weighted_avg(rows)
+            data["cohorts"][dim] = {"property_avg": round(avg, 5), "rows": rows}
+            if dim == "deviceCategory":
+                baseline = avg if total else None
+            if not total or avg <= 0:
+                continue
+            material = [c for c in rows if c["sessions"] / total >= SEGMENT_MIN_SHARE]
+            if not material:
+                continue
+            worst = min(material, key=lambda c: c["rate"])
+            f = _underperf_finding(
+                dim,
+                f"{dim} = {worst['cohort']}",
+                worst["rate"],
+                avg,
+                worst["sessions"] / total,
+                metric_label,
+            )
+            if f:
+                findings.append(f)
+    except Exception as e:
+        return _ok(
+            "ga4-segments",
+            f"segments scan failed: {e}",
+            [{"severity": "Medium", "title": "Segments scan failed", "detail": str(e)}],
+            data,
         )
-        rows = _cohort_rows(report, mode)
-        avg, total = _weighted_avg(rows)
-        data["cohorts"][dim] = {"property_avg": round(avg, 5), "rows": rows}
-        if dim == "deviceCategory":
-            baseline = avg if total else None
-        if not total or avg <= 0:
-            continue
-        material = [c for c in rows if c["sessions"] / total >= SEGMENT_MIN_SHARE]
-        if not material:
-            continue
-        worst = min(material, key=lambda c: c["rate"])
-        f = _underperf_finding(
-            dim,
-            f"{dim} = {worst['cohort']}",
-            worst["rate"],
-            avg,
-            worst["sessions"] / total,
-            metric_label,
-        )
-        if f:
-            findings.append(f)
 
     data["property_baseline"] = round(baseline, 5) if baseline is not None else None
 
@@ -779,7 +778,7 @@ def orchestrate(
     with ThreadPoolExecutor(max_workers=3) as ex:
         f_funnel = ex.submit(run_funnel, property_id, funnel_steps, days, check_postpayment)
         f_conv = ex.submit(run_conversions, property_id)
-        f_seg = ex.submit(run_segments_stub)
+        f_seg = ex.submit(run_segments, property_id, days)
         funnel_out = f_funnel.result()
         conv_out = f_conv.result()
         seg_out = f_seg.result()

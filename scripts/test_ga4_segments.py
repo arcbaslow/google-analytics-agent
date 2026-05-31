@@ -269,3 +269,15 @@ def test_saved_segment_run_error_is_captured(monkeypatch):
     entry = out["data"]["saved_segments"][0]
     assert entry["name"] == "broken"
     assert "error" in entry
+
+
+def test_run_segments_never_raises_on_total_failure(monkeypatch):
+    def boom(*args, **kwargs):
+        raise RuntimeError("data api down")
+
+    monkeypatch.setattr(ga4_data, "run_report", boom)
+    monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [])
+
+    out = ga4_audit.run_segments("123", days=28)
+    assert out["agent"] == "ga4-segments"
+    assert any(f["severity"] == "Medium" for f in out["findings"])
