@@ -316,7 +316,8 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
 
 def archive_audience(audience_name):
     client = _get_admin_alpha_client(write=True)
-    client.archive_audience(name=audience_name)
+    # archive_audience is not a flattened method; it takes a request object.
+    client.archive_audience(request={"name": audience_name})
     return {"status": "archived", "name": audience_name}
 
 
