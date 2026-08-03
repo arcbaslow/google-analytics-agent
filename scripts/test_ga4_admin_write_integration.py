@@ -251,3 +251,42 @@ def test_create_key_event_under_limit_builds_request_and_parses_response(monkeyp
     assert out["name"] == "properties/123/keyEvents/88"
     assert out["event_name"] == "purchase"
     assert out["counting_method"] == "ONCE_PER_EVENT"
+
+
+# ---------- regression: client/type surface mismatch ----------
+
+
+def test_admin_types_come_from_the_same_surface_as_the_client():
+    """Guards the live-API failure the mocked tests above cannot catch.
+
+    ga4_admin builds request messages and takes the client from two different
+    imports. When those resolve to different API versions the GAPIC layer
+    raises "Parameter to initialize message field must be dict or instance of
+    same class". Every message type must come from the same module the client
+    does.
+    """
+    import google.analytics.admin as surface
+
+    from scripts import ga4_admin as mod
+
+    for name in ("CustomDimension", "CustomMetric", "KeyEvent"):
+        resolved = mod._admin_type(name)
+        if hasattr(surface, name):
+            assert resolved is getattr(surface, name), (
+                f"{name} resolved to {resolved.__module__}, "
+                f"client surface exposes {getattr(surface, name).__module__}"
+            )
+
+
+def test_no_module_level_v1beta_type_imports_in_write_helpers():
+    """The three create_* helpers must not re-introduce the split import."""
+    import inspect
+
+    from scripts import ga4_admin as mod
+
+    for fn in (mod.create_custom_dimension, mod.create_custom_metric, mod.create_key_event):
+        src = inspect.getsource(fn)
+        assert "admin_v1beta.types import" not in src, (
+            f"{fn.__name__} imports message types from admin_v1beta while the client "
+            "comes from google.analytics.admin - this fails against the live API"
+        )
