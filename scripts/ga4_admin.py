@@ -39,6 +39,31 @@ def _get_admin_alpha_client(write: bool = False):
     return AlphaClient(credentials=get_credentials(write=write))
 
 
+def _admin_type(name: str):
+    """Return an Admin API message class from the same surface as the client.
+
+    `google.analytics.admin` re-exports the client *and* the message types of
+    whichever API version it is pinned to. Taking the client from that surface
+    while importing message types from `google.analytics.admin_v1beta.types`
+    yields two distinct classes for the same message. The GAPIC layer compares
+    by class identity and rejects the mismatch with:
+
+        Parameter to initialize message field must be dict or instance of
+        same class: expected <class 'CustomDimension'> got
+        <class 'google.analytics.admin_v1beta.types.resources.CustomDimension'>
+
+    Unit tests mock the client, so identity never mattered there and the bug
+    only surfaced against the live API. Always take both from one module.
+    """
+    import google.analytics.admin as surface
+
+    if hasattr(surface, name):
+        return getattr(surface, name)
+    from google.analytics import admin_v1beta
+
+    return getattr(admin_v1beta.types, name)
+
+
 def _proto_to_dict(msg):
     from google.protobuf.json_format import MessageToDict
 
@@ -340,7 +365,7 @@ def _validate_parameter_name(parameter_name, scope):
 
 
 def create_custom_dimension(property_id, parameter_name, display_name, scope, description=""):
-    from google.analytics.admin_v1beta.types import CustomDimension
+    CustomDimension = _admin_type("CustomDimension")
 
     _validate_parameter_name(parameter_name, scope)
     client = _get_admin_client(write=True)
@@ -365,7 +390,7 @@ def archive_custom_dimension(name):
 def create_custom_metric(
     property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""
 ):
-    from google.analytics.admin_v1beta.types import CustomMetric
+    CustomMetric = _admin_type("CustomMetric")
 
     _validate_parameter_name(parameter_name, scope)
     client = _get_admin_client(write=True)
@@ -390,7 +415,7 @@ def archive_custom_metric(name):
 
 
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
-    from google.analytics.admin_v1beta.types import KeyEvent
+    KeyEvent = _admin_type("KeyEvent")
 
     existing = list_key_events(property_id)
     if len(existing) >= KEY_EVENT_LIMIT:
