@@ -3,7 +3,7 @@
 [![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/google-analytics-agent.svg)](https://pypi.org/project/google-analytics-agent/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![version](https://img.shields.io/badge/version-0.5.0-blue.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.5.1-blue.svg)](CHANGELOG.md)
 
 ## Quickstart
 

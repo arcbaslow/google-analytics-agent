@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.5.1 - 2026-08-14
 - `.claude-plugin/plugin.json` still read `0.3.0` while `pyproject.toml`
   and the changelog were at `0.5.0`. Fixed, and
   `scripts/test_version_consistency.py` now asserts all three agree so
