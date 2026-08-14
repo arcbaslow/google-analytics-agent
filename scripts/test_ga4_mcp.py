@@ -1,9 +1,8 @@
 from unittest import mock
 
-import pytest
-
 import ga4_auth
 import ga4_mcp
+import pytest
 
 
 def test_benchmarks_tool_returns_vertical_bands():

@@ -16,7 +16,6 @@ from datetime import date, timedelta
 from ga4_auth import get_credentials
 from ga4_utils import cache_get, cache_set, scrub_pii
 
-
 _FILTER_RE = re.compile(
     r"^\s*(?P<dim>\w+)\s+(?P<op>=|!=|IN|CONTAINS|BEGINS_WITH)\s+(?P<val>.+?)\s*$",
     re.IGNORECASE,

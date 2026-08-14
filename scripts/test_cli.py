@@ -9,8 +9,6 @@ branches, and the error/return-code paths. No network, no real auth.
 import json
 import sys
 
-import pytest
-
 import ga4_admin
 import ga4_audit
 import ga4_auth
@@ -21,6 +19,7 @@ import ga4_definitions
 import ga4_events
 import ga4_funnel
 import ga4_report
+import pytest
 
 
 def _argv(monkeypatch, *args):

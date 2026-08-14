@@ -1,8 +1,7 @@
 import textwrap
 
-import pytest
-
 import check_release_version as crv
+import pytest
 
 
 def test_normalize_tag_strips_leading_v():

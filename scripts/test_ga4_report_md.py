@@ -2,7 +2,6 @@
 
 import ga4_report
 
-
 AGENT_OUTPUTS = [
     {
         "agent": "ga4-quality",

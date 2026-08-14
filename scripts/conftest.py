@@ -14,8 +14,8 @@ def tmp_cache_dir(monkeypatch, tmp_path):
     """Redirect cache and credentials to a temp dir for every test."""
     cache_dir = tmp_path / "ga4-cache"
     creds_path = tmp_path / "ga4-credentials.json"
-    import ga4_utils
     import ga4_auth
+    import ga4_utils
 
     monkeypatch.setattr(ga4_utils, "CACHE_DIR", cache_dir)
     monkeypatch.setattr(ga4_auth, "CREDENTIALS_PATH", creds_path)

@@ -1,10 +1,8 @@
 """Tests for the ga4_audit orchestrator. Mocks every adapter so the test
 runs without an API."""
 
-import pytest
-
 import ga4_audit
-
+import pytest
 
 # ---------- mechanical agent functions ----------
 
