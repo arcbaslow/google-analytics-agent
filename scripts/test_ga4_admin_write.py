@@ -7,10 +7,8 @@ rejects bad input before hitting the network.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import ga4_admin
-
+import pytest
 
 # ---------- parameter name validation ----------
 
@@ -112,4 +110,9 @@ def test_archive_audience_calls_alpha(monkeypatch):
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: mock_client)
     out = ga4_admin.archive_audience("properties/123/audiences/55")
     assert out["status"] == "archived"
-    mock_client.archive_audience.assert_called_once_with(name="properties/123/audiences/55")
+    # archive_audience has no flattened `name` parameter in the Admin SDK -
+    # it only takes `request`. Asserting the flattened form passed against a
+    # MagicMock while failing against the real client.
+    mock_client.archive_audience.assert_called_once_with(
+        request={"name": "properties/123/audiences/55"}
+    )

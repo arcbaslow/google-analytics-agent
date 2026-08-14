@@ -1,9 +1,7 @@
 """Tests for ga4_benchmarks: vertical normalization, compare(), and finding enrichment."""
 
-import pytest
-
 import ga4_benchmarks
-
+import pytest
 
 # ---------- Vertical normalization ----------
 

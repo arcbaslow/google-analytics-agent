@@ -20,7 +20,6 @@ import sys
 
 from ga4_data import run_report
 
-
 # Preset for Google's recommended e-commerce events. Other taxonomies are
 # supported by passing a custom required-params dict to event_params_coverage().
 REQUIRED_PARAMS = {

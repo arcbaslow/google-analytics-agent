@@ -3,10 +3,9 @@
 import urllib.error
 from pathlib import Path
 
-import pytest
-
 import ga4_admin
 import ga4_context
+import pytest
 
 
 @pytest.fixture(autouse=True)

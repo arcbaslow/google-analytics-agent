@@ -1,6 +1,6 @@
 {
   "name": "google-analytics-agent",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Multi-agent toolkit for GA4. Read the Data and Admin APIs, audit data quality, funnels, attribution, event taxonomy, property configuration. Write side: edit event rules, manage audiences, custom dimensions, key events, saved segments, and saved reports.",
   "author": {
     "name": "Dilshat Rakhimov",

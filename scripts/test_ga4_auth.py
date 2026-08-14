@@ -5,9 +5,8 @@ import json
 from types import SimpleNamespace
 from unittest import mock
 
-import pytest
-
 import ga4_auth
+import pytest
 
 
 def test_scopes_for_read():

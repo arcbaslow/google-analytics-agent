@@ -3,10 +3,8 @@
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import ga4_data
-
+import pytest
 
 # ---------- Filter parser ----------
 

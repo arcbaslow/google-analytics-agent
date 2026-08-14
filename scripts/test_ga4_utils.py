@@ -2,9 +2,8 @@
 
 import time
 
-import pytest
-
 import ga4_utils
+import pytest
 
 
 def test_cache_set_get_hit():
