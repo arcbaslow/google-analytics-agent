@@ -122,8 +122,13 @@ def _resolves_to_private(host: str) -> bool:
         # Unresolvable. Let the fetch fail normally rather than guessing.
         return False
     for info in infos:
+        # sockaddr is (host, port) for v4 and (host, port, flowinfo, scope_id)
+        # for v6, so typeshed widens element 0 to str | int.
         addr = info[4][0]
+        if not isinstance(addr, str):
+            continue
         try:
+            # Strip any zone index, e.g. fe80::1%eth0.
             ip = ipaddress.ip_address(addr.split("%", 1)[0])
         except ValueError:
             continue

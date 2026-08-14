@@ -61,12 +61,8 @@ def test_allows_ordinary_public_url(monkeypatch):
 def test_fetch_returns_error_tuple_instead_of_raising(monkeypatch):
     """_fetch promises never to raise; the guard must respect that."""
     called = []
-    monkeypatch.setattr(
-        ga4_context.urllib.request, "urlopen", lambda *a, **k: called.append(1)
-    )
-    status, headers, body = ga4_context._fetch(
-        "http://169.254.169.254/latest/meta-data/"
-    )
+    monkeypatch.setattr(ga4_context.urllib.request, "urlopen", lambda *a, **k: called.append(1))
+    status, headers, body = ga4_context._fetch("http://169.254.169.254/latest/meta-data/")
     assert status == -1
     assert headers == {}
     assert "refusing to fetch" in body
