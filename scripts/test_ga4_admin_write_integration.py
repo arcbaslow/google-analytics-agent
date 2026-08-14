@@ -277,10 +277,8 @@ def test_admin_types_come_from_the_same_surface_as_the_client():
     """
     import google.analytics.admin as surface
 
-    from scripts import ga4_admin as mod
-
     for name in ("CustomDimension", "CustomMetric", "KeyEvent"):
-        resolved = mod._admin_type(name)
+        resolved = ga4_admin._admin_type(name)
         if hasattr(surface, name):
             assert resolved is getattr(surface, name), (
                 f"{name} resolved to {resolved.__module__}, "
@@ -292,9 +290,11 @@ def test_no_module_level_v1beta_type_imports_in_write_helpers():
     """The three create_* helpers must not re-introduce the split import."""
     import inspect
 
-    from scripts import ga4_admin as mod
-
-    for fn in (mod.create_custom_dimension, mod.create_custom_metric, mod.create_key_event):
+    for fn in (
+        ga4_admin.create_custom_dimension,
+        ga4_admin.create_custom_metric,
+        ga4_admin.create_key_event,
+    ):
         src = inspect.getsource(fn)
         assert "admin_v1beta.types import" not in src, (
             f"{fn.__name__} imports message types from admin_v1beta while the client "
