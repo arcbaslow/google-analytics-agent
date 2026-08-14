@@ -23,7 +23,17 @@ from unittest.mock import MagicMock
 
 import ga4_admin
 from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
-from google.analytics.admin_v1beta.types import CustomDimension, CustomMetric, KeyEvent
+
+# Resolve these off the same surface the production code uses, via
+# ga4_admin._admin_type. Importing them straight from admin_v1beta.types
+# hardcodes a version: google.analytics.admin re-exports whichever API
+# version the installed client is pinned to, and when that is not v1beta
+# you get two distinct classes for the same message. Enum members then
+# print identically and compare unequal, which is the exact identity trap
+# _admin_type was written to avoid.
+CustomDimension = ga4_admin._admin_type("CustomDimension")
+CustomMetric = ga4_admin._admin_type("CustomMetric")
+KeyEvent = ga4_admin._admin_type("KeyEvent")
 
 FIXTURES = Path(__file__).parent / "fixtures" / "admin_api"
 
@@ -267,10 +277,8 @@ def test_admin_types_come_from_the_same_surface_as_the_client():
     """
     import google.analytics.admin as surface
 
-    from scripts import ga4_admin as mod
-
     for name in ("CustomDimension", "CustomMetric", "KeyEvent"):
-        resolved = mod._admin_type(name)
+        resolved = ga4_admin._admin_type(name)
         if hasattr(surface, name):
             assert resolved is getattr(surface, name), (
                 f"{name} resolved to {resolved.__module__}, "
@@ -282,9 +290,11 @@ def test_no_module_level_v1beta_type_imports_in_write_helpers():
     """The three create_* helpers must not re-introduce the split import."""
     import inspect
 
-    from scripts import ga4_admin as mod
-
-    for fn in (mod.create_custom_dimension, mod.create_custom_metric, mod.create_key_event):
+    for fn in (
+        ga4_admin.create_custom_dimension,
+        ga4_admin.create_custom_metric,
+        ga4_admin.create_key_event,
+    ):
         src = inspect.getsource(fn)
         assert "admin_v1beta.types import" not in src, (
             f"{fn.__name__} imports message types from admin_v1beta while the client "

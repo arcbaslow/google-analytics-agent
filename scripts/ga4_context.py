@@ -26,8 +26,10 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -102,11 +104,74 @@ def extract_property_urls(property_id: str) -> list[dict[str, Any]]:
 # ---------- HTTP helpers ----------
 
 
+class UnsafeFetchTarget(ValueError):
+    """A URL that this module refuses to fetch."""
+
+
+def _resolves_to_private(host: str) -> bool:
+    """True if any address the host resolves to is not publicly routable.
+
+    Resolution happens here rather than at the string level because
+    `internal.example.com` can be a public name pointing at 10.0.0.5, and a
+    metadata endpoint can be reached through a DNS name just as easily as
+    through 169.254.169.254 directly.
+    """
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        # Unresolvable. Let the fetch fail normally rather than guessing.
+        return False
+    for info in infos:
+        # sockaddr is (host, port) for v4 and (host, port, flowinfo, scope_id)
+        # for v6, so typeshed widens element 0 to str | int.
+        addr = info[4][0]
+        if not isinstance(addr, str):
+            continue
+        try:
+            # Strip any zone index, e.g. fe80::1%eth0.
+            ip = ipaddress.ip_address(addr.split("%", 1)[0])
+        except ValueError:
+            continue
+        if not ip.is_global or ip.is_link_local or ip.is_private or ip.is_loopback:
+            return True
+    return False
+
+
+def assert_fetchable(url: str) -> None:
+    """Reject anything that is not a public http(s) URL.
+
+    This module fetches URLs that the audited site controls: the homepage is
+    supplied by the operator, but `robots.txt` names its own `Sitemap:` target
+    and we follow it. That makes the sitemap URL attacker-controlled input.
+
+    Two things follow. The scheme has to be pinned, because urllib's default
+    opener also handles `file://` and `ftp://`. And the host has to be
+    publicly routable, because `http://169.254.169.254/...` is the cloud
+    metadata endpoint on essentially every VPS provider, and the response
+    would be written into the saved property context and read back into
+    model context on the next audit.
+    """
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ("http", "https"):
+        raise UnsafeFetchTarget(f"refusing to fetch non-http(s) URL: {url!r}")
+    if not parsed.hostname:
+        raise UnsafeFetchTarget(f"refusing to fetch URL with no host: {url!r}")
+    if _resolves_to_private(parsed.hostname):
+        raise UnsafeFetchTarget(
+            f"refusing to fetch {parsed.hostname!r}: resolves to a private, "
+            "loopback, or link-local address"
+        )
+
+
 def _fetch(
     url: str, timeout: int = FETCH_TIMEOUT_SECONDS, max_bytes: int = MAX_HTML_BYTES
 ) -> tuple[int, dict[str, str], str]:
     """Fetch a URL and return (status, headers, body-as-text). Never raises;
     returns (-1, {}, error-message) on transport failure."""
+    try:
+        assert_fetchable(url)
+    except UnsafeFetchTarget as e:
+        return -1, {}, str(e)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:

@@ -11,8 +11,6 @@ from __future__ import annotations
 import functools
 from typing import Any, Callable, TypeVar, cast
 
-from mcp.server.fastmcp import FastMCP
-
 import ga4_admin
 import ga4_audit
 import ga4_auth
@@ -22,6 +20,7 @@ import ga4_data
 import ga4_definitions
 import ga4_events
 import ga4_funnel
+from mcp.server.fastmcp import FastMCP
 
 
 def _resolve_version() -> str:

@@ -3,6 +3,7 @@
 [![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/google-analytics-agent.svg)](https://pypi.org/project/google-analytics-agent/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![version](https://img.shields.io/badge/version-0.5.0-blue.svg)](CHANGELOG.md)
 
 ## Quickstart
 
@@ -459,3 +460,15 @@ A condensed view is in [`examples/sample-audit-screenshot.md`](examples/sample-a
 ## Acknowledgements
 
 Built on top of `google-analytics-data` and `google-analytics-admin`.
+
+## Related
+
+Part of a set of marketing-measurement agent toolkits:
+
+- [google-ads-agents](https://github.com/arcbaslow/google-ads-agents)
+- [google-search-console-agent](https://github.com/arcbaslow/google-search-console-agent)
+- [meta-ads-agents](https://github.com/arcbaslow/meta-ads-agents)
+- [gtm-diff](https://github.com/arcbaslow/gtm-diff)
+- [figma-taxonomy-gen](https://github.com/arcbaslow/figma-taxonomy-gen)
+
+Built and maintained by [Good Labs](https://goodlabs.kz).

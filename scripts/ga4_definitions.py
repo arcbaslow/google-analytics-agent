@@ -215,13 +215,13 @@ def run_report_def(
 
 def _apply_segment_and_rerun(property_id, defn, days, filter_expression):
     """runReport with a segment's filter applied as dimension_filter."""
+    from ga4_data import _get_data_client, _serialize_run_report, date_range
     from google.analytics.data_v1beta.types import (
         DateRange,
         Dimension,
         Metric,
         RunReportRequest,
     )
-    from ga4_data import _get_data_client, _serialize_run_report, date_range
 
     start, end = date_range(days)
     req = RunReportRequest(

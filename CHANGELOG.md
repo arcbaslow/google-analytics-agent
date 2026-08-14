@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- `.claude-plugin/plugin.json` still read `0.3.0` while `pyproject.toml`
+  and the changelog were at `0.5.0`. Fixed, and
+  `scripts/test_version_consistency.py` now asserts all three agree so
+  it cannot drift again. `check_release_version.py` only runs at release
+  time and only compares the tag against pyproject, so it never caught
+  this.
+- The ruff lint selection is pinned explicitly rather than inherited
+  from ruff's implicit default, which changes between releases and would
+  otherwise turn a ruff upgrade into a red CI run.
+- README: version badge and a link to the sibling toolkits.
+
 ## 0.5.0
 
 - Replace the deterministic audit's segments stub with a real `ga4-segments`

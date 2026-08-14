@@ -12,9 +12,8 @@ replay it offline. No live credentials are needed.
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 import ga4_data
+import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures" / "data_api"
 

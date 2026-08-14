@@ -3,10 +3,9 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 import ga4_data
 import ga4_definitions
+import pytest
 
 
 @pytest.fixture(autouse=True)
