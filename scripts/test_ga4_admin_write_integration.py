@@ -23,7 +23,17 @@ from unittest.mock import MagicMock
 
 import ga4_admin
 from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
-from google.analytics.admin_v1beta.types import CustomDimension, CustomMetric, KeyEvent
+
+# Resolve these off the same surface the production code uses, via
+# ga4_admin._admin_type. Importing them straight from admin_v1beta.types
+# hardcodes a version: google.analytics.admin re-exports whichever API
+# version the installed client is pinned to, and when that is not v1beta
+# you get two distinct classes for the same message. Enum members then
+# print identically and compare unequal, which is the exact identity trap
+# _admin_type was written to avoid.
+CustomDimension = ga4_admin._admin_type("CustomDimension")
+CustomMetric = ga4_admin._admin_type("CustomMetric")
+KeyEvent = ga4_admin._admin_type("KeyEvent")
 
 FIXTURES = Path(__file__).parent / "fixtures" / "admin_api"
 
