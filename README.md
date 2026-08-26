@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="google-analytics-agent - Audit, funnels and writes for GA4" width="880">
+</p>
+
 # google-analytics-agent
 
 [![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
