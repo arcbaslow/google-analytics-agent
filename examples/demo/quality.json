@@ -1,0 +1,9 @@
+{
+  "agent": "ga4-quality",
+  "summary": "Synthetic demo: no sampling was reported for the selected window.",
+  "findings": [],
+  "data": {
+    "sampled": false,
+    "confidence": "high"
+  }
+}

@@ -1,478 +1,166 @@
 <p align="center">
-  <img src="assets/banner.png" alt="google-analytics-agent - Audit, funnels and writes for GA4" width="880">
+  <img src="assets/banner.svg" alt="Google Analytics Agent — GA4 data quality, funnels and property management." width="100%">
 </p>
 
-# google-analytics-agent
+# Google Analytics Agent
 
-[![tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
-[![PyPI](https://img.shields.io/pypi/v/google-analytics-agent.svg)](https://pypi.org/project/google-analytics-agent/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![version](https://img.shields.io/badge/version-0.5.1-blue.svg)](CHANGELOG.md)
+GA4 data quality, funnels and property management.
 
-## Quickstart
+[![Tests](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/arcbaslow/google-analytics-agent/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/arcbaslow/google-analytics-agent?color=d97706&label=release)](https://github.com/arcbaslow/google-analytics-agent/releases)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-d97706?logo=python&logoColor=white)](#installation)
+[![MIT license](https://img.shields.io/badge/license-MIT-475569)](LICENSE)
 
-```
-uv venv && uv pip install -r scripts/requirements.txt
-python scripts/ga4_auth.py --adc        # run the printed gcloud command, then:
-python scripts/ga4_auth.py --check
-python scripts/ga4_audit.py --property <id> --output audit.md
-```
+[Quick start](#quick-start) · [Example output](#example-output) · [Tests](#tests) · [Releases](#releases) · [Contributing](CONTRIBUTING.md)
 
-Or run the MCP server in any MCP client: `uvx --from google-analytics-agent ga4-mcp`
+A Python CLI and MCP server for inspecting Google Analytics 4 properties. It combines the Data and Admin APIs with website context, configurable funnels, segment comparisons and benchmark annotations, then produces a prioritized audit report.
 
-A multi-agent toolkit for Google Analytics 4. Talks to the GA4 Data API and
-Admin API, profiles the property's live website, runs specialist analysis
-subagents (funnel, segments, attribution, event taxonomy, data quality,
-property configuration), benchmarks findings against industry bands, and
-ships write surfaces for event rules, audiences, custom dimensions and
-metrics, key events, plus local-stored segment and custom-report
-definitions. Audits render to markdown by default (no emoji), with HTML
-and PDF as alternatives.
+## What you can do
 
-Designed to work with three runtimes side by side:
+| Area | Included capabilities |
+| --- | --- |
+| Data quality | Sampling, missing values, event coverage and confidence labels |
+| Journeys | Ordered event funnels, cohort breakdowns and attribution analysis |
+| Context | Website, platform and vertical inference from the property's web stream |
+| Configuration | Streams, audiences, custom definitions, key events and event rules |
+| Reporting | Markdown, HTML and optional PDF audits; saved report and segment definitions |
+| Integration | Python adapters, `/ga4` skills and an MCP server with preview-first write tools |
 
-- **Claude Code** — full skill and subagent integration via `skills/` and `agents/`
-- **OpenAI Codex** — driven by `AGENTS.md` and the universal Python CLI
-- **Gemini CLI** — driven by `GEMINI.md` and the universal Python CLI
+## Installation
 
-The Python adapters under `scripts/` are the source of truth and work the
-same on all three.
+Requires **Python 3.10+**. For the source CLI:
 
-## What is google-analytics-agent?
-
-A toolkit, not just an analyzer. It can:
-
-- Profile the property's live website: read the web-stream URL from GA4,
-  fetch the homepage / robots.txt / sitemap.xml, and infer vertical,
-  platform (Shopify, WordPress, Magento, …), framework (Next.js, React,
-  Vue, …), SPA-vs-MPA, language, and a sitemap-derived page-type
-  inventory.
-- Audit data quality, funnel drop-off, segment cohorts, event taxonomy,
-  attribution, key events, and property configuration.
-- Benchmark findings against industry bands. Nine verticals shipped
-  (ecommerce, saas, media, lead_gen, finance, travel, education,
-  nonprofit, other); metrics include bounce / engagement / pages-per-
-  session / avg engagement time / conversion rate / cart abandonment /
-  direct share / mobile share / sampling / not-set share.
-- Edit GA4 configuration: rename/synthesize events via EventEditRule and
-  EventCreateRule, create and archive audiences, manage custom dimensions
-  and metrics, manage key events.
-- Persist and reuse local definitions: saved segment filters and saved
-  custom report specs (rendered to JSON / CSV / **markdown** / HTML /
-  PDF).
-
-Three layers:
-
-- Python adapters under `scripts/` call the Data and Admin APIs, cache
-  responses on disk for 15 minutes, scrub PII, and return structured JSON.
-- Markdown agent definitions under `agents/` describe how an agent should
-  analyze that JSON.
-- Skills under `skills/` route `/ga4 ...` commands (in Claude Code) to the
-  right agent or script. For Codex and Gemini CLI, the runtime-specific
-  instruction files describe the same flow in their conventions.
-
-### vs. the official Google GA4 MCP server
-
-Google's official server exposes raw Data/Admin API access. This toolkit
-adds, on top of that surface: an industry benchmark engine (nine
-verticals), live-site context profiling (vertical / platform / framework
-/ sitemap), a multi-agent audit orchestrator that produces a prioritized
-action plan, and the same features across Claude Code, Codex, and Gemini
-CLI as well as MCP.
-
-## Requirements
-
-- Python 3.10 or newer
-- Google Cloud SDK (`gcloud`) for the default auth path, or a Cloud OAuth
-  Desktop client for the fallback path
-- GA4 property access at the Viewer level (read) or Editor level (write)
-- WeasyPrint runtime libraries are only needed if you want PDF reports
-  (markdown is the default audit format and does not need them):
-  - Debian/Ubuntu: `apt install libpango-1.0-0 libpangoft2-1.0-0`
-  - macOS: `brew install pango`
-  - Windows: install the GTK 3 runtime — see WeasyPrint's
-    [Windows installation notes](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows).
-    Easiest path is the MSYS2 bundle; the standalone GTK installer also
-    works. Skip this entirely if you only need markdown or HTML output.
-
-## Install
-
-### From PyPI
-
-The package is published as
-[`google-analytics-agent`](https://pypi.org/project/google-analytics-agent/):
-
-```
-pip install google-analytics-agent        # or: uv pip install google-analytics-agent
-```
-
-This installs the `ga4-mcp` console entry point (the MCP server) without
-cloning the repo. Add the PDF extra with `pip install "google-analytics-agent[pdf]"`.
-
-The remaining options install from a working copy of the repo (run them from
-inside the project directory).
-
-### Recommended: `uv`
-
-```
-uv venv
-uv pip install -r scripts/requirements.txt
-uv run python scripts/ga4_auth.py --check
-```
-
-[`uv`](https://github.com/astral-sh/uv) is a single-binary Python installer
-and runner. One install of `uv` replaces the venv + pip dance and is
-faster on cold-start.
-
-### Optional extras
-
-- `pip install -e ".[pdf]"` — adds WeasyPrint for PDF report rendering. Markdown is the default audit format and needs no extra system libs.
-- `pip install -e ".[dev]"` — adds pytest + ruff for contributors.
-
-### Plain venv (works everywhere)
-
-```
+```bash
+git clone https://github.com/arcbaslow/google-analytics-agent.git
+cd google-analytics-agent
 python -m venv .venv
-
-# macOS / Linux
-source .venv/bin/activate
-
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-
-pip install -r scripts/requirements.txt
 ```
 
-## Authenticate
+Activate with `source .venv/bin/activate` on macOS/Linux or `.venv\Scripts\Activate.ps1` in Windows PowerShell, then:
 
-The default path is gcloud Application Default Credentials. You do not need
-to register your own OAuth client.
-
-```
-python scripts/ga4_auth.py --adc            # prints the gcloud command
-python scripts/ga4_auth.py --adc --write    # same, scoped for write APIs
+```bash
+python -m pip install -e ".[dev]"
 ```
 
-Run the printed command, then verify:
+For just the published MCP package, use `python -m pip install "google-analytics-agent[mcp]"`. The **`[mcp]` extra is required** to run the server. PDF export uses the optional `[pdf]` extra and WeasyPrint system libraries; Markdown and HTML do not require them. See [setup](docs/SETUP.md).
 
-```
+## Quick start
+
+Live queries require property access and Google credentials. The default path uses gcloud Application Default Credentials:
+
+```bash
+python scripts/ga4_auth.py --adc
+# Run the printed gcloud command, then:
 python scripts/ga4_auth.py --check
 python scripts/ga4_auth.py --properties
+python scripts/ga4_auth.py --quota-project YOUR_CLOUD_PROJECT_ID
 ```
 
-Set a quota project once (any Cloud project you have access to with the GA4
-Data and Admin APIs enabled):
+Use a Cloud project with the Analytics Data and Admin APIs enabled. Replace the example property ID with one returned by `--properties`:
 
-```
-python scripts/ga4_auth.py --quota-project <project-id>
-```
-
-Fallback for environments without gcloud (CI, locked-down workstations):
-
-```
-python scripts/ga4_auth.py --oauth --client-secret-file <path>
+```bash
+python scripts/ga4_audit.py --property 123456789 --days 28 --output audit.md
+python scripts/ga4_funnel.py --property 123456789 --steps sign_up,begin_checkout,purchase --days 28 --json
 ```
 
-Credentials are resolved in this order: `GOOGLE_APPLICATION_CREDENTIALS`,
-gcloud ADC, legacy OAuth file at `~/.claude/ga4-credentials.json`.
+Use any ordered event list relevant to the property. The e-commerce funnel is also available as `--preset ecomm`. A Cloud OAuth desktop-client fallback is available through `ga4_auth.py --oauth --client-secret-file client.json`.
 
-## Use it
+## Example output
 
-### Claude Code
+![GA4 audit rendered from synthetic agent results](assets/screenshot.png)
 
-After authentication, slash commands work directly:
+This is the toolkit's Markdown report rendered for documentation, with **synthetic data**. Generate it without a property or credentials:
 
-```
-/ga4 audit <property-id>
-/ga4 funnel <property-id> --steps view_item,add_to_cart,purchase
-/ga4 audiences <property-id>
+```bash
+python scripts/ga4_report.py --property 123456789 --inputs examples/demo/quality.json,examples/demo/funnel.json --format md --confidence high --vertical ecommerce --output audit.md
 ```
 
-The full list lives in `skills/ga4/SKILL.md`. The runtime auto-loads the
-skill and agent definitions.
+Inspect the [generated report](examples/demo/report.md) and [source fixtures](examples/demo/). The longer [sample audit](examples/sample-audit.md) is a separately authored illustration.
 
-### Codex
+## MCP server
 
-Codex reads `AGENTS.md` at the project root for instructions. The
-fastest path is the one-command driver:
-
-```
-python scripts/ga4_audit.py --property <id> --output audit.md
-```
-
-For finer control:
-
-```
-python scripts/ga4_context.py --property <id> --analyze --json
-python scripts/ga4_funnel.py --property <id> --days 28 --json
-python scripts/ga4_admin.py --property <id> --key-events --json
-```
-
-### Gemini CLI
-
-Gemini CLI reads `GEMINI.md`. Same Python CLI, same flags, including the
-one-command driver `python scripts/ga4_audit.py --property <id>`.
-
-### Plain Python
-
-Every feature is exposed as a Python CLI under `scripts/`. The runtimes
-above are conveniences — anything they can do, you can do manually.
-
-### MCP server
-
-The same toolkit runs as an MCP server over stdio, usable from any MCP
-client (Claude Desktop/Code, Cursor, Windsurf, n8n).
+For an MCP client that supports `mcpServers` configuration:
 
 ```json
 {
   "mcpServers": {
     "ga4": {
       "command": "uvx",
-      "args": ["--from", "google-analytics-agent", "ga4-mcp"]
+      "args": ["--from", "google-analytics-agent[mcp]", "ga4-mcp"]
     }
   }
 }
 ```
 
-The server registers 32 tools. Read and analysis tools cover the full
-audit surface — audit, context, funnel, events, check_events, quality,
-conversions, attribution, property_config, report, benchmarks — plus
-read-only admin reads (property_details, data_streams, custom_defs,
-key_events, attribution_settings, list_audiences, list_event_rules) and
-saved-definition tools (list_segments, list_saved_reports,
-run_saved_report). Write tools follow a dry-run-first contract: tools
-like add_key_event, create_audience, add_custom_dimension, and
-add_event_edit_rule, when called without `confirm=true`, return the exact
-change that would be applied and make no API call; re-invoking the same
-call with `confirm=true` executes it.
+Authenticate on the machine running the server before querying it. `uvx` installs the available registry version; to run the current checkout, install `.[mcp]` and set the client's command to the absolute path of `.venv/bin/ga4-mcp` (or `.venv\Scripts\ga4-mcp.exe` on Windows).
 
-## Commands
+Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return a preview unless `confirm=true` is passed; review that preview before confirming. See [ga4_mcp.py](scripts/ga4_mcp.py) for the registered tools and parameter contracts.
 
-Read:
+## Everyday commands
 
-```
-/ga4 audit <property-id>          # full audit, agents in parallel, benchmarked, markdown by default
-/ga4 context <property-id>        # profile the live site: vertical, platform, framework, sitemap shape
-/ga4 funnel <property-id>         # step-by-step funnel (configurable steps)
-/ga4 segments <property-id>       # cohort drop-off breakdowns
-/ga4 events <property-id>         # event taxonomy validation
-/ga4 conversions <property-id>    # key events configuration
-/ga4 attribution <property-id>    # channel attribution at each step
-/ga4 quality <property-id>        # data quality and integrity
-/ga4 property <property-id>       # property configuration
-/ga4 benchmarks [--vertical V]    # inspect bundled industry benchmark bands
+```bash
+python scripts/ga4_data.py --property 123456789 --report eventCount --dimensions eventName --days 28 --json
+python scripts/ga4_events.py --property 123456789 --list-events --days 7 --json
+python scripts/ga4_admin.py --property 123456789 --streams --json
+python scripts/ga4_admin.py --property 123456789 --key-events --json
+python scripts/ga4_definitions.py --list-segments --json
+python scripts/ga4_benchmarks.py --list-verticals
 ```
 
-Write (need `analytics.edit` scope):
+The [router](skills/ga4/SKILL.md) provides `/ga4 audit`, `/ga4 funnel`, `/ga4 events`, `/ga4 audiences` and other agent commands. [AGENTS.md](AGENTS.md) documents the equivalent Python calls for other runtimes.
 
-```
-/ga4 events-edit <property-id>    # EventEditRule / EventCreateRule
-/ga4 audiences <property-id>      # create, list, archive audiences
-/ga4 custom-defs <property-id>    # custom dimensions and metrics
-/ga4 key-events <property-id>     # key events (conversions)
-```
+### Configuration writes
 
-Local stored definitions (no API write):
+Admin writes require the appropriate property role and `analytics.edit` scope; print the sign-in command with `python scripts/ga4_auth.py --adc --write`. The agent instructions require a proposal and confirmation. Direct `ga4_admin.py` write flags execute immediately and do **not** have the MCP preview contract. Prefer the MCP workflow when you need an explicit preview step.
 
-```
-/ga4 segment-defs ...             # saved filter expressions
-/ga4 report ...                   # saved custom reports → JSON / CSV / HTML / PDF
-```
+### Interpreting an audit
 
-Auth:
+Responses use a 15-minute local cache, with supported PII patterns scrubbed by [ga4_utils.py](scripts/ga4_utils.py). Review exports before sharing them: scrubbing is not a guarantee that every identifying value has been removed.
 
-```
-/ga4 auth
-/ga4 properties
+The bundled benchmark bands cover nine verticals. They are directional estimates stored in the repository, not live market measurements. Confidence labels describe the observed data-quality conditions; they do not establish causality. The audit supports arbitrary event journeys, although the legacy HTML template still uses an e-commerce heading.
+
+## Tests
+
+```bash
+python -m ruff check scripts/
+python -m ruff format --check scripts/
+python -m mypy
+python -m pytest scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=93
 ```
 
-Outside Claude Code, the same commands run through the Python adapters in
-`scripts/` — see `AGENTS.md` for the cross-runtime invocation table.
+CI runs on Python 3.10–3.13 with a **93% coverage floor**. Tests cover the CLI, audit orchestration, segments, funnels, reports, auth, MCP previews and Admin API proto round-trips using mocked transport. They need no live GA4 property. Offline integration tests do not establish that every write has been exercised against a live property. See the [release verification](docs/VERIFICATION.md).
 
-## How it works
+## Repository map
 
-`scripts/ga4_auth.py` resolves credentials. `ga4_data.py` wraps `runReport`
-and `runFunnelReport`. `ga4_admin.py` wraps the Admin API for both reads
-(property, streams, custom defs, key events, audiences) and writes (event
-rules, audiences, custom dimensions, key events). `ga4_context.py` reads
-the property's web-stream URL and analyzes the live site to produce the
-property profile that grounds every other audit. `ga4_benchmarks.py`
-ships a vertical-by-metric benchmark table and a `compare()` helper used
-by the reporter to attach calibrated verdicts to findings.
-`ga4_definitions.py` stores reusable segment filter expressions and custom
-report definitions under `~/.claude/ga4-definitions/`. `ga4_report.py`
-renders the audit and single-report markdown, HTML, and PDF (PDF via
-WeasyPrint).
+| Path | Purpose |
+| --- | --- |
+| [scripts/](scripts/) | Data/Admin adapters, MCP server, report renderer and tests |
+| [agents/](agents/) · [skills/](skills/) | Specialist analysis and `/ga4` routing |
+| [examples/demo/](examples/demo/) | Synthetic report inputs and generated Markdown |
+| [docs/](docs/) | Setup, releases and verification |
 
-Agents under `agents/` are markdown files Claude reads and dispatches as
-subagents. Skills under `skills/` provide the `/ga4 ...` routing surface
-for Claude Code. Codex and Gemini CLI use the equivalent runtime-specific
-instruction files (`AGENTS.md`, `GEMINI.md`) plus the same Python adapters.
+## Releases
 
-## Project structure
+**[v0.5.2](https://github.com/arcbaslow/google-analytics-agent/releases/tag/v0.5.2)** — see the [release notes](docs/RELEASE_NOTES.md) for this release and the [changelog](CHANGELOG.md) for project history.
 
-```
-google-analytics-agent/
-  .claude-plugin/        plugin manifest and marketplace config
-  agents/                specialist agent definitions
-  docs/                  setup guide
-  hooks/                 placeholder for pre/post-tool guards
-  scripts/               Python adapters and tests (the universal CLI)
-  examples/              sample-audit.md showing the audit output shape
-  skills/
-    ga4/                 top-level router skill + reference docs
-    ga4-audit/           parallel audit orchestrator (with benchmarks + markdown)
-    ga4-context/         live-site profiler: vertical / platform / framework
-    ga4-funnel/          funnel analysis (configurable steps)
-    ga4-segments/        cohort drop-off
-    ga4-events/          event taxonomy validation
-    ga4-events-edit/     EventEditRule / EventCreateRule writes
-    ga4-audiences/       audience CRUD
-    ga4-custom-defs/     custom dimension / metric CRUD
-    ga4-key-events/      key event CRUD
-    ga4-segment-defs/    local stored segment definitions
-    ga4-custom-report/   local stored report definitions
-  AGENTS.md              Codex instructions
-  GEMINI.md              Gemini CLI instructions
-  CLAUDE.md              Claude Code instructions (also points here)
-```
+GitHub Releases include downloadable artifacts and checksums. Package-registry publication is a separate, opt-in workflow; a GitHub release does not imply that the same version is available on PyPI or npm. Maintainers can follow the [release guide](docs/RELEASING.md).
 
-The `conversions`, `attribution`, `quality`, and `property` read commands
-are routed directly by the `ga4` router (which spawns the matching agent in
-`agents/`); they no longer have separate skill directories. Every
-`/ga4 <command>` invocation is unchanged.
+## Contributing
 
-## Funnels
+Read [CONTRIBUTING.md](CONTRIBUTING.md), run the checks above, and include a minimal reproduction for bugs. Report vulnerabilities through [SECURITY.md](SECURITY.md).
 
-The funnel analysis accepts any ordered list of GA4 event names. The
-e-commerce purchase funnel is available as a convenience preset:
+## Related tools
 
-```
-view_item -> add_to_cart -> begin_checkout -> add_payment_info -> purchase
-```
+| Project | Use it for |
+| --- | --- |
+| [Google Ads Agents](https://github.com/arcbaslow/google-ads-agents) | Paid media audits, tracking checks and reviewed changes. |
+| [Search Console Agent](https://github.com/arcbaslow/google-search-console-agent) | Search performance, indexing and page experience. |
+| [Meta Ads Agents](https://github.com/arcbaslow/meta-ads-agents) | Campaign performance, creative fatigue and event health. |
+| [GTM Diff](https://github.com/arcbaslow/gtm-diff) | Review the changes in your Google Tag Manager exports. |
+| [Figma Taxonomy Gen](https://github.com/arcbaslow/figma-taxonomy-gen) | Turn interactive designs into a reviewable tracking plan. |
 
-For e-commerce flows where a payment provider redirects the user out of
-the page and back, the `--check-postpayment` flag runs a heuristic that
-detects `add_payment_info` firing after `purchase` and drops the misleading
-step from the funnel. The check is opt-in and not relevant outside that
-class of flow.
-
-## Date ranges
-
-- Funnel, segments, conversions, attribution, property: 28 days default
-- Events (data quality sampling): 7 days default
-- Override with `--days N` on any command
-
-## Benchmarks
-
-`scripts/ga4_benchmarks.py` ships a vertical-by-metric band table (p25 /
-p50 / p75) for nine verticals — ecommerce, saas, media, lead_gen,
-finance, travel, education, nonprofit, other. Numbers are conservative
-directional estimates compiled from public industry reports
-(Contentsquare digital experience benchmarks, WordStream PPC benchmarks,
-Unbounce conversion benchmark reports, Statista) as of late 2025. Any
-finding that declares a `metric` / `metric_value` pair is auto-enriched
-with the band, interpretation, and a delta-vs-median percent. The
-benchmark vertical is read from the property context (`ga4-context`),
-overridable per audit via `--vertical`.
-
-## Markdown reports
-
-Audit and custom-report runs default to plain markdown (no emoji) — easy
-to commit, review, and diff. The audit markdown includes:
-
-- Header with property ID, confidence label, and benchmark vertical
-- Property Context section with homepage status, inferred vertical /
-  platform / framework, language, SPA-vs-MPA, sitemap-derived page-type
-  inventory
-- Executive Summary (one bullet per agent)
-- Action Plan grouped by severity, with benchmark band annotations on
-  any metric-bearing finding
-- Per-Agent Output with collapsed raw JSON appendix per agent
-
-Pass `--format html` or `--format pdf` for the other renderings.
-
-## Confidence labels
-
-The `ga4-quality` agent runs first in every audit and emits a label that
-every other finding inherits:
-
-| Label | Meaning |
-|-------|---------|
-| `high` | <1% sampling, clean data — act on findings |
-| `medium` | 1-10% sampling — act but verify with raw event sampling |
-| `low` | 10-30% sampling — directional only |
-| `very_low` | >30% sampling — fix data quality first, do not act on findings |
-
-## Status
-
-v0.4.1 — published to PyPI as `google-analytics-agent`, with an MCP server
-(`ga4-mcp`), packaging and CI hardening, and automated Trusted-Publishing
-releases. Read path is complete and works against live properties. Write
-path (event rules, audiences, custom defs, key events) is wired and covered
-by offline integration tests that exercise the real proto round-trip
-(recorded API responses, mocked transport); it has not yet been smoke-tested
-against a live property. Local segment and custom-report stores are complete.
-
-## Releasing
-
-Releases publish to PyPI automatically via `.github/workflows/release.yml`,
-using PyPI Trusted Publishing (OIDC — no API token stored in the repo).
-
-To cut a release:
-
-1. Bump `version` in `pyproject.toml` and commit.
-2. Push to `master`.
-3. Create a GitHub Release with tag `vX.Y.Z` (matching the new version).
-
-The workflow then verifies the tag matches the packaged version, builds the
-sdist and wheel, runs `twine check`, and publishes to PyPI from the `pypi`
-environment. The tag/version guard (`scripts/check_release_version.py`) fails
-the build if the Release tag and `pyproject.toml` version disagree.
-
-If the `release: published` event fails to trigger the workflow (GitHub
-occasionally drops it when the workflow was only just added to the default
-branch), trigger it manually against an existing tag:
-
-```
-gh workflow run release.yml -f tag=vX.Y.Z
-```
-
-The manual run builds from the branch HEAD it is dispatched on (so push the
-version bump first) and otherwise follows the same verify and publish path.
-The `tag` input is checked against the packaged version by the same guard.
-
-One-time setup (already done for this repo, listed for forks):
-
-- On PyPI, register a Trusted Publisher for the project: owner, repo,
-  workflow `release.yml`, environment `pypi`.
-- In GitHub repo settings, create an environment named `pypi`.
+Maintained by [Good Labs](https://goodlabs.kz) — measurement implementation, tracking plans and analytics audits.
 
 ## License
 
-MIT. See `pyproject.toml`.
-
-## Sample output
-
-See [`examples/sample-audit.md`](examples/sample-audit.md) for a
-hand-crafted audit showing the markdown report shape — header, property
-context, executive summary, severity-grouped action plan with benchmark
-verdicts, and per-agent appendix.
-
-A condensed view is in [`examples/sample-audit-screenshot.md`](examples/sample-audit-screenshot.md).
-
-## Acknowledgements
-
-Built on top of `google-analytics-data` and `google-analytics-admin`.
-
-## Related
-
-Part of a set of marketing-measurement agent toolkits:
-
-- [google-ads-agents](https://github.com/arcbaslow/google-ads-agents)
-- [google-search-console-agent](https://github.com/arcbaslow/google-search-console-agent)
-- [meta-ads-agents](https://github.com/arcbaslow/meta-ads-agents)
-- [gtm-diff](https://github.com/arcbaslow/gtm-diff)
-- [figma-taxonomy-gen](https://github.com/arcbaslow/figma-taxonomy-gen)
-
-Built and maintained by [Good Labs](https://goodlabs.kz).
+[MIT](LICENSE) © Dilshat Rakhimov. This is an independent project; it is not an official product of the platform vendors.
