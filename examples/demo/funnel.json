@@ -1,0 +1,22 @@
+{
+  "agent": "ga4-funnel",
+  "summary": "Synthetic demo: 1,000 checkout starts and 620 purchases; investigate the checkout step.",
+  "findings": [
+    {
+      "severity": "High",
+      "title": "Checkout completion needs investigation",
+      "detail": "The fixture contains 380 checkout starts without a purchase. Compare device cohorts and confirm event ordering before attributing the difference to UX."
+    },
+    {
+      "severity": "Medium",
+      "title": "Direct traffic share is elevated",
+      "detail": "Review campaign tagging and cross-domain configuration.",
+      "metric": "direct_share",
+      "metric_value": 0.42
+    }
+  ],
+  "data": {
+    "begin_checkout": 1000,
+    "purchase": 620
+  }
+}
