@@ -64,6 +64,14 @@ def cache_set(value: dict[str, Any], *parts: Any) -> None:
         json.dump(value, f, default=str)
 
 
+def cache_invalidate(*parts: Any) -> None:
+    """Drop the cached entry for these key parts, if any. Writes call this for
+    every cached read they change, otherwise the read serves the pre-write
+    state until the TTL runs out."""
+    path = CACHE_DIR / f"{_cache_key(*parts)}.json"
+    path.unlink(missing_ok=True)
+
+
 def scrub_pii(data: Any) -> Any:
     """
     Recursively scrub PII from arbitrary JSON-like data.

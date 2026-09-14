@@ -24,6 +24,18 @@ def test_cache_expiry(monkeypatch):
     assert ga4_utils.cache_get("expiry_key") is None
 
 
+def test_cache_invalidate_drops_only_that_entry():
+    ga4_utils.cache_set({"value": 1}, "inv_key", "123")
+    ga4_utils.cache_set({"value": 2}, "inv_key", "456")
+    ga4_utils.cache_invalidate("inv_key", "123")
+    assert ga4_utils.cache_get("inv_key", "123") is None
+    assert ga4_utils.cache_get("inv_key", "456") == {"value": 2}
+
+
+def test_cache_invalidate_missing_entry_is_noop():
+    ga4_utils.cache_invalidate("never_cached_key")
+
+
 def test_scrub_pii_email_in_string():
     out = ga4_utils.scrub_pii("Contact me at john@example.com today")
     assert "[email-redacted]" in out

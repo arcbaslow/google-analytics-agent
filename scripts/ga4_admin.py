@@ -18,9 +18,10 @@ import sys
 from pathlib import Path
 
 from ga4_auth import get_credentials
-from ga4_utils import cache_get, cache_set
+from ga4_utils import cache_get, cache_invalidate, cache_set
 
 _PARAM_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+_PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
 
 PARAMETER_NAME_LIMITS = {"EVENT": 40, "USER": 24, "ITEM": 40}
 AUDIENCE_DURATION_MAX_DAYS = 540
@@ -88,6 +89,14 @@ def _dict_to_proto(d, proto_cls):
 
 def _read_json_file(path: str):
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _invalidate_for_name(read, name):
+    """Delete/archive writes only get a resource name such as
+    `properties/123/keyEvents/456`; drop the cached `read` for its property."""
+    match = _PROPERTY_IN_NAME_RE.match(name)
+    if match:
+        cache_invalidate(read, match.group(1))
 
 
 # ---------- reads ----------
@@ -237,7 +246,8 @@ def list_platform_links(property_id):
 
 
 def list_event_rules(property_id, stream_id):
-    """List both edit rules and create rules for one data stream."""
+    """List both edit rules and create rules for one data stream. Not cached;
+    caching it would require the rule writes below to invalidate it."""
     client = _get_admin_alpha_client()
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     edits = [_proto_to_dict(r) for r in client.list_event_edit_rules(parent=parent)]
@@ -299,6 +309,8 @@ def delete_event_create_rule(rule_name):
 
 
 def list_audiences(property_id):
+    """Not cached; caching it would require the audience writes below to
+    invalidate it."""
     client = _get_admin_alpha_client()
     return [_proto_to_dict(a) for a in client.list_audiences(parent=f"properties/{property_id}")]
 
@@ -378,12 +390,14 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
     created = client.create_custom_dimension(
         parent=f"properties/{property_id}", custom_dimension=dim
     )
+    cache_invalidate("custom_defs", property_id)
     return _proto_to_dict(created)
 
 
 def archive_custom_dimension(name):
     client = _get_admin_client(write=True)
     client.archive_custom_dimension(name=name)
+    _invalidate_for_name("custom_defs", name)
     return {"status": "archived", "name": name}
 
 
@@ -402,12 +416,14 @@ def create_custom_metric(
         scope=CustomMetric.MetricScope[scope.upper()],
     )
     created = client.create_custom_metric(parent=f"properties/{property_id}", custom_metric=metric)
+    cache_invalidate("custom_defs", property_id)
     return _proto_to_dict(created)
 
 
 def archive_custom_metric(name):
     client = _get_admin_client(write=True)
     client.archive_custom_metric(name=name)
+    _invalidate_for_name("custom_defs", name)
     return {"status": "archived", "name": name}
 
 
@@ -417,6 +433,9 @@ def archive_custom_metric(name):
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     KeyEvent = _admin_type("KeyEvent")
 
+    # Count against the live list. A cached one can predate a delete made
+    # elsewhere (GA4 UI, another host) and block a create that fits the limit.
+    cache_invalidate("key_events", property_id)
     existing = list_key_events(property_id)
     if len(existing) >= KEY_EVENT_LIMIT:
         raise ValueError(
@@ -429,12 +448,14 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
         counting_method=KeyEvent.CountingMethod[counting_method.upper()],
     )
     created = client.create_key_event(parent=f"properties/{property_id}", key_event=ke)
+    cache_invalidate("key_events", property_id)
     return _proto_to_dict(created)
 
 
 def delete_key_event(name):
     client = _get_admin_client(write=True)
     client.delete_key_event(name=name)
+    _invalidate_for_name("key_events", name)
     return {"status": "deleted", "name": name}
 
 

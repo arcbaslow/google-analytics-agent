@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3] - 2026-09-11
+
+### Fixed
+
+- Admin writes did not invalidate the 15-minute read cache, so a read after a write returned the pre-write state until the TTL ran out, including through the MCP `key_events` and `custom_defs` tools. `create_key_event` and `delete_key_event` now drop the cached `list_key_events`; creating or archiving a custom dimension or metric drops the cached `list_custom_defs`. The new `ga4_utils.cache_invalidate` removes one entry by its key parts. Event rule and audience reads are not cached and were not affected.
+- `create_key_event` checked the 30-key-event limit against the cached list, which could predate a delete and reject a create that fits. It now counts against the live list.
+
 ## [0.5.2] - 2026-09-08
 
 ### Added
