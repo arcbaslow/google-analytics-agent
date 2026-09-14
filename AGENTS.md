@@ -126,7 +126,8 @@ redirect-back. It is off by default.
 ## Caching and PII
 
 The scripts cache responses on disk at `~/.claude/ga4-cache/` for 15
-minutes per unique query. PII keys (`email`, `phone`, ID-like fields) are
+minutes per unique query. Admin writes drop the cached reads they change,
+so a read right after a write reflects it. PII keys (`email`, `phone`, ID-like fields) are
 scrubbed from responses before any analysis. Both are implemented in
 `scripts/ga4_utils.py`.
 

@@ -116,3 +116,116 @@ def test_archive_audience_calls_alpha(monkeypatch):
     mock_client.archive_audience.assert_called_once_with(
         request={"name": "properties/123/audiences/55"}
     )
+
+
+# ---------- writes invalidate the cached reads they change ----------
+
+
+class _FakeAdminClient:
+    """In-memory Admin client: reads return the current state, writes change it.
+    Resource IDs are the event/parameter names, so a delete of
+    properties/123/keyEvents/sign_up removes "sign_up"."""
+
+    def __init__(self, key_events=(), dims=(), metrics=()):
+        self.key_events = list(key_events)
+        self.dims = list(dims)
+        self.metrics = list(metrics)
+
+    def list_key_events(self, parent):
+        return list(self.key_events)
+
+    def create_key_event(self, parent, key_event):
+        self.key_events.append(key_event.event_name)
+        return key_event
+
+    def delete_key_event(self, name):
+        self.key_events.remove(name.rsplit("/", 1)[1])
+
+    def list_custom_dimensions(self, parent):
+        return list(self.dims)
+
+    def list_custom_metrics(self, parent):
+        return list(self.metrics)
+
+    def create_custom_dimension(self, parent, custom_dimension):
+        self.dims.append(custom_dimension.parameter_name)
+        return custom_dimension
+
+    def create_custom_metric(self, parent, custom_metric):
+        self.metrics.append(custom_metric.parameter_name)
+        return custom_metric
+
+    def archive_custom_dimension(self, name):
+        self.dims.remove(name.rsplit("/", 1)[1])
+
+    def archive_custom_metric(self, name):
+        self.metrics.remove(name.rsplit("/", 1)[1])
+
+
+def _use_fake_admin(monkeypatch, **state):
+    fake = _FakeAdminClient(**state)
+    client = MagicMock(wraps=fake)
+    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
+    monkeypatch.setattr(ga4_admin, "_proto_to_dict", lambda m: m)
+    return fake, client
+
+
+def test_key_event_writes_refresh_cached_list(monkeypatch):
+    # The sequence run through the MCP connector on 2026-09-11: two deletes and
+    # a create, after which the cached read still returned the original list.
+    _, client = _use_fake_admin(
+        monkeypatch, key_events=["purchase", "close_convert_lead", "qualify_lead"]
+    )
+    before = ["purchase", "close_convert_lead", "qualify_lead"]
+    assert ga4_admin.list_key_events("123") == before
+    assert ga4_admin.list_key_events("123") == before
+    assert client.list_key_events.call_count == 1  # the cache is live
+
+    ga4_admin.delete_key_event("properties/123/keyEvents/close_convert_lead")
+    ga4_admin.delete_key_event("properties/123/keyEvents/qualify_lead")
+    assert ga4_admin.list_key_events("123") == ["purchase"]
+
+    ga4_admin.create_key_event("123", "sign_up")
+    assert ga4_admin.list_key_events("123") == ["purchase", "sign_up"]
+
+
+def test_create_key_event_limit_check_ignores_stale_cache(monkeypatch):
+    fake, _ = _use_fake_admin(monkeypatch, key_events=[f"ke_{i}" for i in range(30)])
+    ga4_admin.list_key_events("123")  # caches 30 key events
+    fake.key_events.pop()  # deleted outside this process, e.g. in the GA4 UI
+
+    ga4_admin.create_key_event("123", "sign_up")
+    assert fake.key_events[-1] == "sign_up"
+
+
+@pytest.mark.parametrize(
+    "write, expected",
+    [
+        pytest.param(
+            lambda: ga4_admin.create_custom_dimension("123", "plan", "Plan", "EVENT"),
+            {"custom_dimensions": ["brand", "plan"], "custom_metrics": ["value"]},
+            id="create_custom_dimension",
+        ),
+        pytest.param(
+            lambda: ga4_admin.archive_custom_dimension("properties/123/customDimensions/brand"),
+            {"custom_dimensions": [], "custom_metrics": ["value"]},
+            id="archive_custom_dimension",
+        ),
+        pytest.param(
+            lambda: ga4_admin.create_custom_metric("123", "margin", "Margin", "STANDARD"),
+            {"custom_dimensions": ["brand"], "custom_metrics": ["value", "margin"]},
+            id="create_custom_metric",
+        ),
+        pytest.param(
+            lambda: ga4_admin.archive_custom_metric("properties/123/customMetrics/value"),
+            {"custom_dimensions": ["brand"], "custom_metrics": []},
+            id="archive_custom_metric",
+        ),
+    ],
+)
+def test_custom_def_writes_refresh_cached_list(monkeypatch, write, expected):
+    _use_fake_admin(monkeypatch, dims=["brand"], metrics=["value"])
+    ga4_admin.list_custom_defs("123")  # caches the pre-write state
+
+    write()
+    assert ga4_admin.list_custom_defs("123") == expected
