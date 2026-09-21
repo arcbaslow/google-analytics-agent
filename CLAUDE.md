@@ -9,14 +9,7 @@ covers Claude Code-specific notes only.
 Claude Code loads `skills/ga4/SKILL.md` as the top-level router. It
 exposes `/ga4 <command>` and routes to:
 
-- read skills: `ga4-audit`, `ga4-context`, `ga4-funnel`, `ga4-segments`,
-  `ga4-events`
-- router-hosted read commands (no separate skill; the router verifies auth
-  and spawns the matching agent directly): `conversions`, `attribution`,
-  `quality`, `property`
-- write skills: `ga4-events-edit`, `ga4-audiences`, `ga4-custom-defs`,
-  `ga4-key-events`
-- local-definition skills: `ga4-segment-defs`, `ga4-custom-report`
+- `conversions`, `attribution`, `quality`, `property` are router-hosted commands with no skill directory of their own (the router verifies auth and spawns the matching agent directly).
 
 The `ga4-audit` orchestrator spawns `ga4-context` and `ga4-quality` in
 parallel as gates before the rest of the audit runs. Every other audit
