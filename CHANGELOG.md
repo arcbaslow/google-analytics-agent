@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Mark failed or empty quality checks as incomplete instead of high confidence, preserve zero sampling rates, and expose available response thresholding, restrictions, empty reasons and truncation details.
+
 - Validate each website redirect before following it, preventing context fetches from following a public URL into a private network or non-HTTP(S) target.
 
 - Read retention from its own Admin resource and recognize serialized web streams for enhanced measurement. Report data filters and Search Console links as unsupported manual checks instead of calling nonexistent API methods.

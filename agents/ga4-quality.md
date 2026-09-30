@@ -112,3 +112,9 @@ Finding shape:
   "metric_value": 0.42
 }
 ```
+
+Quality output includes `checks_complete` and `incomplete_checks`. Failed or
+empty checks cap confidence at low; a measured zero sample rate stays zero.
+`ga4_data.py --include-metadata` retains available thresholding, empty-result,
+restriction and truncation details. A thresholding flag alone does not prove
+that rows were removed. New metadata fields depend on the installed SDK.

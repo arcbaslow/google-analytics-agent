@@ -204,7 +204,7 @@ def _serialize_run_report(response, include_metadata=False):
     }
     if include_metadata:
         sampling = []
-        for sm in response.metadata.sampling_metadatas or []:
+        for sm in getattr(response.metadata, "sampling_metadatas", []) or []:
             sampling.append(
                 {
                     "samples_read_count": sm.samples_read_count,
@@ -222,6 +222,22 @@ def _serialize_run_report(response, include_metadata=False):
             "currency_code": response.metadata.currency_code,
             "time_zone": response.metadata.time_zone,
         }
+        # Serialize optional fields only when this SDK knows them. September
+        # 2026 truncation fields are absent from older supported clients.
+        from google.protobuf.json_format import MessageToDict
+        from google.protobuf.message import Message
+
+        metadata_pb = getattr(response.metadata, "_pb", None)
+        if isinstance(metadata_pb, Message):
+            raw_meta = MessageToDict(metadata_pb, preserving_proto_field_name=True)
+            for field in (
+                "subject_to_thresholding",
+                "empty_reason",
+                "schema_restriction_response",
+                "data_truncation_reasons",
+            ):
+                if field in raw_meta:
+                    out["metadata"][field] = raw_meta[field]
         if response.property_quota:
             pq = response.property_quota
             out["metadata"]["quota"] = {
