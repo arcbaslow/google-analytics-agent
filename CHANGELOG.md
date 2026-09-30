@@ -8,6 +8,8 @@
 
 ### Fixed
 
+- Require Data 0.18.16 for sampling metadata and Admin 0.23.0 for event-edit rules and key events. Use explicit beta clients and matching types for supported Admin calls, retaining alpha for alpha-only methods. Test minimum and current clients in CI; reporting identity remains optional below Admin 0.25.0.
+
 - Tolerate subsecond filesystem clock skew when checking fresh cache entries on Windows; retain the 15-minute expiry and reject timestamps more than one second in the future.
 
 - Label benchmark bands and report comparisons as unverified heuristics; preserve existing numbers and legacy band names. Correct deprecated API names, unsupported wrapper options, quota advice and report defaults. Use a property-neutral HTML report title.

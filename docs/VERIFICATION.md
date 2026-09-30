@@ -1,5 +1,48 @@
 # Verification
 
+## Next: Google client compatibility — 2026-09-30
+
+Continued on `roadmap-work` at the owner's request to work through the roadmap.
+Starting commit: `2393862`. Baseline checks passed again: 495 tests, 96.07%
+coverage, Ruff lint/format and mypy. No live GA4 calls or credential-file IO.
+The external offline guard described below was used for every test run.
+
+An isolated environment with the old declared floors (Data 0.18.0, Admin
+0.22.0) reproduced missing `EventEditRule` and `ReportingIdentitySettings`
+imports during collection. Class inspection found no `KeyEvent` on either
+Admin surface. The Data integration subset had one failure and five passes:
+`samplingMetadatas` could not be parsed into the old response type.
+
+The new floors are Data 0.18.16 and Admin 0.23.0, based on the upstream
+[Data](https://github.com/googleapis/google-cloud-python/blob/main/packages/google-analytics-data/CHANGELOG.md)
+and [Admin](https://github.com/googleapis/google-cloud-python/blob/main/packages/google-analytics-admin/CHANGELOG.md)
+release histories and the passing tests below. Reporting identity remains
+optional below Admin 0.25.0. Request tests now construct real beta request
+messages from adapter arguments; client factories are mocked and checked
+for the explicit surface and credential scope.
+
+| Check | Minimum Data/Admin | Current Data/Admin |
+| --- | --- | --- |
+| Versions | 0.18.16 / 0.23.0 | 0.23.2 / 0.30.1 |
+| `pip check` | Pass | Pass |
+| Ruff lint and format | Pass, 43 files | Pass, 43 files |
+| Mypy | Pass, 13 source files | Pass, 13 source files |
+| Mocked pytest with CI coverage floor | 495 passed, 4 skipped | 498 passed, 1 skipped |
+| Coverage | 95.72% | 96.12% |
+
+Four minimum-client skips cover optional identity responses; the real old
+client's unsupported-result test passes there and skips with current clients.
+The minimum environment reports two upstream protobuf 4 deprecation warnings.
+Both local environments use Windows and Python 3.12.14. CI now defines
+minimum/current jobs on all four existing Python versions, but was not run
+remotely. Other dependency floors, intermediate versions and live API behavior
+remain unverified. No dependency upper bounds or package version changed.
+
+To reproduce the minimum environment, install `.[dev]` with
+`-c constraints/minimum-google.txt`, then run `pip check` and the four CI
+checks. The constraints limit the two Analytics clients only. The local
+pytest command adds `-p offline_guard` with the same `PYTHONPATH` as below.
+
 ## Roadmap work — 2026-09-30
 
 Local branch: `roadmap-work`, created from master `aec65cb`. Package version

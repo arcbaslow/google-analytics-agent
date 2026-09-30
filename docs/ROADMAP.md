@@ -7,14 +7,18 @@ reviewed proposal and `y/N` per operation. No live property was used.
 
 Effort estimates are engineering days including mocked tests and documentation.
 Risk describes the change, not the severity of the existing defect. Now is the
-implementation scope for this branch; Next and Later require another decision.
+initial implementation scope for this branch. The owner's follow-up to work
+through the roadmap authorizes the bounded Next work recorded below. Larger
+design and semantic questions retain their stated decision requirements.
 
 ## Implementation status
 
 All Now items were completed locally on `roadmap-work`. The entries below
 retain the baseline problem and planned scope so the changes can be reviewed.
-No Next or Later implementation was added. See [verification](VERIFICATION.md)
-for the baseline/final checks, environment and limits of this run.
+The first Next item is now implemented: supported Admin calls use explicit
+beta clients and matching message types, with a minimum/current dependency
+matrix in CI. Later items remain proposals. See [verification](VERIFICATION.md)
+for the baseline/final checks, environment and limits of each run.
 
 | Item | Implementation commit |
 | --- | --- |
@@ -178,7 +182,7 @@ availability and older client libraries need an explicit unsupported result.
 
 | Item | Operator value and evidence | Effort | Risk and reason deferred |
 | --- | --- | --- | --- |
-| Verify minimum supported Google client versions and use explicit beta clients where possible | Ranges are not exact pins. Current alias resolves to alpha. Lower-bound Data clients may lack fields used by metadata serialization. [Data library history][data-library], [Admin library history][admin-library], `pyproject.toml:17` | 2 days | Medium; needs separate minimum/latest dependency matrix, not an untested bound change |
+| Completed: verify minimum supported Google clients and use explicit beta clients | Reproduced missing EventEditRule/KeyEvent in Admin 0.22.0 and undecodable sampling metadata in Data 0.18.0. Require Admin 0.23.0 and Data 0.18.16; use explicit beta clients/types for supported calls. [Data library history][data-library], [Admin library history][admin-library], `pyproject.toml`, `constraints/minimum-google.txt` | 2 days | Medium; CI now covers minimum/current clients across Python 3.10–3.13. Local checks use Windows/Python 3.12 only. Identity remains optional below Admin 0.25.0 |
 | Metadata discovery and compatibility preflight | Avoid quota-consuming invalid field combinations, including custom fields. [getMetadata][metadata], [checkCompatibility][compatibility]; absent from `ga4_data.py` | 1–2 days | Low; add explicit reads, not a hidden request before every cached query |
 | Bounded pagination and saved-report schema | `run_report` issues one request; reports beyond the default limit are incomplete. Saved `dimension_filter`, `metric_filter`, `order_bys`, `limit`, `default_format` are stored but ignored (`ga4_data.py:127`, `ga4_definitions.py:166`). [runReport][run-report] | 2–4 days | Medium; agree on row/token limits, truncation semantics and supported definition contract first |
 | Correct metric meaning in parameter and cohort audits | Positive aggregate revenue is not 100% parameter coverage (`ga4_events.py:94`); `keyEvents / sessions` is event frequency, not session key-event rate (`ga4_audit.py:578`). [Schema][schema] defines `sessionKeyEventRate` | 2 days | Medium; intended metric and compatibility with current findings need a decision; leave calculations alone this run |
@@ -219,18 +223,24 @@ from API surface versions. [Data report][run-report], [funnel][funnel-api],
 
 This inventory was checked against [Admin resources][admin-ref] and the
 installed client classes without constructing authenticated clients.
-`google.analytics.admin.AnalyticsAdminServiceClient` currently re-exports
-alpha, despite some source comments describing beta. Keep types and clients
-on the same surface.
+At baseline, `google.analytics.admin.AnalyticsAdminServiceClient` re-exported
+alpha, despite some source comments describing beta. The Next compatibility
+change uses explicit beta imports for supported calls and matching types;
+alpha-only calls retain explicit alpha imports.
 
-The repo permits Data `>=0.18.0,<1`, Admin `>=0.22.0,<1`; installation resolved
+The baseline permitted Data `>=0.18.0,<1`, Admin `>=0.22.0,<1`; installation resolved
 Data 0.23.2 (published September 24, 2026) and Admin 0.30.1 (June 25, 2026).
 Both fit the current ranges. [Data package][data-package], [Admin package][admin-package].
 Upstream histories show recent regenerated clients, Python compatibility
 changes, and deprecated `credentials_file` constructor arguments. This repo
 uses credential objects, not that deprecated argument. The removed UA
-configuration methods are not called here. A minimum-version matrix is still
-needed; a successful current install does not verify all allowed versions.
+configuration methods are not called here. The follow-up reproduced failures
+at those old lower bounds. Data 0.18.16 introduced sampling metadata; Admin
+0.23.0 introduced event-edit rules (beta key events arrived in 0.22.9).
+Those are the new tested floors. Reporting identity arrived in Admin 0.25.0
+and retains an unsupported result on earlier supported clients. The matrix
+tests these Data/Admin floors and current resolution, not all intermediate
+versions or minimum transitive dependencies.
 [Data library history][data-library], [Admin library history][admin-library].
 
 Data changes: April 23, 2026 added alpha advertising conversion reporting;

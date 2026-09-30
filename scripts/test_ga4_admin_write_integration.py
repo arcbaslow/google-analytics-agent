@@ -24,17 +24,15 @@ from unittest.mock import MagicMock
 import ga4_admin
 import pytest
 from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
-
-# Resolve these off the same surface the production code uses, via
-# ga4_admin._admin_type. Importing them straight from admin_v1beta.types
-# hardcodes a version: google.analytics.admin re-exports whichever API
-# version the installed client is pinned to, and when that is not v1beta
-# you get two distinct classes for the same message. Enum members then
-# print identically and compare unequal, which is the exact identity trap
-# _admin_type was written to avoid.
-CustomDimension = ga4_admin._admin_type("CustomDimension")
-CustomMetric = ga4_admin._admin_type("CustomMetric")
-KeyEvent = ga4_admin._admin_type("KeyEvent")
+from google.analytics.admin_v1beta import AnalyticsAdminServiceClient as BetaClient
+from google.analytics.admin_v1beta.types import (
+    CreateCustomDimensionRequest,
+    CreateCustomMetricRequest,
+    CreateKeyEventRequest,
+    CustomDimension,
+    CustomMetric,
+    KeyEvent,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "admin_api"
 
@@ -51,8 +49,19 @@ def _alpha(monkeypatch, method, response):
 
 
 def _beta(monkeypatch, method, response):
-    client = MagicMock()
-    getattr(client, method).return_value = response
+    client = MagicMock(spec=BetaClient)
+    request_type = {
+        "create_custom_dimension": CreateCustomDimensionRequest,
+        "create_custom_metric": CreateCustomMetricRequest,
+        "create_key_event": CreateKeyEventRequest,
+    }[method]
+
+    def call(**kwargs):
+        # Exercise the real GAPIC request conversion without a transport.
+        request_type(**kwargs)
+        return response
+
+    getattr(client, method).side_effect = call
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
     return client
 
@@ -276,31 +285,29 @@ def test_admin_types_come_from_the_same_surface_as_the_client():
     same class". Every message type must come from the same module the client
     does.
     """
-    import google.analytics.admin as surface
+    from google.analytics import admin_v1beta as surface
 
     for name in ("CustomDimension", "CustomMetric", "KeyEvent"):
         resolved = ga4_admin._admin_type(name)
-        if hasattr(surface, name):
-            assert resolved is getattr(surface, name), (
-                f"{name} resolved to {resolved.__module__}, "
-                f"client surface exposes {getattr(surface, name).__module__}"
-            )
+        assert resolved is getattr(surface.types, name)
 
 
-def test_no_module_level_v1beta_type_imports_in_write_helpers():
-    """The three create_* helpers must not re-introduce the split import."""
-    import inspect
+@pytest.mark.parametrize("write", [False, True])
+@pytest.mark.parametrize("version", ["beta", "alpha"])
+def test_admin_factory_selects_explicit_surface_and_scope(monkeypatch, version, write):
+    from google.analytics import admin_v1alpha, admin_v1beta
 
-    for fn in (
-        ga4_admin.create_custom_dimension,
-        ga4_admin.create_custom_metric,
-        ga4_admin.create_key_event,
-    ):
-        src = inspect.getsource(fn)
-        assert "admin_v1beta.types import" not in src, (
-            f"{fn.__name__} imports message types from admin_v1beta while the client "
-            "comes from google.analytics.admin - this fails against the live API"
-        )
+    surface = admin_v1beta if version == "beta" else admin_v1alpha
+    constructor = MagicMock()
+    credentials = MagicMock(return_value=object())
+    monkeypatch.setattr(surface, "AnalyticsAdminServiceClient", constructor)
+    monkeypatch.setattr(ga4_admin, "get_credentials", credentials)
+    factory = (
+        ga4_admin._get_admin_client if version == "beta" else ga4_admin._get_admin_alpha_client
+    )
+    assert factory(write=write) is constructor.return_value
+    credentials.assert_called_once_with(write=write)
+    constructor.assert_called_once_with(credentials=credentials.return_value)
 
 
 @pytest.fixture(autouse=True)

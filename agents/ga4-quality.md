@@ -20,6 +20,7 @@ do not describe bot detection or self-referral diagnosis as built-in checks.
 ## Interpret
 
 The adapter exposes `metadata.sampling`, `row_count`, and `rows_returned`.
+Data client 0.18.16 or newer is required so sampling metadata can be decoded.
 Sampling is the omitted fraction, `1 - sample_rate`, not the retained fraction.
 A zero rate is valid. Failed or empty checks set `checks_complete: false` and
 cap confidence at low (or very_low when measured quality is worse).

@@ -62,7 +62,7 @@ def _confirmed_write(fn):
 
 
 def _get_admin_client(write: bool = False):
-    from google.analytics.admin import AnalyticsAdminServiceClient
+    from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
 
     return AnalyticsAdminServiceClient(credentials=get_credentials(write=write))
 
@@ -74,25 +74,11 @@ def _get_admin_alpha_client(write: bool = False):
 
 
 def _admin_type(name: str):
-    """Return an Admin API message class from the same surface as the client.
+    """Use the explicit beta surface for both the client and its message types.
 
-    `google.analytics.admin` re-exports the client *and* the message types of
-    whichever API version it is pinned to. Taking the client from that surface
-    while importing message types from `google.analytics.admin_v1beta.types`
-    yields two distinct classes for the same message. The GAPIC layer compares
-    by class identity and rejects the mismatch with:
-
-        Parameter to initialize message field must be dict or instance of
-        same class: expected <class 'CustomDimension'> got
-        <class 'google.analytics.admin_v1beta.types.resources.CustomDimension'>
-
-    Unit tests mock the client, so identity never mattered there and the bug
-    only surfaced against the live API. Always take both from one module.
+    Alpha and beta messages with identical field names are distinct classes;
+    mixing them fails when GAPIC builds the request.
     """
-    import google.analytics.admin as surface
-
-    if hasattr(surface, name):
-        return getattr(surface, name)
     from google.analytics import admin_v1beta
 
     return getattr(admin_v1beta.types, name)

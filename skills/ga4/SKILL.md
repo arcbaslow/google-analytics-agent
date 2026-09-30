@@ -245,3 +245,9 @@ or MCP `reporting_identity(property_id)`. This alpha read uses the 15-minute
 cache and response scrubber. Older SDKs without the method return
 `status: unsupported`. Report the selected mode as context for user counts;
 there is no identity write or universal recommendation to switch modes.
+
+Google clients: require Data 0.18.16+ and Admin 0.23.0+ (both below 1.0).
+Supported Admin calls use explicit beta clients and matching message types;
+alpha-only methods keep explicit alpha imports. Reporting identity needs
+Admin 0.25.0+ and otherwise returns `status: unsupported`. CI tests minimum
+and current Data/Admin clients; newer optional response fields remain optional.
