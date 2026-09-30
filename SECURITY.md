@@ -45,3 +45,9 @@ phone numbers, ID-like keys) before being written.
 I aim to acknowledge security reports within 7 days and ship a fix or
 mitigation within 30 days. For high-severity issues affecting active
 users, both windows shrink.
+
+PII scrubbing also applies to Admin responses, cached data, context, MCP and
+rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
+values are redacted; numeric metrics and GA resource names are retained.
+Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
+anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.

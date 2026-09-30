@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from ga4_utils import scrub_pii
+
 SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 
 
@@ -123,6 +125,8 @@ def _render_per_agent(agents_output):
 
 def render_html(property_id, agents_output, confidence="medium"):
     """Build the HTML report from per-agent outputs."""
+    property_id = scrub_pii(property_id)
+    agents_output = scrub_pii(agents_output)
     all_findings = []
     summaries = []
     for ao in agents_output:
@@ -150,6 +154,7 @@ def render_html(property_id, agents_output, confidence="medium"):
 
 def render_pdf(html, output_path):
     """Render HTML to PDF via WeasyPrint."""
+    html = scrub_pii(html)
     from weasyprint import HTML
 
     HTML(string=html).write_pdf(output_path)
@@ -157,6 +162,7 @@ def render_pdf(html, output_path):
 
 def render_pdf_bytes(html) -> bytes:
     """Render HTML to PDF and return the bytes (no filesystem write)."""
+    html = scrub_pii(html)
     from weasyprint import HTML
 
     return HTML(string=html).write_pdf()
@@ -199,6 +205,8 @@ CUSTOM_REPORT_TEMPLATE = r"""<!DOCTYPE html>
 
 def render_custom_report_markdown(definition, report_payload):
     """Render a single saved-report run as plain markdown (no emoji)."""
+    definition = scrub_pii(definition)
+    report_payload = scrub_pii(report_payload)
     name = definition.get("name", "untitled")
     desc = definition.get("description", "")
     payload = (
@@ -252,6 +260,8 @@ def render_custom_report_markdown(definition, report_payload):
 
 def render_custom_report_html(definition, report_payload):
     """Render a single saved-report run as standalone HTML."""
+    definition = scrub_pii(definition)
+    report_payload = scrub_pii(report_payload)
     name = _esc(definition.get("name", "untitled"))
     desc = definition.get("description", "")
     desc_html = f'<div class="description">{_esc(desc)}</div>' if desc else ""
@@ -330,6 +340,7 @@ def _format_benchmark_md(b):
 
 def render_property_context_md(context):
     """Render the property/site context block as markdown."""
+    context = scrub_pii(context)
     if not context:
         return "## Property Context\n\n_No context cached. Run `/ga4 context <property-id>` to populate._\n"
 
@@ -383,6 +394,9 @@ def render_markdown(property_id, agents_output, confidence="medium", context=Non
     inference) — if None, the function tries to load it from the local
     cache via ga4_context.load_context. `vertical` overrides the
     inferred vertical used for benchmark enrichment."""
+    property_id = scrub_pii(property_id)
+    agents_output = scrub_pii(agents_output)
+    context = scrub_pii(context)
     if context is None:
         context = _load_property_context(property_id)
     if vertical is None and context:

@@ -60,3 +60,9 @@ Run a saved custom report with a segment applied:
 ```
 python scripts/ga4_definitions.py --run-report channel-by-week --property 123 --segment "branded-traffic" --format html --output channel-branded.html
 ```
+
+PII scrubbing also applies to Admin responses, cached data, context, MCP and
+rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
+values are redacted; numeric metrics and GA resource names are retained.
+Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
+anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.

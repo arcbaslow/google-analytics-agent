@@ -49,10 +49,12 @@ import ga4_events
 import ga4_funnel
 import ga4_report
 import ga4_utils
+from ga4_utils import scrub_pii, scrub_response
 
 # ---------- Helpers ----------
 
 
+@scrub_response
 def _ok(agent, summary, findings=None, data=None):
     return {
         "agent": agent,
@@ -223,7 +225,7 @@ def run_events(property_id, days=7):
                 {
                     "severity": "High",
                     "title": "Could not list events from Data API",
-                    "detail": str(e),
+                    "detail": scrub_pii(str(e)),
                 }
             ],
         )
@@ -256,7 +258,7 @@ def run_events(property_id, days=7):
                     {
                         "severity": "Low",
                         "title": f"Could not check parameter coverage for {ev}",
-                        "detail": str(e),
+                        "detail": scrub_pii(str(e)),
                     }
                 )
 
@@ -309,7 +311,7 @@ def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
         return _ok(
             "ga4-funnel",
             f"funnel failed: {e}",
-            [{"severity": "High", "title": "Funnel report failed", "detail": str(e)}],
+            [{"severity": "High", "title": "Funnel report failed", "detail": scrub_pii(str(e))}],
         )
 
     if "error" in result:
@@ -382,7 +384,13 @@ def run_conversions(property_id):
         return _ok(
             "ga4-conversions",
             f"key events fetch failed: {e}",
-            [{"severity": "High", "title": "Could not list key events", "detail": str(e)}],
+            [
+                {
+                    "severity": "High",
+                    "title": "Could not list key events",
+                    "detail": scrub_pii(str(e)),
+                }
+            ],
         )
 
     names = [k.get("eventName") or k.get("event_name") for k in key_events]
@@ -442,7 +450,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
             {
                 "severity": "Medium",
                 "title": "Attribution settings request failed",
-                "detail": str(e),
+                "detail": scrub_pii(str(e)),
             }
         )
 
@@ -480,7 +488,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
             {
                 "severity": "Medium",
                 "title": "Channel breakdown for primary event failed",
-                "detail": str(e),
+                "detail": scrub_pii(str(e)),
             }
         )
 
@@ -515,7 +523,11 @@ def run_property(property_id):
             )
     except Exception as e:
         findings.append(
-            {"severity": "High", "title": "Could not fetch property details", "detail": str(e)}
+            {
+                "severity": "High",
+                "title": "Could not fetch property details",
+                "detail": scrub_pii(str(e)),
+            }
         )
 
     try:
@@ -531,7 +543,11 @@ def run_property(property_id):
             )
     except Exception as e:
         findings.append(
-            {"severity": "Medium", "title": "Could not list data streams", "detail": str(e)}
+            {
+                "severity": "Medium",
+                "title": "Could not list data streams",
+                "detail": scrub_pii(str(e)),
+            }
         )
 
     try:
@@ -548,7 +564,7 @@ def run_property(property_id):
                 )
     except Exception as e:
         findings.append(
-            {"severity": "Low", "title": "Could not list data filters", "detail": str(e)}
+            {"severity": "Low", "title": "Could not list data filters", "detail": scrub_pii(str(e))}
         )
 
     try:
@@ -559,7 +575,7 @@ def run_property(property_id):
         }
     except Exception as e:
         findings.append(
-            {"severity": "Low", "title": "Could not list custom defs", "detail": str(e)}
+            {"severity": "Low", "title": "Could not list custom defs", "detail": scrub_pii(str(e))}
         )
 
     return _ok("ga4-property", "property configuration scan complete", findings, data)
@@ -681,7 +697,7 @@ def run_segments(property_id, days=28):
         return _ok(
             "ga4-segments",
             f"segments scan failed: {e}",
-            [{"severity": "Medium", "title": "Segments scan failed", "detail": str(e)}],
+            [{"severity": "Medium", "title": "Segments scan failed", "detail": scrub_pii(str(e))}],
             data,
         )
 
@@ -711,7 +727,7 @@ def run_segments(property_id, days=28):
                 if f:
                     findings.append(f)
         except Exception as e:
-            saved.append({"name": name, "error": str(e)})
+            saved.append({"name": name, "error": scrub_pii(str(e))})
     data["saved_segments"] = saved
 
     return _ok(
@@ -867,7 +883,7 @@ def main():
             primary_event=args.primary_event,
         )
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
 
     body: str | bytes

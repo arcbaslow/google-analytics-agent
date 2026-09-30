@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 from ga4_auth import get_credentials
-from ga4_utils import cache_get, cache_invalidate, cache_set, scrub_pii
+from ga4_utils import cache_get, cache_invalidate, cache_set, scrub_pii, scrub_response
 
 _PARAM_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 _PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
@@ -101,7 +101,9 @@ def _admin_type(name: str):
 def _proto_to_dict(msg):
     from google.protobuf.json_format import MessageToDict
 
-    return MessageToDict(msg._pb if hasattr(msg, "_pb") else msg, preserving_proto_field_name=True)
+    return scrub_pii(
+        MessageToDict(msg._pb if hasattr(msg, "_pb") else msg, preserving_proto_field_name=True)
+    )
 
 
 def _dict_to_proto(d, proto_cls):
@@ -135,6 +137,7 @@ def _invalidate_for_name(read, name):
 # ---------- reads ----------
 
 
+@scrub_response
 def get_property_details(property_id):
     cached = cache_get("property_details", property_id)
     if cached:
@@ -146,6 +149,7 @@ def get_property_details(property_id):
     return out
 
 
+@scrub_response
 def list_data_streams(property_id):
     cached = cache_get("data_streams", property_id)
     if cached:
@@ -158,6 +162,7 @@ def list_data_streams(property_id):
     return streams
 
 
+@scrub_response
 def get_enhanced_measurement(property_id):
     cached = cache_get("enhanced_measurement", property_id)
     if cached:
@@ -173,12 +178,13 @@ def get_enhanced_measurement(property_id):
                 )
                 stream_d["enhanced_measurement"] = _proto_to_dict(em)
             except Exception as e:
-                stream_d["enhanced_measurement_error"] = str(e)
+                stream_d["enhanced_measurement_error"] = scrub_pii(str(e))
         results.append(stream_d)
     cache_set(results, "enhanced_measurement", property_id)
     return results
 
 
+@scrub_response
 def list_data_filters(property_id):
     cached = cache_get("data_filters", property_id)
     if cached:
@@ -189,11 +195,12 @@ def list_data_filters(property_id):
             _proto_to_dict(f) for f in client.list_data_filters(parent=f"properties/{property_id}")
         ]
     except Exception as e:
-        filters = [{"error": str(e)}]
+        filters = [{"error": scrub_pii(str(e))}]
     cache_set(filters, "data_filters", property_id)
     return filters
 
 
+@scrub_response
 def list_custom_defs(property_id):
     cached = cache_get("custom_defs", property_id)
     if cached:
@@ -210,6 +217,7 @@ def list_custom_defs(property_id):
     return out
 
 
+@scrub_response
 def list_key_events(property_id):
     cached = cache_get("key_events", property_id)
     if cached:
@@ -226,6 +234,7 @@ def list_key_events(property_id):
     return events
 
 
+@scrub_response
 def get_attribution_settings(property_id):
     cached = cache_get("attribution_settings", property_id)
     if cached:
@@ -235,11 +244,12 @@ def get_attribution_settings(property_id):
         att = client.get_attribution_settings(name=f"properties/{property_id}/attributionSettings")
         out = _proto_to_dict(att)
     except Exception as e:
-        out = {"error": str(e)}
+        out = {"error": scrub_pii(str(e))}
     cache_set(out, "attribution_settings", property_id)
     return out
 
 
+@scrub_response
 def list_platform_links(property_id):
     cached = cache_get("platform_links", property_id)
     if cached:
@@ -252,7 +262,7 @@ def list_platform_links(property_id):
         try:
             out[name] = [_proto_to_dict(x) for x in fn()]
         except Exception as e:
-            out[name] = [{"error": str(e)}]
+            out[name] = [{"error": scrub_pii(str(e))}]
 
     _try(
         "google_ads_links", lambda: client.list_google_ads_links(parent=f"properties/{property_id}")
@@ -278,6 +288,7 @@ def list_platform_links(property_id):
 # ---------- event create / edit rules (v1alpha, per data stream) ----------
 
 
+@scrub_response
 def list_event_rules(property_id, stream_id):
     """List both edit rules and create rules for one data stream. Not cached;
     caching it would require the rule writes below to invalidate it."""
@@ -289,6 +300,7 @@ def list_event_rules(property_id, stream_id):
 
 
 @_confirmed_write
+@scrub_response
 def create_event_edit_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
 
@@ -300,6 +312,7 @@ def create_event_edit_rule(property_id, stream_id, definition):
 
 
 @_confirmed_write
+@scrub_response
 def update_event_edit_rule(rule_name, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
     from google.protobuf.field_mask_pb2 import FieldMask
@@ -312,6 +325,7 @@ def update_event_edit_rule(rule_name, definition):
 
 
 @_confirmed_write
+@scrub_response
 def delete_event_edit_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_edit_rule(name=rule_name)
@@ -319,6 +333,7 @@ def delete_event_edit_rule(rule_name):
 
 
 @_confirmed_write
+@scrub_response
 def reorder_event_edit_rules(property_id, stream_id, ordered_names):
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
@@ -327,6 +342,7 @@ def reorder_event_edit_rules(property_id, stream_id, ordered_names):
 
 
 @_confirmed_write
+@scrub_response
 def create_event_create_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventCreateRule
 
@@ -338,6 +354,7 @@ def create_event_create_rule(property_id, stream_id, definition):
 
 
 @_confirmed_write
+@scrub_response
 def delete_event_create_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_create_rule(name=rule_name)
@@ -347,6 +364,7 @@ def delete_event_create_rule(rule_name):
 # ---------- audiences (v1alpha) ----------
 
 
+@scrub_response
 def list_audiences(property_id):
     """Not cached; caching it would require the audience writes below to
     invalidate it."""
@@ -354,12 +372,14 @@ def list_audiences(property_id):
     return [_proto_to_dict(a) for a in client.list_audiences(parent=f"properties/{property_id}")]
 
 
+@scrub_response
 def get_audience(audience_name):
     client = _get_admin_alpha_client()
     return _proto_to_dict(client.get_audience(name=audience_name))
 
 
 @_confirmed_write
+@scrub_response
 def create_audience(property_id, definition):
     from google.analytics.admin_v1alpha.types import Audience
 
@@ -372,6 +392,7 @@ def create_audience(property_id, definition):
 
 
 @_confirmed_write
+@scrub_response
 def update_audience_metadata(audience_name, display_name=None, description=None):
     """Only display_name and description are mutable post-create. Filter clauses
     cannot be edited — archive and recreate to change them."""
@@ -393,6 +414,7 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
 
 
 @_confirmed_write
+@scrub_response
 def archive_audience(audience_name):
     client = _get_admin_alpha_client(write=True)
     # archive_audience is not a flattened method; it takes a request object.
@@ -419,6 +441,7 @@ def _validate_parameter_name(parameter_name, scope):
 
 
 @_confirmed_write
+@scrub_response
 def create_custom_dimension(property_id, parameter_name, display_name, scope, description=""):
     CustomDimension = _admin_type("CustomDimension")
 
@@ -438,6 +461,7 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
 
 
 @_confirmed_write
+@scrub_response
 def archive_custom_dimension(name):
     client = _get_admin_client(write=True)
     client.archive_custom_dimension(name=name)
@@ -446,6 +470,7 @@ def archive_custom_dimension(name):
 
 
 @_confirmed_write
+@scrub_response
 def create_custom_metric(
     property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""
 ):
@@ -466,6 +491,7 @@ def create_custom_metric(
 
 
 @_confirmed_write
+@scrub_response
 def archive_custom_metric(name):
     client = _get_admin_client(write=True)
     client.archive_custom_metric(name=name)
@@ -477,6 +503,7 @@ def archive_custom_metric(name):
 
 
 @_confirmed_write
+@scrub_response
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     KeyEvent = _admin_type("KeyEvent")
 
@@ -500,6 +527,7 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
 
 
 @_confirmed_write
+@scrub_response
 def delete_key_event(name):
     client = _get_admin_client(write=True)
     client.delete_key_event(name=name)
@@ -565,13 +593,13 @@ def main():
     try:
         out = _dispatch(args)
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
 
     if out is None:
         parser.print_help()
         return 1
-    print(json.dumps(out, indent=2, default=str))
+    print(json.dumps(scrub_pii(out), indent=2, default=str))
     return 0
 
 

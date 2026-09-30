@@ -59,3 +59,9 @@ Storage: `~/.claude/ga4-definitions/reports/<slug>.json`
 - **search-terms** — site search keyword volume
 
 For each, save a definition once with `--save-report`, then re-run weekly.
+
+PII scrubbing also applies to Admin responses, cached data, context, MCP and
+rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
+values are redacted; numeric metrics and GA resource names are retained.
+Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
+anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.

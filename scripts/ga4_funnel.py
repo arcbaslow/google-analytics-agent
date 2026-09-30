@@ -15,6 +15,7 @@ import sys
 
 from ga4_data import run_funnel_report
 from ga4_events import check_events, detect_postpayment_api
+from ga4_utils import scrub_pii, scrub_response
 
 # E-commerce purchase funnel preset. Users running non-ecomm funnels pass
 # their own --steps list and ignore this constant.
@@ -48,6 +49,7 @@ def validate_steps(property_id, steps, days=7):
     return {"validated_steps": validated, "dropped_steps": dropped, "warnings": warnings}
 
 
+@scrub_response
 def build_funnel(property_id, steps=None, days=28, breakdown=None, check_postpayment=False):
     """Build a funnel and compute rates.
 
@@ -226,7 +228,7 @@ def main():
         )
         print(json.dumps(result, indent=2, default=str))
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
     return 0
 

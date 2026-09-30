@@ -35,6 +35,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from ga4_utils import scrub_pii, scrub_response
+
 SCOPES_READ = ["https://www.googleapis.com/auth/analytics.readonly"]
 SCOPES_EDIT = ["https://www.googleapis.com/auth/analytics.edit"]
 CLOUD_PLATFORM = "https://www.googleapis.com/auth/cloud-platform"
@@ -241,10 +243,10 @@ def check_auth() -> bool:
     try:
         creds = get_credentials(write=False)
     except AuthRequiredError as e:
-        print(json.dumps({"status": "no_credentials", "hint": e.hint}))
+        print(json.dumps({"status": "no_credentials", "hint": scrub_pii(e.hint)}))
         return False
     except Exception as e:
-        print(json.dumps({"status": "error", "type": type(e).__name__, "error": str(e)}))
+        print(json.dumps({"status": "error", "type": type(e).__name__, "error": scrub_pii(str(e))}))
         return False
 
     info = {"status": "ok", "source": credentials_source(creds)}
@@ -252,10 +254,11 @@ def check_auth() -> bool:
     expiry = getattr(creds, "expiry", None)
     if expiry:
         info["expiry"] = expiry.isoformat()
-    print(json.dumps(info))
+    print(json.dumps(scrub_pii(info)))
     return True
 
 
+@scrub_response
 def list_properties() -> list[dict[str, Any]]:
     creds = get_credentials(write=False)
     from google.analytics.admin import AnalyticsAdminServiceClient
@@ -310,7 +313,9 @@ def main() -> int:
         try:
             props = list_properties()
         except AuthRequiredError as e:
-            print(json.dumps({"error": "no_credentials", "hint": e.hint}), file=sys.stderr)
+            print(
+                json.dumps({"error": "no_credentials", "hint": scrub_pii(e.hint)}), file=sys.stderr
+            )
             return 1
         print(json.dumps(props, indent=2))
         return 0

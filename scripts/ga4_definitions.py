@@ -35,6 +35,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from ga4_utils import scrub_pii, scrub_response
+
 DEFINITIONS_DIR = Path.home() / ".claude" / "ga4-definitions"
 SEGMENTS_DIR = DEFINITIONS_DIR / "segments"
 REPORTS_DIR = DEFINITIONS_DIR / "reports"
@@ -68,6 +70,7 @@ def save_segment(name: str, filter_expression: dict[str, Any], description: str 
     return path
 
 
+@scrub_response
 def list_segments() -> list[dict[str, Any]]:
     _ensure_dirs()
     out = []
@@ -89,6 +92,7 @@ def load_segment(name: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+@scrub_response
 def delete_segment(name: str) -> dict[str, Any]:
     path = SEGMENTS_DIR / f"{_slug(name)}.json"
     if not path.exists():
@@ -128,6 +132,7 @@ def save_report_def(name: str, definition: dict[str, Any]) -> Path:
     return path
 
 
+@scrub_response
 def list_report_defs() -> list[dict[str, Any]]:
     _ensure_dirs()
     out = []
@@ -155,6 +160,7 @@ def load_report_def(name: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+@scrub_response
 def delete_report_def(name: str) -> dict[str, Any]:
     path = REPORTS_DIR / f"{_slug(name)}.json"
     if not path.exists():
@@ -179,19 +185,17 @@ def run_report_def(
 
     from ga4_data import run_report
 
+    seg_filter = load_segment(segment)["filter_expression"] if segment else None
     rows = run_report(
         property_id=property_id,
         metrics=defn["metrics"],
         dimensions=defn.get("dimensions", []),
         days=days,
         include_metadata=True,
+        filter_dict=seg_filter,
     )
 
-    if segment:
-        # Re-run with the segment's filter applied. We pass the raw filter dict
-        # through ga4_data via a small extension instead of duplicating run_report.
-        seg_def = load_segment(segment)
-        rows = _apply_segment_and_rerun(property_id, defn, days, seg_def["filter_expression"])
+    defn, rows = scrub_pii(defn), scrub_pii(rows)
 
     if format == "json":
         return {"definition": defn, "result": rows}
@@ -211,29 +215,6 @@ def run_report_def(
         html = render_custom_report_html(defn, rows)
         return render_pdf_bytes(html)
     return rows
-
-
-def _apply_segment_and_rerun(property_id, defn, days, filter_expression):
-    """runReport with a segment's filter applied as dimension_filter."""
-    from ga4_data import _get_data_client, _serialize_run_report, date_range
-    from google.analytics.data_v1beta.types import (
-        DateRange,
-        Dimension,
-        Metric,
-        RunReportRequest,
-    )
-
-    start, end = date_range(days)
-    req = RunReportRequest(
-        property=f"properties/{property_id}",
-        metrics=[Metric(name=m) for m in defn["metrics"]],
-        dimensions=[Dimension(name=d) for d in defn.get("dimensions", [])],
-        date_ranges=[DateRange(start_date=start, end_date=end)],
-        dimension_filter=build_filter_from_definition(filter_expression),
-        return_property_quota=False,
-    )
-    client = _get_data_client()
-    return _serialize_run_report(client.run_report(req), include_metadata=True)
 
 
 def _to_csv(report_payload) -> str:
@@ -295,7 +276,7 @@ def main():
     try:
         out = _dispatch(args)
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
     if out is None:
         parser.print_help()
@@ -348,13 +329,16 @@ def _dispatch(args):
 
 
 def _write_output(out, args):
+    out = scrub_pii(out)
     if args.output:
         if isinstance(out, (bytes, bytearray)):
             Path(args.output).write_bytes(out)
         elif isinstance(out, str):
             Path(args.output).write_text(out, encoding="utf-8")
         else:
-            Path(args.output).write_text(json.dumps(out, indent=2, default=str), encoding="utf-8")
+            Path(args.output).write_text(
+                json.dumps(scrub_pii(out), indent=2, default=str), encoding="utf-8"
+            )
         print(json.dumps({"status": "ok", "output": args.output}))
     else:
         if isinstance(out, bytes):
@@ -362,7 +346,7 @@ def _write_output(out, args):
         elif isinstance(out, str):
             print(out)
         else:
-            print(json.dumps(out, indent=2, default=str))
+            print(json.dumps(scrub_pii(out), indent=2, default=str))
 
 
 if __name__ == "__main__":

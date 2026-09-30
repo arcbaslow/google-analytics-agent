@@ -224,43 +224,31 @@ def test_run_report_def_html_format(monkeypatch):
     assert "<table" in out
 
 
-def test_run_report_def_with_segment_reruns_through_filter(monkeypatch):
+def test_segment_report_uses_one_scrubbed_cached_request(monkeypatch):
     ga4_definitions.save_report_def("channels", REPORT_DEF_RUN)
     ga4_definitions.save_segment(
         "buyers", {"field": "eventName", "op": "EXACT", "value": "purchase"}
     )
-    monkeypatch.setattr(ga4_data, "run_report", lambda **kw: _ROWS)
-    captured = {}
+    from google.analytics.data_v1beta.types import RunReportResponse
 
-    def fake_apply(property_id, defn, days, filter_expression):
-        captured["filter"] = filter_expression
-        return {"rows": [{"segmented": "yes"}]}
-
-    monkeypatch.setattr(ga4_definitions, "_apply_segment_and_rerun", fake_apply)
-    out = ga4_definitions.run_report_def("channels", "123", segment="buyers")
-
-    assert captured["filter"]["value"] == "purchase"
-    assert out["result"]["rows"] == [{"segmented": "yes"}]
-
-
-def test_apply_segment_and_rerun_builds_request_with_dimension_filter(monkeypatch):
-    monkeypatch.setattr(ga4_data, "date_range", lambda days: ("2026-01-01", "2026-01-28"))
     client = MagicMock()
-    sent = {}
-    client.run_report.side_effect = lambda req: sent.setdefault("req", req) or MagicMock()
+    client.run_report.return_value = RunReportResponse(
+        dimension_headers=[{"name": "pageLocation"}],
+        metric_headers=[{"name": "activeUsers"}],
+        rows=[
+            {
+                "dimension_values": [{"value": "https://example.com/?q=person@example.com"}],
+                "metric_values": [{"value": "1000000000"}],
+            }
+        ],
+    )
     monkeypatch.setattr(ga4_data, "_get_data_client", lambda: client)
-    monkeypatch.setattr(
-        ga4_data,
-        "_serialize_run_report",
-        lambda resp, include_metadata=False: {"rows": [{"ok": "1"}]},
+    out = ga4_definitions.run_report_def("channels", "123", segment="buyers")
+    assert "person@example.com" not in str(out)
+    assert out["result"]["rows"][0]["activeUsers"] == "1000000000"
+    assert (
+        client.run_report.call_args.args[0].dimension_filter.filter.string_filter.value
+        == "purchase"
     )
-
-    defn = {"metrics": ["activeUsers"], "dimensions": ["country"]}
-    out = ga4_definitions._apply_segment_and_rerun(
-        "123", defn, 28, {"field": "country", "op": "EXACT", "value": "US"}
-    )
-
-    assert out["rows"] == [{"ok": "1"}]
-    req = sent["req"]
-    assert req.property == "properties/123"
-    assert req.dimension_filter is not None
+    assert ga4_definitions.run_report_def("channels", "123", segment="buyers") == out
+    client.run_report.assert_called_once()

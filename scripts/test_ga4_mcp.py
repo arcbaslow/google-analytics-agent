@@ -139,7 +139,7 @@ def test_reauth_api_error_surfaces_as_auth_required():
 
 def test_non_auth_error_is_not_swallowed():
     with mock.patch.object(ga4_mcp.ga4_audit, "orchestrate", side_effect=ValueError("boom")):
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError, match="ValueError: boom"):
             ga4_mcp.audit(property_id="123")
 
 

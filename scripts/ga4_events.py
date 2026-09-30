@@ -19,6 +19,7 @@ import json
 import sys
 
 from ga4_data import run_report
+from ga4_utils import scrub_pii, scrub_response
 
 # Preset for Google's recommended e-commerce events. Other taxonomies are
 # supported by passing a custom required-params dict to event_params_coverage().
@@ -31,6 +32,7 @@ REQUIRED_PARAMS = {
 }
 
 
+@scrub_response
 def list_events(property_id, days=7):
     """Distinct event names with counts."""
     return run_report(
@@ -38,6 +40,7 @@ def list_events(property_id, days=7):
     )
 
 
+@scrub_response
 def check_events(property_id, event_names, days=7):
     """Check which listed events fired in the window."""
     in_list = ",".join(event_names)
@@ -56,6 +59,7 @@ def check_events(property_id, event_names, days=7):
     return {"events": result, "window_days": days}
 
 
+@scrub_response
 def event_params_coverage(property_id, event_name, days=7):
     """Per-parameter coverage for a single event."""
     required = REQUIRED_PARAMS.get(event_name, [])
@@ -130,6 +134,7 @@ def _param_coverage(property_id, event_name, param, total, days):
     return {"coverage_pct": None, "note": f"param {param} not mapped to a Data API field"}
 
 
+@scrub_response
 def detect_postpayment_api(property_id, days=7):
     """Post-payment heuristic for the `add_payment_info` event.
 
@@ -223,7 +228,7 @@ def main():
             parser.print_help()
             return 1
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
     return 0
 
