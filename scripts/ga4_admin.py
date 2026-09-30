@@ -301,6 +301,27 @@ def get_data_retention_settings(property_id):
     return out
 
 
+@scrub_response
+def get_reporting_identity_settings(property_id):
+    """Read the selected identity. Older SDKs may not expose this alpha method."""
+    cached = cache_get("reporting_identity_settings", property_id)
+    if cached is not None:
+        return cached
+    client = _get_admin_alpha_client()
+    if not hasattr(client, "get_reporting_identity_settings"):
+        return {
+            "status": "unsupported",
+            "reason": "Installed Admin client does not expose getReportingIdentitySettings.",
+        }
+    out = _proto_to_dict(
+        client.get_reporting_identity_settings(
+            name=f"properties/{property_id}/reportingIdentitySettings"
+        )
+    )
+    cache_set(out, "reporting_identity_settings", property_id)
+    return out
+
+
 # ---------- event create / edit rules (v1alpha, per data stream) ----------
 
 
@@ -569,6 +590,7 @@ def main():
     actions.add_argument("--custom-defs", action="store_true")
     actions.add_argument("--key-events", action="store_true")
     actions.add_argument("--attribution-settings", action="store_true")
+    actions.add_argument("--reporting-identity", action="store_true")
     actions.add_argument("--links", action="store_true")
     actions.add_argument("--list-event-rules", action="store_true")
     actions.add_argument("--list-audiences", action="store_true")
@@ -634,6 +656,8 @@ def _dispatch(args):
         return list_key_events(args.property)
     if args.attribution_settings:
         return get_attribution_settings(args.property)
+    if args.reporting_identity:
+        return get_reporting_identity_settings(args.property)
     if args.links:
         return list_platform_links(args.property)
     if args.list_event_rules:

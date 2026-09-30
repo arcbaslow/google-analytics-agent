@@ -238,3 +238,10 @@ them alone to set severity. See [the source review](../../docs/ROADMAP.md).
 
 Cache freshness tolerates up to one second of filesystem clock skew; larger
 future timestamps and entries aged 15 minutes or more are misses.
+
+Read the selected reporting identity with
+`python scripts/ga4_admin.py --property X --reporting-identity --json`
+or MCP `reporting_identity(property_id)`. This alpha read uses the 15-minute
+cache and response scrubber. Older SDKs without the method return
+`status: unsupported`. Report the selected mode as context for user counts;
+there is no identity write or universal recommendation to switch modes.

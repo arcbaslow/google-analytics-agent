@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Read reporting identity with `ga4_admin.py --reporting-identity` and MCP `reporting_identity`, including caching, scrubbing and an explicit unsupported result for older clients.
+
 ### Fixed
 
 - Tolerate subsecond filesystem clock skew when checking fresh cache entries on Windows; retain the 15-minute expiry and reject timestamps more than one second in the future.

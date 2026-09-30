@@ -143,3 +143,10 @@ Benchmark tables and comparisons are labeled `source_status: unverified_heuristi
 Their p25/p50/p75 names are legacy band labels, not verified population
 percentiles. Do not present them as evidence of industry performance or use
 them alone to set severity. See [the source review](../../docs/ROADMAP.md).
+
+Read the selected reporting identity with
+`python scripts/ga4_admin.py --property X --reporting-identity --json`
+or MCP `reporting_identity(property_id)`. This alpha read uses the 15-minute
+cache and response scrubber. Older SDKs without the method return
+`status: unsupported`. Report the selected mode as context for user counts;
+there is no identity write or universal recommendation to switch modes.
