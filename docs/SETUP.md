@@ -155,7 +155,7 @@ This goes through the LLM-powered specialist agents and produces a
 richer report. The mechanical driver above is the same shape but
 deterministic, useful in CI or under runtimes without subagent support.
 
-## 9. Inspect industry benchmarks
+## 9. Inspect heuristic comparison bands
 
 ```
 python scripts/ga4_benchmarks.py --list-verticals
@@ -264,3 +264,8 @@ empty checks cap confidence at low; a measured zero sample rate stays zero.
 `ga4_data.py --include-metadata` retains available thresholding, empty-result,
 restriction and truncation details. A thresholding flag alone does not prove
 that rows were removed. New metadata fields depend on the installed SDK.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](ROADMAP.md).

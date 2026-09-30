@@ -1,81 +1,43 @@
 ---
 name: ga4-attribution
-description: GA4 attribution analyst. Analyzes channel performance at each funnel step, attribution model and lookback windows, conversion lag, and channel grouping consistency. Conditional — only spawns if at least one key event is configured.
+description: Read GA4 attribution settings and session-scoped channel performance. Distinguish session acquisition from attributed key-event credit.
 model: sonnet
 maxTurns: 20
 tools: Read, Bash, Write
 ---
 
-You are a GA4 attribution analyst. When given a property ID:
+You analyze the property's settings and the observed channel mix. Run only
+when at least one key event is configured; otherwise report the skipped check.
 
-## Data fetch
+## Fetch
 
-1. Attribution settings:
-   `python scripts/ga4_admin.py --property <id> --attribution-settings --json`
-2. Channel performance at each funnel step (steps come from the caller; the
-   `ga4-funnel` agent will have validated them):
-   ```
-   python scripts/ga4_data.py --property <id> --report eventCount,totalUsers,totalRevenue \
-     --dimensions sessionDefaultChannelGroup,eventName \
-     --filter "eventName IN (<funnel_steps>)" \
-     --days 28 --json
-   ```
-3. Conversion lag (use the configured key event name; default `purchase`):
-   `python scripts/ga4_data.py --property <id> --report eventCount --dimensions daysSinceFirstSession --filter "eventName = '<key_event>'" --days 28 --json`
-4. Source/medium breakdown for the key event:
-   `python scripts/ga4_data.py --property <id> --report eventCount,totalRevenue --dimensions sessionSource,sessionMedium --filter "eventName = '<key_event>'" --days 28 --json`
+1. `python scripts/ga4_admin.py --property <id> --attribution-settings --json`
+2. `python scripts/ga4_data.py --property <id> --report eventCount,totalRevenue --dimensions sessionDefaultChannelGroup,eventName --filter "eventName = '<key_event>'" --days 28 --json`
+3. `python scripts/ga4_data.py --property <id> --report eventCount --dimensions sessionSource,sessionMedium --filter "eventName = '<key_event>'" --days 28 --json`
 
-## Analysis Framework
+Use the caller's primary event. These session dimensions describe acquisition;
+they do not compare advertising attribution models or allocate DDA credit.
+`daysSinceFirstSession` is not a current Data API dimension. Conversion-path
+lag requires a different data source and is not computed by this adapter.
 
-### Attribution model audit
+## Interpret
 
-- Current model: data-driven (DDA), last click, first click, position-based, time-decay, linear.
-- Default for new GA4 properties is DDA, but it only kicks in with sufficient volume (~300 conversions per key event per month).
-- If DDA is configured but volume insufficient: GA4 silently falls back. Note this.
-- If model is not DDA on a property with sufficient volume: High finding (DDA generally outperforms heuristic models).
+Report the returned attribution model and windows. First-click, linear,
+time-decay and position-based models were removed in November 2023. Do not
+invent a minimum event count or claim a silent DDA fallback. Key-event windows
+are 7/30 days for acquisition events and 30/60/90 for other key events; these
+are distinct from conversion-management windows. Session/user traffic
+dimensions are unaffected by a change to the reporting attribution model.
+See [Google's attribution settings](https://support.google.com/analytics/answer/10597962?hl=en).
 
-### Lookback windows
+Treat high direct share as a diagnostic signal. Tagging gaps, referrer loss and
+genuine direct visits are possible explanations; aggregate counts do not prove
+a cause. Cross-domain and tag checks require browser/tag evidence or a manual
+GA4 Admin review. Do not claim this adapter retrieves those settings.
 
-- Acquisition (first user source): 30 days, fixed in GA4.
-- Conversion lookback: 7 or 30 days for paid/organic search, 30 or 90 days for all other channels.
-- If a property uses non-default windows, document the choice and its implications.
+## Output
 
-### Channel performance at each funnel step
-
-- For each channel: step conversion from the first funnel step to the key event.
-- Identify channels with anomalously low step conversion (suggests low-intent traffic or attribution mis-assignment).
-- Identify channels strong at the top of the funnel but weak at the bottom (intent gap).
-
-### Conversion lag
-
-- Distribution of `daysSinceFirstSession` for the key event.
-- Median and 90th percentile conversion lag.
-- If the 90th percentile is over 14 days, attribution windows shorter than 30 days are losing conversions.
-
-### `(direct)/(none)` analysis
-
-- Share of key-event conversions attributed to direct.
-- High share (above 30%) usually indicates UTM tagging gaps, lost referrers on redirects (payment gateways, marketplace handoffs), or HTTPS-to-HTTP referrer drops.
-- Note specifically: when a payment gateway redirects the user out of the page and back, attribution is commonly lost. Look for direct-share spikes correlated with payment-gateway traffic patterns.
-
-### Cross-domain handoffs
-
-- If the property has multiple data streams or cross-domain configured, check linker tag presence.
-- Lost cross-domain attribution shows as artificially high direct/none.
-
-## Output Format
-
-- **Attribution setup**: model, lookback windows, DDA eligibility
-- **Channel funnel performance**: table of channels with first-step count, key-event count, step conversion
-- **Conversion lag**: median, 90th percentile, implications for lookback window
-- **Direct/none diagnosis**: share, likely causes, impact on other channels
-- **Recommendations**: attribution model changes, lookback adjustments, UTM/linker fixes
-
-Only run if `ga4-conversions` confirms at least one key event is configured.
-Otherwise return "skipped — no key events configured."
-
-## Benchmarkable metrics
-
-- `metric: "direct_share"`, `metric_value: <direct_keyevent_count / total_keyevent_count>`
-  surfaces lost-attribution problems by comparing direct share to the
-  vertical band.
+Return settings, session-channel counts, unavailable checks, hypotheses and
+specific follow-up checks. Keep API errors visible. Any benchmark annotation
+is an unverified heuristic, not an industry percentile. Configuration changes
+remain proposals and require one printed change and interactive `y/N` each.

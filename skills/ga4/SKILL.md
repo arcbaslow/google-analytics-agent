@@ -39,7 +39,7 @@ Read commands:
 | `/ga4 attribution <property-id>` | Channel attribution at each funnel step |
 | `/ga4 quality <property-id>` | Data quality and integrity check |
 | `/ga4 property <property-id>` | Property configuration audit |
-| `/ga4 benchmarks [--vertical V]` | Inspect bundled industry benchmark bands |
+| `/ga4 benchmarks [--vertical V]` | Inspect bundled heuristic bands and evidence status |
 
 Write / config commands (need `analytics.edit` scope):
 
@@ -177,7 +177,7 @@ Load on-demand as needed (do NOT load all at startup):
 Default date ranges per analysis type:
 - Funnel, segments, conversions, attribution, property: **28 days** (4 full weeks, controls weekday seasonality)
 - Events (data quality sampling): **7 days**
-- Override with `--days N` on any command
+- Override with `--days N` on date-window commands; configuration reads have no date window.
 
 ## Funnel Definition
 
@@ -190,27 +190,29 @@ view_item -> add_to_cart -> begin_checkout -> add_payment_info -> purchase
 
 The `ga4-events` agent validates that each step in any chosen funnel exists
 and fires correctly. For e-commerce flows, an opt-in `--check-postpayment`
-flag detects events that fire after a payment-gateway redirect-back and
-suggests dropping them from the funnel.
+flag compares aggregate event counts. Treat its result as a hypothesis;
+counts do not establish event order. Review omitted steps explicitly.
 
 ## Currency
 
-Reports use the property's own configured currency by default. The
-`normalize_currency` helper in `ga4_utils.py` converts to a target currency
-when comparing across properties; pass `--base-currency <code>` to set the
-target (default: `USD`).
+Reports use the property's configured currency. There is no `--base-currency`
+CLI flag. `ga4_utils.normalize_currency` is a Python helper with a static
+mid-2025 fallback table; it is not an automatic reporting conversion or a
+current exchange-rate source.
 
 ## Benchmarks
 
 Findings that include a `metric` / `metric_value` pair are auto-enriched
-with industry-benchmark verdicts by `scripts/ga4_benchmarks.py`. The
+with unverified heuristic comparisons by `scripts/ga4_benchmarks.py`. The
 benchmark vertical is read from the property context (`ga4-context`),
 overridable via `--vertical`. Available verticals: ecommerce, saas,
 media, lead_gen, finance, travel, education, nonprofit, other.
 
 ## Markdown output
 
-Audit and custom-report runs default to plain markdown (no emoji). The
+The audit CLI defaults to markdown. Saved custom reports default to JSON;
+request `--format md` explicitly. The standalone report renderer defaults
+to HTML. The
 report includes a Property Context section (from `ga4-context`), the
 data-confidence label, benchmark verdicts inline with findings, and a
 collapsed raw-JSON appendix per agent. Pass `--format html` or
@@ -228,3 +230,8 @@ cache writes do not fail API reads. If disk invalidation fails after an Admin
 write, a warning is emitted and this process bypasses that entry; other
 processes can remain stale until expiry. Concurrent read/write races and
 separation by credential principal remain open work in docs/ROADMAP.md.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](../../docs/ROADMAP.md).

@@ -34,8 +34,9 @@ than intended).
 2. Per-step event counts for sanity:
    `python scripts/ga4_data.py --property <id> --report eventCount --dimensions eventName --filter "eventName IN (<steps>)" --days 28 --json`
 
-3. Daily time series:
-   `python scripts/ga4_data.py --property <id> --funnel-report --steps <steps> --daily --days 28 --json`
+3. Daily event-count time series (not a daily sequential funnel):
+   `python scripts/ga4_data.py --property <id> --report eventCount --dimensions date,eventName --filter "eventName IN (<steps>)" --days 28 --json`
+   The `--daily` option does not affect funnel reports.
 
 ## Analysis Framework
 
@@ -60,9 +61,9 @@ that's where the money is.
 When the caller passes `--check-postpayment` and `add_payment_info` is in
 the funnel:
 
-- If `add_payment_info` count is within 10% of `purchase` count, the event
-  is firing after the payment-gateway redirect-back. Flag and drop step
-  from the funnel until tagging is fixed.
+- Similar `add_payment_info` and `purchase` counts are a hypothesis to
+  investigate, not evidence of ordering. The current helper may remove the
+  step when this opt-in heuristic triggers; disclose the changed step list.
 
 This check is only relevant to e-commerce flows where a payment provider
 redirects the user out of the page; it is off by default.
@@ -97,7 +98,8 @@ When the funnel ends at the property's key event (e.g. `purchase`,
 
 - `metric: "conversion_rate"`, `metric_value: <overall_conversion_rate as 0-1 float>`
 
-Lets the reporter compare against the inferred vertical's CR band. If
+The comparison uses unverified heuristic bands and may have a different
+denominator from this funnel; do not present it as an industry percentile. If
 the leakiest step is upstream of the conversion event, also surface the
 step-level conversion rate as a qualitative finding (no metric/value
 pair — benchmark bands don't exist for per-step CRs).

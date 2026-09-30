@@ -164,3 +164,8 @@ Maintained by [Good Labs](https://goodlabs.kz) — measurement implementation, t
 ## License
 
 [MIT](LICENSE) © Dilshat Rakhimov. This is an independent project; it is not an official product of the platform vendors.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](docs/ROADMAP.md).

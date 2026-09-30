@@ -1,17 +1,10 @@
 """
-Industry benchmark engine.
+Heuristic comparison bands.
 
-Loads a static benchmark table keyed by (vertical, metric) and produces a
-verdict for any observed value. Used by the analysis agents and the
-markdown reporter so findings can carry a calibrated comparison rather
-than free-floating "this looks bad" claims.
-
-The shipped numbers are conservative directional estimates compiled from
-public industry reports (Contentsquare digital experience benchmarks,
-WordStream PPC benchmarks, Unbounce conversion benchmark reports,
-Statista) as of late 2025. Treat them as order-of-magnitude markers; the
-underlying methodology differs across sources, and your own analytics
-property is the better long-term reference once enough history exists.
+The numeric tables have no verified cell-level public provenance. They are
+retained for compatibility, not presented as measured industry percentiles.
+The p25/p50/p75 names and verdicts are legacy labels. Compare with a property's
+own history before making a decision. See docs/ROADMAP.md for the source audit.
 
 CLI:
   python scripts/ga4_benchmarks.py --list-verticals
@@ -25,6 +18,11 @@ import argparse
 import json
 import sys
 from typing import Any
+
+from ga4_utils import scrub_pii, scrub_response
+
+SOURCE_STATUS = "unverified_heuristic"
+SOURCE_NOTE = "Unverified heuristic bands; p25/p50/p75 are legacy labels, not measured population percentiles."
 
 # direction: how to interpret values
 #   "lower_better"  — higher = worse (bounce_rate, direct_share, cart_abandon)
@@ -187,10 +185,14 @@ def normalize_vertical(name: str | None) -> str:
     return VERTICAL_ALIASES.get(n, n if n in _BENCHMARKS else "other")
 
 
-def benchmarks_for(vertical: str) -> dict[str, dict[str, float]]:
-    return _BENCHMARKS[normalize_vertical(vertical)]
+def benchmarks_for(vertical: str) -> dict[str, dict[str, Any]]:
+    return {
+        metric: {**bands, "source_status": SOURCE_STATUS, "source_note": SOURCE_NOTE}
+        for metric, bands in _BENCHMARKS[normalize_vertical(vertical)].items()
+    }
 
 
+@scrub_response
 def compare(metric: str, value: float, vertical: str | None = None) -> dict[str, Any]:
     """Compare a single observed value against the benchmark band for the
     chosen vertical. Returns a structured verdict with band + interpretation.
@@ -221,6 +223,8 @@ def compare(metric: str, value: float, vertical: str | None = None) -> dict[str,
         "metric": metric,
         "value": value,
         "value_normalized": normalized,
+        "source_status": SOURCE_STATUS,
+        "source_note": SOURCE_NOTE,
         "vertical": v,
         "direction": direction,
         "p25": bench["p25"],
@@ -314,7 +318,7 @@ def main():
         try:
             value = float(raw)
         except ValueError:
-            print(json.dumps({"error": f"value not numeric: {raw!r}"}), file=sys.stderr)
+            print(json.dumps({"error": scrub_pii(f"value not numeric: {raw!r}")}), file=sys.stderr)
             return 1
         print(json.dumps(compare(metric, value, args.vertical), indent=2, default=str))
         return 0

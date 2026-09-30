@@ -97,7 +97,7 @@ def _auth_guarded(fn: F) -> F:
 
 @mcp.tool()
 def benchmarks(vertical: str = "other") -> dict[str, Any]:
-    """Return the benchmark band table for a vertical."""
+    """Return unverified heuristic bands for a vertical, with provenance labels."""
     v = ga4_benchmarks.normalize_vertical(vertical)
     return {"vertical": v, "bands": ga4_benchmarks.benchmarks_for(v)}
 
