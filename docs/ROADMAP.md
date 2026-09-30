@@ -9,6 +9,30 @@ Effort estimates are engineering days including mocked tests and documentation.
 Risk describes the change, not the severity of the existing defect. Now is the
 implementation scope for this branch; Next and Later require another decision.
 
+## Implementation status
+
+All Now items were completed locally on `roadmap-work`. The entries below
+retain the baseline problem and planned scope so the changes can be reviewed.
+No Next or Later implementation was added. See [verification](VERIFICATION.md)
+for the baseline/final checks, environment and limits of this run.
+
+| Item | Implementation commit |
+| --- | --- |
+| N1: interactive approval for all 15 Admin writers | `b0caabd` |
+| N2: response scrubbing and one filtered saved-report path | `7b3cf94` |
+| N3: cache recovery, empty results, errors and column order | `3e5d4d9` |
+| N3 follow-up: reproduced Windows timestamp skew | `ccb0c61` |
+| N4: real Admin resource contracts and unsupported checks | `15dab92` |
+| N5: redirect validation | `af730fc` |
+| N6: incomplete quality checks and optional metadata | `583f771` |
+| N7: wrapper corrections and benchmark evidence labels | `d36ad80` |
+| N8: read-only reporting identity | `091d723` |
+
+The final cache read accepts up to one second of filesystem clock skew.
+A synthetic Windows probe reproduced negative ages as small as 0.24
+microseconds; deterministic tests cover skew, future timestamps and expiry.
+No live API was involved in that reproduction.
+
 ## Baseline and evidence
 
 Installed `.[dev]` in a fresh venv using Python 3.12.14 on Windows.
@@ -162,7 +186,7 @@ availability and older client libraries need an explicit unsupported result.
 | Read error taxonomy and quota budgets | MCP handles auth but not quota uniformly; aggregate Admin errors can look like successful checks. Add structured auth/permission/quota distinctions, bounded read retries and request budgets. `ga4_mcp.py:71`, `ga4_admin.py:210`, [quotas][data-quotas] | 2–3 days | Medium; do not replay writes or stack retries on top of GAPIC defaults |
 | Cache identity and concurrency | Shared cache is keyed by property/query, not principal or granted role. In-flight reads can refill stale state after invalidation. Context has no TTL. `ga4_utils.py:43`, `ga4_context.py:566` | 2–3 days | Medium; needs namespace and lock/generation design without reading credentials; separate context refresh policy from API TTL |
 | Consent and user-provided-data diagnostics | Admin UPD setting is not evidence of per-event consent. Read settings and explain what requires tag inspection or export evidence. [Consent][consent], [UPD API addition][admin-news], [export privacy fields][bq-schema] | 2–3 days | Medium; no automatic consent changes and no individual-level exports |
-| Key-event limits and scopes | Hardcoded 30 applies without checking service level; auth check only resolves credentials, does not verify granted edit scope. `ga4_admin.py:27`, `ga4_auth.py:153`, `ga4_audit.py:377` | 1–2 days | Medium; verify standard/360 and automatically marked events before changing limit enforcement |
+| Key-event limits and scopes | Hardcoded 30 applies without checking service level; auth check only resolves credentials, does not verify granted edit scope. `ga4_admin.py:27`, `ga4_auth.py:153`, `ga4_audit.py:377`; [configuration limits][configuration-limits] | 1–2 days | Medium; verify standard/360 and automatically marked events before changing limit enforcement |
 | MCP approval bound to a proposal | Preserve useful writes without trusting a caller's boolean. Need a human approval channel bound to exact operation, target and payload; refusal/timeout/replay tests | 3–5 days | High; changes transport contract. Until then use interactive CLI, one write at a time (N1) |
 | Production coverage and contract tests | Exclude tests from the coverage denominator with a justified new floor; use real proto messages and client specs for all adapters. Baseline is 91.68% production vs 95.41% CI | 1–2 days | Low; avoid silently moving CI's floor or claiming coverage proves live API behavior |
 
@@ -212,8 +236,9 @@ needed; a successful current install does not verify all allowed versions.
 Data changes: April 23, 2026 added alpha advertising conversion reporting;
 September 14 added truncation reasons and alpha conversational `properties.chat`
 with a separate scope. Existing `runReport`/funnel methods remain documented.
-Deprecated `conversions`/`isConversionEvent` names survive in an agent example;
-use `keyEvents`/`isKeyEvent`. [Data API changelog][data-news].
+Deprecated `conversions`/`isConversionEvent` names survived in a baseline agent
+example; N7 replaces them with `keyEvents`/`isKeyEvent`.
+[Data API changelog][data-news].
 
 Admin changes: April 14, 2026 added UPD reads; June 18 added reporting-identity
 updates and `PropertySummary.can_edit`. Identity reads arrived August 2025,
@@ -245,6 +270,10 @@ Past-year product changes relevant to the proposals:
   Existing instructions must not describe one legacy lookback policy as
   universal. API support and property eligibility require separate checks.
   [2026 releases][product-news].
+- Current key-event attribution windows differ from conversion-management
+  windows, and reporting-model changes do not affect session/user-scoped
+  traffic dimensions. N7 removes unsupported lag and DDA-volume claims.
+  [Attribution settings][attribution-help].
 - Reporting identity is User-ID/device ID/modeling, not the old Google Signals
   identity description in `agents/ga4-property.md`. Consent mode is not proved
   by a homepage fetch. [Identity][identity-help], [consent documentation][consent].
@@ -255,7 +284,7 @@ Past-year product changes relevant to the proposals:
 ## Benchmark provenance
 
 No reproducible source was found for the exact p25/p50/p75 cells in
-`ga4_benchmarks.py`. The code supplies publisher names but no URL, cohort,
+`ga4_benchmarks.py`. The baseline supplied publisher names but no URL, cohort,
 sample size, date, calculation or metric mapping per cell. The `other` table
 is described as an average without a derivation. This is an evidence gap,
 not proof that every value is false.
@@ -307,6 +336,10 @@ evidence that their outputs are accurate.
   redirect checks; full address pinning is a larger transport change.
 - Live scopes, roles, quotas, propagation delays, API eligibility, property
   custom-field compatibility and end-to-end writes remain unverified by design.
+- New cache writes are scrubbed and old entries are scrubbed when returned.
+  Existing on-disk caches were not inspected or migrated; TTL expiry is not a
+  disk-retention/deletion policy. A future cleanup policy should handle legacy
+  entries without scanning credentials or removing unrelated files.
 
 [admin-ref]: https://developers.google.com/analytics/devguides/config/admin/v1/rest
 [retention]: https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/properties/getDataRetentionSettings
@@ -335,3 +368,5 @@ evidence that their outputs are accurate.
 [google-mcp]: https://github.com/googleanalytics/google-analytics-mcp/blob/main/README.md
 [community-mcp]: https://github.com/surendranb/google-analytics-mcp
 [analytics-r]: https://github.com/MarkEdmondson1234/googleAnalyticsR
+[attribution-help]: https://support.google.com/analytics/answer/10597962?hl=en
+[configuration-limits]: https://support.google.com/analytics/answer/12229528?hl=en
