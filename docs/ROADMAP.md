@@ -15,9 +15,10 @@ design and semantic questions retain their stated decision requirements.
 
 All Now items were completed locally on `roadmap-work`. The entries below
 retain the baseline problem and planned scope so the changes can be reviewed.
-The first Next item is now implemented: supported Admin calls use explicit
+The first two Next items are now implemented: supported Admin calls use explicit
 beta clients and matching message types, with a minimum/current dependency
-matrix in CI. Later items remain proposals. See [verification](VERIFICATION.md)
+matrix in CI, and explicit CLI/MCP reads expose report metadata and Core
+compatibility. Later items remain proposals. See [verification](VERIFICATION.md)
 for the baseline/final checks, environment and limits of each run.
 
 | Item | Implementation commit |
@@ -31,6 +32,7 @@ for the baseline/final checks, environment and limits of each run.
 | N6: incomplete quality checks and optional metadata | `583f771` |
 | N7: wrapper corrections and benchmark evidence labels | `d36ad80` |
 | N8: read-only reporting identity | `091d723` |
+| Next: verified Google clients and explicit API surfaces | `74a3335` |
 
 The final cache read accepts up to one second of filesystem clock skew.
 A synthetic Windows probe reproduced negative ages as small as 0.24
@@ -183,7 +185,7 @@ availability and older client libraries need an explicit unsupported result.
 | Item | Operator value and evidence | Effort | Risk and reason deferred |
 | --- | --- | --- | --- |
 | Completed: verify minimum supported Google clients and use explicit beta clients | Reproduced missing EventEditRule/KeyEvent in Admin 0.22.0 and undecodable sampling metadata in Data 0.18.0. Require Admin 0.23.0 and Data 0.18.16; use explicit beta clients/types for supported calls. [Data library history][data-library], [Admin library history][admin-library], `pyproject.toml`, `constraints/minimum-google.txt` | 2 days | Medium; CI now covers minimum/current clients across Python 3.10–3.13. Local checks use Windows/Python 3.12 only. Identity remains optional below Admin 0.25.0 |
-| Metadata discovery and compatibility preflight | Avoid quota-consuming invalid field combinations, including custom fields. [getMetadata][metadata], [checkCompatibility][compatibility]; absent from `ga4_data.py` | 1–2 days | Low; add explicit reads, not a hidden request before every cached query |
+| Completed: metadata discovery and compatibility preflight | Explicit CLI/MCP reads expose available fields and Core compatibility. [getMetadata][metadata], [checkCompatibility][compatibility], `ga4_data.py`, [usage](REPORT_FIELDS.md) | 1–2 days | Low; metadata uses the scrubbed 15-minute cache and invalidates after custom-definition/key-event writes; compatibility is uncached. No automatic extra report request. Live custom-field availability remains unverified |
 | Bounded pagination and saved-report schema | `run_report` issues one request; reports beyond the default limit are incomplete. Saved `dimension_filter`, `metric_filter`, `order_bys`, `limit`, `default_format` are stored but ignored (`ga4_data.py:127`, `ga4_definitions.py:166`). [runReport][run-report] | 2–4 days | Medium; agree on row/token limits, truncation semantics and supported definition contract first |
 | Correct metric meaning in parameter and cohort audits | Positive aggregate revenue is not 100% parameter coverage (`ga4_events.py:94`); `keyEvents / sessions` is event frequency, not session key-event rate (`ga4_audit.py:578`). [Schema][schema] defines `sessionKeyEventRate` | 2 days | Medium; intended metric and compatibility with current findings need a decision; leave calculations alone this run |
 | Funnel result contract and missing-step policy | `_compute_rates` assumes exact step names and derives breakdown from any non-count column (`ga4_funnel.py:133`, `:218`). Missing steps are removed, changing the question. Compare real proto fixtures with [funnel response][funnel-api] | 2 days | Medium; numbered names/RESERVED_TOTAL aggregation and desired missing-step behavior need explicit fixtures and policy |

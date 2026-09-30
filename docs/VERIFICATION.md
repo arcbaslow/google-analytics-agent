@@ -1,5 +1,42 @@
 # Verification
 
+## Next: report field discovery — 2026-09-30
+
+Continued after `74a3335`, which completed the Google client compatibility
+item. Added explicit beta `getMetadata` and `checkCompatibility` adapters,
+CLI actions and MCP tools. The API contracts and limitations are documented
+with official sources in [REPORT_FIELDS.md](REPORT_FIELDS.md).
+
+The 31 new mocked tests use real request/response messages. They cover
+field names/types, empty lists, privacy in output and disk cache, property
+isolation, cache bypass, filter precedence, CLI dispatch and action conflicts,
+scrubbed quota/API errors, and the absence of automatic preflight calls.
+All six custom-definition/key-event writes are checked for metadata-cache
+invalidation after success and preservation after failure or refusal. Each
+write still prompts once; no live API or real credentials were used.
+
+| Check | Minimum Data/Admin | Current Data/Admin |
+| --- | --- | --- |
+| Versions | 0.18.16 / 0.23.0 | 0.23.2 / 0.30.1 |
+| `pip check` | Pass | Pass |
+| Ruff lint and format | Pass, 44 files | Pass, 44 files |
+| Mypy | Pass, 13 source files | Pass, 13 source files |
+| Mocked pytest with CI coverage floor | 526 passed, 4 skipped | 529 passed, 1 skipped |
+| Coverage | 95.86% | 96.25% |
+
+The starting current-client baseline for this continuation was 495 passed
+and 96.07%. Skips and local environment limits are as described below. The
+coverage floor remains 93%, and the denominator still includes tests.
+All checks passed before each local implementation commit. No push or release.
+
+Unbuilt Next items retain their roadmap rationale: pagination and saved-report
+limits need a contract; metric/funnel semantics need decisions; quota/retry,
+cache identity and MCP approval work need broader designs. Consent diagnostics,
+key-event limit verification and coverage policy remain queued. No Later
+features were added. Live field availability, compatibility, permissions and
+propagation remain deliberately unverified; local tests ran only on Python
+3.12.14/Windows, with the external no-network/no-credential-file guard.
+
 ## Next: Google client compatibility — 2026-09-30
 
 Continued on `roadmap-work` at the owner's request to work through the roadmap.

@@ -36,6 +36,16 @@ return one API page; inspect `row_count` and `rows_returned` before using totals
 
 ## Commands
 
+Before selecting unfamiliar or custom fields, use
+`python scripts/ga4_data.py --property 123 --metadata --json`.
+An explicit preflight is
+`python scripts/ga4_data.py --property 123 --check-compatibility --metrics sessions --dimensions date --json`.
+These reads also have MCP tools `report_metadata` and `check_compatibility`.
+Compatibility checks Core fields only and may reject incompatible selections;
+they are not run automatically when executing saved reports. Metadata is
+cached for 15 minutes; compatibility is uncached. Both scrub responses.
+See [report fields](../../docs/REPORT_FIELDS.md) for filters and limits.
+
 | Intent | Command |
 |--------|---------|
 | Save | `python scripts/ga4_definitions.py --save-report channel-by-week definition.json` |

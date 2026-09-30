@@ -480,6 +480,7 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
         parent=f"properties/{property_id}", custom_dimension=dim
     )
     cache_invalidate("custom_defs", property_id)
+    cache_invalidate("report_metadata", property_id)
     return _proto_to_dict(created)
 
 
@@ -489,6 +490,7 @@ def archive_custom_dimension(name):
     client = _get_admin_client(write=True)
     client.archive_custom_dimension(name=name)
     _invalidate_for_name("custom_defs", name)
+    _invalidate_for_name("report_metadata", name)
     return {"status": "archived", "name": name}
 
 
@@ -510,6 +512,7 @@ def create_custom_metric(
     )
     created = client.create_custom_metric(parent=f"properties/{property_id}", custom_metric=metric)
     cache_invalidate("custom_defs", property_id)
+    cache_invalidate("report_metadata", property_id)
     return _proto_to_dict(created)
 
 
@@ -519,6 +522,7 @@ def archive_custom_metric(name):
     client = _get_admin_client(write=True)
     client.archive_custom_metric(name=name)
     _invalidate_for_name("custom_defs", name)
+    _invalidate_for_name("report_metadata", name)
     return {"status": "archived", "name": name}
 
 
@@ -546,6 +550,7 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     )
     created = client.create_key_event(parent=f"properties/{property_id}", key_event=ke)
     cache_invalidate("key_events", property_id)
+    cache_invalidate("report_metadata", property_id)
     return _proto_to_dict(created)
 
 
@@ -555,6 +560,7 @@ def delete_key_event(name):
     client = _get_admin_client(write=True)
     client.delete_key_event(name=name)
     _invalidate_for_name("key_events", name)
+    _invalidate_for_name("report_metadata", name)
     return {"status": "deleted", "name": name}
 
 

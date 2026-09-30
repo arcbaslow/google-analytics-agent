@@ -251,3 +251,12 @@ Supported Admin calls use explicit beta clients and matching message types;
 alpha-only methods keep explicit alpha imports. Reporting identity needs
 Admin 0.25.0+ and otherwise returns `status: unsupported`. CI tests minimum
 and current Data/Admin clients; newer optional response fields remain optional.
+
+Discover report fields with `ga4_data.py --property X --metadata --json` or
+MCP `report_metadata(property_id)`. For an explicit Core report preflight,
+use `ga4_data.py --property X --check-compatibility --metrics sessions --dimensions date --json`
+or MCP `check_compatibility(property_id, metrics, dimensions)`.
+Compatibility is uncached and does not validate funnels or realtime. Metadata
+uses the 15-minute cache; successful custom-definition and key-event writes
+invalidate it. Both reads scrub responses. No report triggers these reads
+automatically. See docs/REPORT_FIELDS.md for filters and limits.
