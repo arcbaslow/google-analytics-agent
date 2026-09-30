@@ -342,7 +342,7 @@ def main():
                 use_cache=use_cache,
             )
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
 
     print(json.dumps(result, indent=2, default=str))

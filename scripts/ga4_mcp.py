@@ -21,6 +21,7 @@ import ga4_data
 import ga4_definitions
 import ga4_events
 import ga4_funnel
+from ga4_utils import scrub_pii
 from mcp.server.fastmcp import FastMCP
 
 
@@ -77,11 +78,11 @@ def _auth_guarded(fn: F) -> F:
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
-            return fn(*args, **kwargs)
+            return scrub_pii(fn(*args, **kwargs))
         except ga4_admin.ConfirmationRequiredError as e:
-            return {"error": "confirmation_required", "applied": False, "hint": str(e)}
+            return {"error": "confirmation_required", "applied": False, "hint": scrub_pii(str(e))}
         except ga4_auth.AuthRequiredError as e:
-            return {"error": "auth_required", "hint": e.hint}
+            return {"error": "auth_required", "hint": scrub_pii(e.hint)}
         except Exception as e:
             if _is_reauth_error(e):
                 return {
@@ -89,7 +90,7 @@ def _auth_guarded(fn: F) -> F:
                     "hint": "Credentials are expired or require reauthentication. Run:\n  "
                     + ga4_auth.adc_command(write=False),
                 }
-            raise
+            raise RuntimeError(f"{type(e).__name__}: {scrub_pii(str(e))}") from None
 
     return cast(F, wrapper)
 

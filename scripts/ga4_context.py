@@ -37,6 +37,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from ga4_utils import scrub_pii, scrub_response
+
 CONTEXT_DIR = Path.home() / ".claude" / "ga4-context"
 FETCH_TIMEOUT_SECONDS = 12
 USER_AGENT = "google-analytics-agent/0.3 (+context-extractor)"
@@ -54,7 +56,7 @@ def _ensure_dir():
 def save_context(property_id: str, context: dict[str, Any]) -> Path:
     _ensure_dir()
     path = CONTEXT_DIR / f"{property_id}.json"
-    path.write_text(json.dumps(context, indent=2, default=str), encoding="utf-8")
+    path.write_text(json.dumps(scrub_pii(context), indent=2, default=str), encoding="utf-8")
     return path
 
 
@@ -62,7 +64,7 @@ def load_context(property_id: str) -> dict[str, Any] | None:
     path = CONTEXT_DIR / f"{property_id}.json"
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    return scrub_pii(json.loads(path.read_text(encoding="utf-8")))
 
 
 def delete_context(property_id: str) -> dict[str, Any]:
@@ -171,7 +173,7 @@ def _fetch(
     try:
         assert_fetchable(url)
     except UnsafeFetchTarget as e:
-        return -1, {}, str(e)
+        return -1, {}, scrub_pii(str(e))
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -420,6 +422,7 @@ def _classify_page_types(urls: list[str]) -> dict[str, int]:
 # ---------- The analyzer ----------
 
 
+@scrub_response
 def analyze_website(url: str) -> dict[str, Any]:
     """Fetch the URL plus robots.txt and sitemap.xml, return a context dict."""
     parsed = urllib.parse.urlparse(url)
@@ -553,6 +556,7 @@ def _make_summary(home, vertical, platform, framework, is_spa) -> str:
 # ---------- High-level orchestration ----------
 
 
+@scrub_response
 def build_property_context(property_id: str, force: bool = False) -> dict[str, Any]:
     """Top-level: read GA4 streams, pick the first web stream's URL,
     analyze the site, and persist a structured context dict."""
@@ -635,10 +639,10 @@ def main():
             parser.print_help()
             return 1
     except Exception as e:
-        print(json.dumps({"error": str(e), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
         return 1
 
-    print(json.dumps(out, indent=2, default=str))
+    print(json.dumps(scrub_pii(out), indent=2, default=str))
     return 0
 
 

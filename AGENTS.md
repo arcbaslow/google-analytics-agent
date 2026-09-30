@@ -188,3 +188,9 @@ and asks `y/N` for that operation. Run it in an interactive terminal; piped
 input, EOF and cancellation refuse the write. There is no bypass flag. MCP
 stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
+
+PII scrubbing also applies to Admin responses, cached data, context, MCP and
+rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
+values are redacted; numeric metrics and GA resource names are retained.
+Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
+anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.

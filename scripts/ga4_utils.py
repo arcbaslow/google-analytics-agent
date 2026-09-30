@@ -4,12 +4,14 @@ Shared utilities: JSON cache (15-min TTL), PII scrubber, currency normalization.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import re
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 
 CACHE_DIR = Path.home() / ".claude" / "ga4-cache"
 CACHE_TTL_SECONDS = 15 * 60
@@ -37,7 +39,26 @@ PII_PARAM_DENY = {
     "passport",
     "tax_id",
     "credit_card",
+    "user_id",
+    "client_id",
+    "user_pseudo_id",
+    "ip_address",
 }
+
+
+def _sensitive_key(key: str) -> bool:
+    name = re.sub(r"[^a-z0-9]", "", key.rsplit(":", 1)[-1].lower())
+    return name in {k.replace("_", "") for k in PII_PARAM_DENY}
+
+
+def scrub_response(fn):
+    """Scrub public JSON-like responses without changing request arguments."""
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        return scrub_pii(fn(*args, **kwargs))
+
+    return wrapper
 
 
 def _cache_key(*parts: Any) -> str:
@@ -54,14 +75,14 @@ def cache_get(*parts: Any) -> dict[str, Any] | None:
     if time.time() - path.stat().st_mtime > CACHE_TTL_SECONDS:
         return None
     with open(path) as f:
-        return json.load(f)
+        return scrub_pii(json.load(f))
 
 
 def cache_set(value: dict[str, Any], *parts: Any) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = CACHE_DIR / f"{_cache_key(*parts)}.json"
     with open(path, "w") as f:
-        json.dump(value, f, default=str)
+        json.dump(scrub_pii(value), f, default=str)
 
 
 def cache_invalidate(*parts: Any) -> None:
@@ -79,19 +100,65 @@ def scrub_pii(data: Any) -> Any:
     """
     if isinstance(data, dict):
         out = {}
+        sensitive_value = any(
+            isinstance(data.get(k), str) and _sensitive_key(data[k])
+            for k in ("field", "field_name", "fieldName", "parameter")
+        )
         for k, v in data.items():
-            if k.lower() in PII_PARAM_DENY:
+            if _sensitive_key(k):
                 continue
-            out[k] = scrub_pii(v)
+            if sensitive_value and k in (
+                "value",
+                "values",
+                "parameter_value",
+                "parameterValue",
+                "string_filter",
+                "stringFilter",
+                "in_list_filter",
+                "inListFilter",
+            ):
+                out[k] = "[redacted]"
+            else:
+                out[scrub_pii(k)] = scrub_pii(v)
         return out
-    if isinstance(data, list):
+    if isinstance(data, (list, tuple)):
         return [scrub_pii(x) for x in data]
     if isinstance(data, str):
         # Skip scrubbing on pure numeric values (GA4 metrics come back as strings like "30620956.912")
         if re.match(r"^-?\d+(\.\d+)?$", data):
             return data
+        # GA resource IDs are structural identifiers, not phone numbers.
+        if re.fullmatch(
+            r"(?:accounts|properties)/\d+(?:/[A-Za-z][A-Za-z0-9]*/\d+)*(?:/[A-Za-z][A-Za-z0-9]*)?",
+            data,
+        ):
+            return data
+        decoded = data
+        for _ in range(3):
+            decoded = unquote(decoded)
+        if EMAIL_RE.search(decoded):
+            data = decoded
+        try:
+            url = urlsplit(data)
+            query = parse_qsl(url.query, keep_blank_values=True)
+            if url.scheme in ("http", "https") and any(_sensitive_key(k) for k, _ in query):
+                data = urlunsplit(
+                    url._replace(
+                        query=urlencode(
+                            [
+                                (k, "[redacted]" if _sensitive_key(k) else scrub_pii(v))
+                                for k, v in query
+                            ]
+                        )
+                    )
+                )
+        except ValueError:
+            pass
         s = EMAIL_RE.sub("[email-redacted]", data)
-        s = PHONE_RE.sub("[phone-redacted]", s)
+        s = PHONE_RE.sub(
+            lambda m: m[0] if re.fullmatch(r"\d{4}-\d{2}-\d{2}", m[0]) else "[phone-redacted]",
+            s,
+        )
         return s
     return data
 
