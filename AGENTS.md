@@ -182,3 +182,9 @@ vertical and appends a band + interpretation phrase to the finding line.
 - Don't generalize the tool's framing toward any single industry — funnel
   analysis here works for e-commerce, lead-gen, SaaS, content, anything
   expressible as an ordered list of GA4 events.
+
+Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
+and asks `y/N` for that operation. Run it in an interactive terminal; piped
+input, EOF and cancellation refuse the write. There is no bypass flag. MCP
+stdio tools provide previews; `confirm=true` returns `confirmation_required`
+without terminal approval. Never chain writes.

@@ -3,7 +3,8 @@
 Reads/analysis return structured JSON unchanged from the underlying modules
 (PII scrubbing and caching are inherited). Admin writes use a dry-run-first
 confirmation contract: confirm=false (default) returns the resolved change
-and makes no API call; confirm=true executes.
+and makes no API call. Writes also require interactive terminal approval;
+confirm=true cannot approve a write over stdio.
 """
 
 from __future__ import annotations
@@ -77,6 +78,8 @@ def _auth_guarded(fn: F) -> F:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return fn(*args, **kwargs)
+        except ga4_admin.ConfirmationRequiredError as e:
+            return {"error": "confirmation_required", "applied": False, "hint": str(e)}
         except ga4_auth.AuthRequiredError as e:
             return {"error": "auth_required", "hint": e.hint}
         except Exception as e:
@@ -192,7 +195,7 @@ def _preview(would_apply: Any) -> dict[str, Any]:
         "preview": True,
         "applied": False,
         "would_apply": would_apply,
-        "note": "Dry run. No API call made. Re-invoke with confirm=true to apply.",
+        "note": "Dry run. No API call made. Apply in an interactive CLI terminal after reviewing its y/N prompt; confirm=true is not terminal approval.",
     }
 
 
@@ -208,7 +211,7 @@ def add_key_event(
     counting_method: str = "ONCE_PER_EVENT",
     confirm: bool = False,
 ) -> dict[str, Any]:
-    """Create a key event (conversion). Dry-run unless confirm=true."""
+    """Create a key event (conversion). Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"event_name": event_name, "counting_method": counting_method})
     return _applied(
@@ -219,7 +222,7 @@ def add_key_event(
 @mcp.tool()
 @_auth_guarded
 def delete_key_event(name: str, confirm: bool = False) -> dict[str, Any]:
-    """Delete a key event by full resource name. Dry-run unless confirm=true."""
+    """Delete a key event by full resource name. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"name": name})
     return _applied(ga4_admin.delete_key_event(name))
@@ -230,7 +233,7 @@ def delete_key_event(name: str, confirm: bool = False) -> dict[str, Any]:
 def create_audience(
     property_id: str, definition: dict[str, Any], confirm: bool = False
 ) -> dict[str, Any]:
-    """Create an audience from a definition dict. Dry-run unless confirm=true."""
+    """Create an audience from a definition dict. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview(definition)
     return _applied(ga4_admin.create_audience(property_id, definition))
@@ -239,7 +242,7 @@ def create_audience(
 @mcp.tool()
 @_auth_guarded
 def archive_audience(audience_name: str, confirm: bool = False) -> dict[str, Any]:
-    """Archive an audience by full resource name. Dry-run unless confirm=true."""
+    """Archive an audience by full resource name. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"audience_name": audience_name})
     return _applied(ga4_admin.archive_audience(audience_name))
@@ -255,7 +258,7 @@ def add_custom_dimension(
     description: str = "",
     confirm: bool = False,
 ) -> dict[str, Any]:
-    """Create a custom dimension. Dry-run unless confirm=true."""
+    """Create a custom dimension. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview(
             {
@@ -283,7 +286,7 @@ def add_custom_metric(
     description: str = "",
     confirm: bool = False,
 ) -> dict[str, Any]:
-    """Create a custom metric. Dry-run unless confirm=true."""
+    """Create a custom metric. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview(
             {
@@ -304,7 +307,7 @@ def add_custom_metric(
 @mcp.tool()
 @_auth_guarded
 def archive_custom_dimension(name: str, confirm: bool = False) -> dict[str, Any]:
-    """Archive a custom dimension by full resource name. Dry-run unless confirm=true."""
+    """Archive a custom dimension by full resource name. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"name": name})
     return _applied(ga4_admin.archive_custom_dimension(name))
@@ -313,7 +316,7 @@ def archive_custom_dimension(name: str, confirm: bool = False) -> dict[str, Any]
 @mcp.tool()
 @_auth_guarded
 def archive_custom_metric(name: str, confirm: bool = False) -> dict[str, Any]:
-    """Archive a custom metric by full resource name. Dry-run unless confirm=true."""
+    """Archive a custom metric by full resource name. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"name": name})
     return _applied(ga4_admin.archive_custom_metric(name))
@@ -324,7 +327,7 @@ def archive_custom_metric(name: str, confirm: bool = False) -> dict[str, Any]:
 def add_event_edit_rule(
     property_id: str, stream_id: str, definition: dict[str, Any], confirm: bool = False
 ) -> dict[str, Any]:
-    """Create an event edit rule on a data stream. Dry-run unless confirm=true."""
+    """Create an event edit rule on a data stream. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"stream_id": stream_id, "definition": definition})
     return _applied(ga4_admin.create_event_edit_rule(property_id, stream_id, definition))
@@ -335,7 +338,7 @@ def add_event_edit_rule(
 def add_event_create_rule(
     property_id: str, stream_id: str, definition: dict[str, Any], confirm: bool = False
 ) -> dict[str, Any]:
-    """Create an event create rule on a data stream. Dry-run unless confirm=true."""
+    """Create an event create rule on a data stream. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"stream_id": stream_id, "definition": definition})
     return _applied(ga4_admin.create_event_create_rule(property_id, stream_id, definition))
@@ -344,7 +347,7 @@ def add_event_create_rule(
 @mcp.tool()
 @_auth_guarded
 def delete_event_edit_rule(rule_name: str, confirm: bool = False) -> dict[str, Any]:
-    """Delete an event edit rule by full resource name. Dry-run unless confirm=true."""
+    """Delete an event edit rule by full resource name. Preview by default; execution also requires interactive y/N approval."""
     if not confirm:
         return _preview({"rule_name": rule_name})
     return _applied(ga4_admin.delete_event_edit_rule(rule_name))

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Require an interactive `y/N` after a printed proposal for every Admin write, including direct Python calls. Refuse piped input and ambiguous CLI actions. MCP previews remain available, but `confirm=true` cannot replace terminal approval.
+
 ## [0.5.3] - 2026-09-11
 
 ### Fixed

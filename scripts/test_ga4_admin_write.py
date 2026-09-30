@@ -229,3 +229,10 @@ def test_custom_def_writes_refresh_cached_list(monkeypatch, write, expected):
 
     write()
     assert ga4_admin.list_custom_defs("123") == expected
+
+
+@pytest.fixture(autouse=True)
+def approve_each_test_write(monkeypatch):
+    """Existing transport tests explicitly simulate a person accepting each prompt."""
+    monkeypatch.setattr(ga4_admin.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "y")

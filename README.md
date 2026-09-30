@@ -94,7 +94,7 @@ For an MCP client that supports `mcpServers` configuration:
 
 Authenticate on the machine running the server before querying it. `uvx` installs the available registry version; to run the current checkout, install `.[mcp]` and set the client's command to the absolute path of `.venv/bin/ga4-mcp` (or `.venv\Scripts\ga4-mcp.exe` on Windows).
 
-Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return a preview unless `confirm=true` is passed; review that preview before confirming. See [ga4_mcp.py](scripts/ga4_mcp.py) for the registered tools and parameter contracts.
+Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return previews. `confirm=true` cannot supply the terminal approval required for execution; use the interactive CLI for writes. See [ga4_mcp.py](scripts/ga4_mcp.py) for the registered tools and parameter contracts.
 
 ## Everyday commands
 
@@ -111,7 +111,7 @@ The [router](skills/ga4/SKILL.md) provides `/ga4 audit`, `/ga4 funnel`, `/ga4 ev
 
 ### Configuration writes
 
-Admin writes require the appropriate property role and `analytics.edit` scope; print the sign-in command with `python scripts/ga4_auth.py --adc --write`. The agent instructions require a proposal and confirmation. Direct `ga4_admin.py` write flags execute immediately and do **not** have the MCP preview contract. Prefer the MCP workflow when you need an explicit preview step.
+Admin writes require the appropriate property role and `analytics.edit` scope; print the sign-in command with `python scripts/ga4_auth.py --adc --write`. Every `ga4_admin.py` write prints the proposed change and asks `y/N` in an interactive terminal before any API call. Cancellation, EOF and piped input refuse the operation. There is no bypass flag; approve each write separately.
 
 ### Interpreting an audit
 

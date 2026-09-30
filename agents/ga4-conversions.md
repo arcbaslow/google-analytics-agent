@@ -66,3 +66,9 @@ You are a GA4 key events configuration auditor. When given a property ID:
   for the primary key event over the audit window. The reporter places
   this against the vertical's CR band so the recommendation says
   "below p25 for [vertical]" rather than just "low".
+
+Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
+and asks `y/N` for that operation. Run it in an interactive terminal; piped
+input, EOF and cancellation refuse the write. There is no bypass flag. MCP
+stdio tools provide previews; `confirm=true` returns `confirmation_required`
+without terminal approval. Never chain writes.

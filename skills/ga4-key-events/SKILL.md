@@ -47,3 +47,9 @@ when every fire matters. Lead-gen forms and signup events typically use
 - Content / media: `subscribe`, `play_video` past a threshold
 - Avoid making low-signal events like `view_item` a key event unless your
   brand-discovery model genuinely needs it; otherwise it pollutes Ads bidding
+
+Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
+and asks `y/N` for that operation. Run it in an interactive terminal; piped
+input, EOF and cancellation refuse the write. There is no bypass flag. MCP
+stdio tools provide previews; `confirm=true` returns `confirmation_required`
+without terminal approval. Never chain writes.
