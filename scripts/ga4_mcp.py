@@ -391,6 +391,13 @@ def attribution_settings(property_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 @_auth_guarded
+def reporting_identity(property_id: str) -> dict[str, Any]:
+    """Read the selected reporting identity; does not change the property."""
+    return ga4_admin.get_reporting_identity_settings(property_id)
+
+
+@mcp.tool()
+@_auth_guarded
 def list_audiences(property_id: str) -> list[dict[str, Any]]:
     """List the audiences on the property."""
     return ga4_admin.list_audiences(property_id)
