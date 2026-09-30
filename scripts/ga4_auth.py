@@ -261,7 +261,7 @@ def check_auth() -> bool:
 @scrub_response
 def list_properties() -> list[dict[str, Any]]:
     creds = get_credentials(write=False)
-    from google.analytics.admin import AnalyticsAdminServiceClient
+    from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
 
     client = AnalyticsAdminServiceClient(credentials=creds)
     properties = []

@@ -30,6 +30,10 @@ A Python CLI and MCP server for inspecting Google Analytics 4 properties. It com
 
 Requires **Python 3.10+**. For the source CLI:
 
+The package requires Google Data client 0.18.16+ and Admin client 0.23.0+
+(both below 1.0). Reporting identity requires Admin 0.25.0+; older supported
+clients return `status: unsupported` for that read.
+
 ```bash
 git clone https://github.com/arcbaslow/google-analytics-agent.git
 cd google-analytics-agent

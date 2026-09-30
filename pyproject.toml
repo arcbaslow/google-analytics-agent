@@ -17,8 +17,9 @@ dependencies = [
   # whole funnel surface import v1alpha types directly, and those imports are
   # function-local: a major bump that moves or removes v1alpha keeps the package
   # importable and the mocked suite green, then fails on the first live call.
-  "google-analytics-data>=0.18.0,<1",
-  "google-analytics-admin>=0.22.0,<1",
+  # Sampling metadata requires Data 0.18.16; event edit rules require Admin 0.23.0.
+  "google-analytics-data>=0.18.16,<1",
+  "google-analytics-admin>=0.23.0,<1",
   "google-auth>=2.25.0,<3",
   "google-auth-oauthlib>=1.2.0,<2"
 ]

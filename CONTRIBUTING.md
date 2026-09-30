@@ -21,7 +21,18 @@ pytest scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=93
 ```
 
 All must pass. `.github/workflows/tests.yml` is the source of truth. CI runs them on every PR across Python 3.10 / 3.11 /
-3.12 / 3.13.
+3.12 / 3.13, with both the minimum Data/Admin clients and the current resolver
+selection. To reproduce the minimum-client job in a separate environment:
+
+```
+pip install -e ".[dev]" -c constraints/minimum-google.txt
+pip check
+```
+
+Then run the four checks above. The constraints cover Data/Admin only, not
+every transitive dependency. Keep them aligned with the lower bounds in
+`pyproject.toml`. Optional reporting-identity contract tests skip on clients
+without that method; the unsupported-result test still runs.
 
 ## Commit style
 

@@ -282,7 +282,7 @@ def test_list_properties_flattens_account_summaries(monkeypatch):
     client = mock.MagicMock()
     client.list_account_summaries.return_value = [summary]
     monkeypatch.setattr(
-        "google.analytics.admin.AnalyticsAdminServiceClient", lambda credentials=None: client
+        "google.analytics.admin_v1beta.AnalyticsAdminServiceClient", lambda credentials=None: client
     )
 
     props = ga4_auth.list_properties()

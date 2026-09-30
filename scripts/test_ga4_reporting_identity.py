@@ -5,13 +5,19 @@ import ga4_admin
 import ga4_mcp
 import pytest
 from google.analytics.admin_v1alpha import AnalyticsAdminServiceClient
-from google.analytics.admin_v1alpha.types import ReportingIdentitySettings
+from google.analytics.admin_v1alpha import types as alpha_types
+
+identity_available = pytest.mark.skipif(
+    not hasattr(AnalyticsAdminServiceClient, "get_reporting_identity_settings"),
+    reason="Optional reporting identity read requires Admin 0.25.0 or newer",
+)
 
 
 @pytest.mark.parametrize("identity", ["BLENDED", "OBSERVED", "DEVICE_BASED"])
+@identity_available
 def test_reporting_identity_read_is_cached_and_never_writes(monkeypatch, identity):
     client = MagicMock(spec=AnalyticsAdminServiceClient)
-    client.get_reporting_identity_settings.return_value = ReportingIdentitySettings(
+    client.get_reporting_identity_settings.return_value = alpha_types.ReportingIdentitySettings(
         name="properties/123/reportingIdentitySettings",
         reporting_identity=identity,
     )
@@ -42,6 +48,7 @@ def test_reporting_identity_cli_dispatch(monkeypatch, capsys):
     assert "OBSERVED" in capsys.readouterr().out
 
 
+@identity_available
 def test_identity_error_is_not_cached_and_mcp_still_scrubs(monkeypatch):
     client = MagicMock(spec=AnalyticsAdminServiceClient)
     client.get_reporting_identity_settings.side_effect = RuntimeError("person@example.com denied")
@@ -49,8 +56,17 @@ def test_identity_error_is_not_cached_and_mcp_still_scrubs(monkeypatch):
     with pytest.raises(RuntimeError, match="email-redacted"):
         ga4_mcp.reporting_identity("123")
     client.get_reporting_identity_settings.side_effect = None
-    client.get_reporting_identity_settings.return_value = ReportingIdentitySettings(
+    client.get_reporting_identity_settings.return_value = alpha_types.ReportingIdentitySettings(
         reporting_identity="BLENDED"
     )
     assert ga4_mcp.reporting_identity("123")["reporting_identity"] == "BLENDED"
     assert client.get_reporting_identity_settings.call_count == 2
+
+
+def test_installed_client_without_identity_returns_unsupported(monkeypatch):
+    if hasattr(AnalyticsAdminServiceClient, "get_reporting_identity_settings"):
+        pytest.skip("Installed SDK supports reporting identity")
+    client = MagicMock(spec=AnalyticsAdminServiceClient)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda: client)
+    assert ga4_admin.get_reporting_identity_settings("123")["status"] == "unsupported"
+    assert client.method_calls == []
