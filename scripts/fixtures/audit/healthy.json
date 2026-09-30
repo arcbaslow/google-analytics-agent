@@ -105,9 +105,9 @@
   ],
   "attribution_settings": { "reporting_attribution_model": "DATA_DRIVEN" },
   "property_details": {
-    "displayName": "Acme Store",
-    "dataRetentionSettings": { "eventDataRetention": "FOURTEEN_MONTHS" }
+    "displayName": "Acme Store"
   },
+  "data_retention_settings": { "eventDataRetention": "FOURTEEN_MONTHS" },
   "data_streams": [
     { "displayName": "Web", "webStreamData": { "defaultUri": "https://acme.example" } }
   ],

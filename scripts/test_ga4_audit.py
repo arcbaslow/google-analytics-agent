@@ -115,6 +115,11 @@ def test_run_conversions_ok_when_two_key_events(monkeypatch):
 def test_run_property_flags_short_retention(monkeypatch):
     monkeypatch.setattr(
         ga4_audit.ga4_admin,
+        "get_data_retention_settings",
+        lambda pid: {"event_data_retention": "TWO_MONTHS"},
+    )
+    monkeypatch.setattr(
+        ga4_audit.ga4_admin,
         "get_property_details",
         lambda pid: {
             "displayName": "Acme",

@@ -129,3 +129,8 @@ without a benchmark annotation — that's fine for qualitative findings.
 | No funnel events fire | Skip funnel and segments agents, return ga4-property and ga4-quality findings only |
 | Post-payment heuristic positive (opt-in) | Degrade funnel by one step, flag in Critical findings |
 | Agent timeout | Report findings from completed agents, note incomplete sections |
+
+Property retention is read from `getDataRetentionSettings`. Enhanced
+measurement recognizes the API's snake_case web-stream fields. Data filters
+and Search Console links return `status: unsupported`: inspect these in GA4
+Admin, and never interpret an unavailable check as an empty configuration.

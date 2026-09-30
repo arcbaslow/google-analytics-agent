@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Read retention from its own Admin resource and recognize serialized web streams for enhanced measurement. Report data filters and Search Console links as unsupported manual checks instead of calling nonexistent API methods.
+
 - Replace cache files atomically, tolerate unreadable/corrupt entries, reuse empty results, avoid caching API errors and keep report column order in cache keys. Warn and bypass the entry in the current process when disk invalidation fails after a write.
 
 - Scrub Admin, cache, context, rendered report, MCP and CLI error responses. Cover sensitive camelCase/custom-dimension identifiers and encoded email addresses while preserving numeric metrics and GA resource names. Saved-segment reports now use one cached, scrubbed Data API request.

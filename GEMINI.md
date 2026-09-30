@@ -87,3 +87,8 @@ cache writes do not fail API reads. If disk invalidation fails after an Admin
 write, a warning is emitted and this process bypasses that entry; other
 processes can remain stale until expiry. Concurrent read/write races and
 separation by credential principal remain open work in docs/ROADMAP.md.
+
+Property retention is read from `getDataRetentionSettings`. Enhanced
+measurement recognizes the API's snake_case web-stream fields. Data filters
+and Search Console links return `status: unsupported`: inspect these in GA4
+Admin, and never interpret an unavailable check as an empty configuration.

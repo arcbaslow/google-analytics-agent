@@ -64,7 +64,7 @@ def test_empty_admin_results_are_reused(monkeypatch):
 def test_transient_admin_error_does_not_poison_next_read(monkeypatch):
     client = MagicMock()
     client.get_attribution_settings.side_effect = [RuntimeError("quota"), {"ok": True}]
-    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda **_: client)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda **_: client)
     monkeypatch.setattr(ga4_admin, "_proto_to_dict", lambda m: m)
     assert "error" in ga4_admin.get_attribution_settings("123")
     assert ga4_admin.get_attribution_settings("123") == {"ok": True}
