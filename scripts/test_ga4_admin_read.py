@@ -83,18 +83,17 @@ def test_list_key_events_falls_back_to_conversion_events(monkeypatch, tmp_cache_
 def test_get_attribution_settings_wraps_error(monkeypatch, tmp_cache_dir):
     client = mock.MagicMock()
     client.get_attribution_settings.side_effect = RuntimeError("nope")
-    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
 
     out = ga4_admin.get_attribution_settings("123")
     assert out["error"] == "nope"
 
 
-def test_list_data_filters_wraps_error(monkeypatch, tmp_cache_dir):
+def test_data_filters_are_explicitly_unsupported(monkeypatch):
     client = mock.MagicMock()
-    client.list_data_filters.side_effect = RuntimeError("boom")
-    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
-
-    assert ga4_admin.list_data_filters("123") == [{"error": "boom"}]
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", client)
+    assert ga4_admin.list_data_filters("123")[0]["status"] == "unsupported"
+    client.assert_not_called()
 
 
 # ---------- enhanced measurement ----------
@@ -112,7 +111,7 @@ def test_get_enhanced_measurement_attaches_settings_for_web_streams(monkeypatch,
         "_proto_to_dict",
         lambda m: {"webStreamData": {"defaultUri": "https://x"}} if m is web_stream else m,
     )
-    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
 
     out = ga4_admin.get_enhanced_measurement("123")
     assert out[0]["enhanced_measurement"] == {"streamEnabled": True}
@@ -130,7 +129,7 @@ def test_get_enhanced_measurement_records_settings_error(monkeypatch, tmp_cache_
         "_proto_to_dict",
         lambda m: {"webStreamData": {}} if m is web_stream else m,
     )
-    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
 
     out = ga4_admin.get_enhanced_measurement("123")
     assert "enhanced_measurement_error" in out[0]
@@ -141,7 +140,7 @@ def test_get_enhanced_measurement_skips_non_web_streams(monkeypatch, tmp_cache_d
     other_stream = mock.MagicMock()
     client.list_data_streams.return_value = [other_stream]
     monkeypatch.setattr(ga4_admin, "_proto_to_dict", lambda m: {"type_": "IOS_APP_DATA_STREAM"})
-    monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
 
     out = ga4_admin.get_enhanced_measurement("123")
     assert "enhanced_measurement" not in out[0]
@@ -155,10 +154,9 @@ def test_list_platform_links_aggregates_with_per_type_errors(monkeypatch, tmp_ca
     client = mock.MagicMock()
     alpha = mock.MagicMock()
     client.list_google_ads_links.return_value = ["gads"]
-    client.list_search_ads360_links.side_effect = RuntimeError("sa360 fail")
-    client.list_display_video360_advertiser_links.return_value = []
+    alpha.list_search_ads360_links.side_effect = RuntimeError("sa360 fail")
+    alpha.list_display_video360_advertiser_links.return_value = []
     alpha.list_big_query_links.return_value = ["bq"]
-    alpha.list_search_console_links.return_value = []
 
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: alpha)
@@ -168,4 +166,4 @@ def test_list_platform_links_aggregates_with_per_type_errors(monkeypatch, tmp_ca
     assert out["google_ads_links"] == ["gads"]
     assert out["search_ads_360_links"] == [{"error": "sa360 fail"}]
     assert out["bigquery_links"] == ["bq"]
-    assert out["search_console_links"] == []
+    assert out["search_console_links"][0]["status"] == "unsupported"

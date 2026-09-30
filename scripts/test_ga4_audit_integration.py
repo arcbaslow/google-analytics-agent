@@ -75,6 +75,9 @@ def _wire(monkeypatch, scenario):
     monkeypatch.setattr(
         ga4_admin, "get_attribution_settings", lambda pid: scenario["attribution_settings"]
     )
+    monkeypatch.setattr(
+        ga4_admin, "get_data_retention_settings", lambda pid: scenario["data_retention_settings"]
+    )
     monkeypatch.setattr(ga4_admin, "get_property_details", lambda pid: scenario["property_details"])
     monkeypatch.setattr(ga4_admin, "list_data_streams", lambda pid: scenario["data_streams"])
     monkeypatch.setattr(ga4_admin, "list_data_filters", lambda pid: scenario["data_filters"])

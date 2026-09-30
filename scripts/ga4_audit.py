@@ -510,23 +510,33 @@ def run_property(property_id):
     try:
         details = ga4_admin.get_property_details(property_id)
         data["property"] = details
-        retention = details.get("dataRetentionSettings", {}).get(
-            "eventDataRetention"
-        ) or details.get("data_retention_settings", {}).get("event_data_retention")
-        if retention and retention not in {"FOURTEEN_MONTHS", "FIFTY_MONTHS"}:
-            findings.append(
-                {
-                    "severity": "High",
-                    "title": "Data retention shorter than 14 months",
-                    "detail": f"Event-data retention is {retention}. For multi-month cohort analysis set to FOURTEEN_MONTHS in Admin → Data Settings → Data Retention.",
-                }
-            )
     except Exception as e:
         findings.append(
             {
                 "severity": "High",
                 "title": "Could not fetch property details",
                 "detail": scrub_pii(str(e)),
+            }
+        )
+
+    try:
+        settings = ga4_admin.get_data_retention_settings(property_id)
+        data["data_retention_settings"] = settings
+        retention = settings.get("event_data_retention") or settings.get("eventDataRetention")
+        if retention == "TWO_MONTHS":
+            findings.append(
+                {
+                    "severity": "High",
+                    "title": "Data retention shorter than 14 months",
+                    "detail": "Event-data retention is TWO_MONTHS. Review the retention needed for cohort analysis in GA4 Admin.",
+                }
+            )
+    except Exception as e:
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Could not fetch data retention settings",
+                "detail": str(e),
             }
         )
 
@@ -554,6 +564,14 @@ def run_property(property_id):
         filters = ga4_admin.list_data_filters(property_id)
         data["data_filters"] = filters
         for f in filters:
+            if isinstance(f, dict) and f.get("status") == "unsupported":
+                findings.append(
+                    {
+                        "severity": "Low",
+                        "title": "Data filters require manual inspection",
+                        "detail": f["reason"],
+                    }
+                )
             if isinstance(f, dict) and f.get("filterState") == "TEST":
                 findings.append(
                     {

@@ -129,9 +129,9 @@
   ],
   "attribution_settings": { "reporting_attribution_model": "PAID_AND_ORGANIC_CHANNELS_LAST_CLICK" },
   "property_details": {
-    "displayName": "Leaky Shop",
-    "dataRetentionSettings": { "eventDataRetention": "TWO_MONTHS" }
+    "displayName": "Leaky Shop"
   },
+  "data_retention_settings": { "eventDataRetention": "TWO_MONTHS" },
   "data_streams": [
     { "displayName": "Web", "webStreamData": { "defaultUri": "https://leaky.example" } }
   ],

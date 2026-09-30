@@ -167,11 +167,15 @@ def get_enhanced_measurement(property_id):
     cached = cache_get("enhanced_measurement", property_id)
     if cached is not None:
         return cached
-    client = _get_admin_client()
+    client = _get_admin_alpha_client()
     results = []
     for s in client.list_data_streams(parent=f"properties/{property_id}"):
         stream_d = _proto_to_dict(s)
-        if "webStreamData" in stream_d or stream_d.get("type_") == "WEB_DATA_STREAM":
+        if (
+            "web_stream_data" in stream_d
+            or "webStreamData" in stream_d
+            or stream_d.get("type", stream_d.get("type_")) == "WEB_DATA_STREAM"
+        ):
             try:
                 em = client.get_enhanced_measurement_settings(
                     name=f"{s.name}/enhancedMeasurementSettings"
@@ -186,18 +190,14 @@ def get_enhanced_measurement(property_id):
 
 @scrub_response
 def list_data_filters(property_id):
-    cached = cache_get("data_filters", property_id)
-    if cached is not None:
-        return cached
-    client = _get_admin_alpha_client()
-    try:
-        filters = [
-            _proto_to_dict(f) for f in client.list_data_filters(parent=f"properties/{property_id}")
-        ]
-    except Exception as e:
-        filters = [{"error": scrub_pii(str(e))}]
-    cache_set(filters, "data_filters", property_id)
-    return filters
+    """No public Admin API method exists for property data filters."""
+    return [
+        {
+            "status": "unsupported",
+            "property_id": property_id,
+            "reason": "Data filters are not exposed by the public Admin API; inspect them in GA4 Admin.",
+        }
+    ]
 
 
 @scrub_response
@@ -239,7 +239,7 @@ def get_attribution_settings(property_id):
     cached = cache_get("attribution_settings", property_id)
     if cached is not None:
         return cached
-    client = _get_admin_client()
+    client = _get_admin_alpha_client()
     try:
         att = client.get_attribution_settings(name=f"properties/{property_id}/attributionSettings")
         out = _proto_to_dict(att)
@@ -269,19 +269,35 @@ def list_platform_links(property_id):
     )
     _try(
         "search_ads_360_links",
-        lambda: client.list_search_ads360_links(parent=f"properties/{property_id}"),
+        lambda: alpha.list_search_ads360_links(parent=f"properties/{property_id}"),
     )
     _try(
         "display_video_360_advertiser_links",
-        lambda: client.list_display_video360_advertiser_links(parent=f"properties/{property_id}"),
+        lambda: alpha.list_display_video360_advertiser_links(parent=f"properties/{property_id}"),
     )
     _try("bigquery_links", lambda: alpha.list_big_query_links(parent=f"properties/{property_id}"))
-    _try(
-        "search_console_links",
-        lambda: alpha.list_search_console_links(parent=f"properties/{property_id}"),
-    )
+    out["search_console_links"] = [
+        {
+            "status": "unsupported",
+            "reason": "Search Console links are not exposed by the public Admin API; inspect them in GA4 Admin.",
+        }
+    ]
 
     cache_set(out, "platform_links", property_id)
+    return out
+
+
+@scrub_response
+def get_data_retention_settings(property_id):
+    """Retention is a separate resource, not a field on Property."""
+    cached = cache_get("data_retention_settings", property_id)
+    if cached is not None:
+        return cached
+    client = _get_admin_client()
+    out = _proto_to_dict(
+        client.get_data_retention_settings(name=f"properties/{property_id}/dataRetentionSettings")
+    )
+    cache_set(out, "data_retention_settings", property_id)
     return out
 
 
