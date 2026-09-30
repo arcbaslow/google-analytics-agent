@@ -12,13 +12,16 @@ Write surfaces (require analytics.edit scope):
 from __future__ import annotations
 
 import argparse
+import copy
+import functools
+import inspect
 import json
 import re
 import sys
 from pathlib import Path
 
 from ga4_auth import get_credentials
-from ga4_utils import cache_get, cache_invalidate, cache_set
+from ga4_utils import cache_get, cache_invalidate, cache_set, scrub_pii
 
 _PARAM_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 _PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
@@ -26,6 +29,36 @@ _PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
 PARAMETER_NAME_LIMITS = {"EVENT": 40, "USER": 24, "ITEM": 40}
 AUDIENCE_DURATION_MAX_DAYS = 540
 KEY_EVENT_LIMIT = 30
+
+
+class ConfirmationRequiredError(RuntimeError):
+    """No interactive approval was supplied for this one proposed write."""
+
+
+def _confirmed_write(fn):
+    """Gate direct imports as well as the CLI. Never consume MCP's stdin pipe."""
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        bound = inspect.signature(fn).bind(*args, **kwargs)
+        bound.apply_defaults()
+        bound.arguments = copy.deepcopy(bound.arguments)
+        proposal = {"operation": fn.__name__, "arguments": bound.arguments}
+        print(json.dumps(scrub_pii(proposal), indent=2, default=str), file=sys.stderr)
+        print("Apply this change? [y/N]", file=sys.stderr, flush=True)
+        if not sys.stdin.isatty():
+            raise ConfirmationRequiredError(
+                "Use an interactive terminal to review and approve this write."
+            )
+        try:
+            approved = input().strip().lower() == "y"
+        except (EOFError, KeyboardInterrupt):
+            approved = False
+        if not approved:
+            raise ConfirmationRequiredError("Write cancelled; no API call made.")
+        return fn(*bound.args, **bound.kwargs)
+
+    return wrapper
 
 
 def _get_admin_client(write: bool = False):
@@ -255,6 +288,7 @@ def list_event_rules(property_id, stream_id):
     return {"edit_rules": edits, "create_rules": creates}
 
 
+@_confirmed_write
 def create_event_edit_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
 
@@ -265,6 +299,7 @@ def create_event_edit_rule(property_id, stream_id, definition):
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def update_event_edit_rule(rule_name, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
     from google.protobuf.field_mask_pb2 import FieldMask
@@ -276,12 +311,14 @@ def update_event_edit_rule(rule_name, definition):
     return _proto_to_dict(updated)
 
 
+@_confirmed_write
 def delete_event_edit_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_edit_rule(name=rule_name)
     return {"status": "deleted", "name": rule_name}
 
 
+@_confirmed_write
 def reorder_event_edit_rules(property_id, stream_id, ordered_names):
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
@@ -289,6 +326,7 @@ def reorder_event_edit_rules(property_id, stream_id, ordered_names):
     return {"status": "reordered", "count": len(ordered_names)}
 
 
+@_confirmed_write
 def create_event_create_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventCreateRule
 
@@ -299,6 +337,7 @@ def create_event_create_rule(property_id, stream_id, definition):
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def delete_event_create_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_create_rule(name=rule_name)
@@ -320,6 +359,7 @@ def get_audience(audience_name):
     return _proto_to_dict(client.get_audience(name=audience_name))
 
 
+@_confirmed_write
 def create_audience(property_id, definition):
     from google.analytics.admin_v1alpha.types import Audience
 
@@ -331,6 +371,7 @@ def create_audience(property_id, definition):
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def update_audience_metadata(audience_name, display_name=None, description=None):
     """Only display_name and description are mutable post-create. Filter clauses
     cannot be edited — archive and recreate to change them."""
@@ -351,6 +392,7 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
     return _proto_to_dict(updated)
 
 
+@_confirmed_write
 def archive_audience(audience_name):
     client = _get_admin_alpha_client(write=True)
     # archive_audience is not a flattened method; it takes a request object.
@@ -376,6 +418,7 @@ def _validate_parameter_name(parameter_name, scope):
         )
 
 
+@_confirmed_write
 def create_custom_dimension(property_id, parameter_name, display_name, scope, description=""):
     CustomDimension = _admin_type("CustomDimension")
 
@@ -394,6 +437,7 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def archive_custom_dimension(name):
     client = _get_admin_client(write=True)
     client.archive_custom_dimension(name=name)
@@ -401,6 +445,7 @@ def archive_custom_dimension(name):
     return {"status": "archived", "name": name}
 
 
+@_confirmed_write
 def create_custom_metric(
     property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""
 ):
@@ -420,6 +465,7 @@ def create_custom_metric(
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def archive_custom_metric(name):
     client = _get_admin_client(write=True)
     client.archive_custom_metric(name=name)
@@ -430,6 +476,7 @@ def archive_custom_metric(name):
 # ---------- key events (v1beta) ----------
 
 
+@_confirmed_write
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     KeyEvent = _admin_type("KeyEvent")
 
@@ -452,6 +499,7 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     return _proto_to_dict(created)
 
 
+@_confirmed_write
 def delete_key_event(name):
     client = _get_admin_client(write=True)
     client.delete_key_event(name=name)
@@ -467,27 +515,29 @@ def main():
     parser.add_argument("--property")
     parser.add_argument("--stream", help="Data stream ID (for event rule commands)")
 
+    actions = parser.add_mutually_exclusive_group()
+
     # reads
-    parser.add_argument("--details", action="store_true")
-    parser.add_argument("--streams", action="store_true")
-    parser.add_argument("--enhanced-measurement", action="store_true")
-    parser.add_argument("--data-filters", action="store_true")
-    parser.add_argument("--custom-defs", action="store_true")
-    parser.add_argument("--key-events", action="store_true")
-    parser.add_argument("--attribution-settings", action="store_true")
-    parser.add_argument("--links", action="store_true")
-    parser.add_argument("--list-event-rules", action="store_true")
-    parser.add_argument("--list-audiences", action="store_true")
+    actions.add_argument("--details", action="store_true")
+    actions.add_argument("--streams", action="store_true")
+    actions.add_argument("--enhanced-measurement", action="store_true")
+    actions.add_argument("--data-filters", action="store_true")
+    actions.add_argument("--custom-defs", action="store_true")
+    actions.add_argument("--key-events", action="store_true")
+    actions.add_argument("--attribution-settings", action="store_true")
+    actions.add_argument("--links", action="store_true")
+    actions.add_argument("--list-event-rules", action="store_true")
+    actions.add_argument("--list-audiences", action="store_true")
 
     # writes
-    parser.add_argument("--add-edit-rule", metavar="JSON_PATH")
-    parser.add_argument("--add-create-rule", metavar="JSON_PATH")
+    actions.add_argument("--add-edit-rule", metavar="JSON_PATH")
+    actions.add_argument("--add-create-rule", metavar="JSON_PATH")
     parser.add_argument("--rule-name", help="Full resource name for --delete-rule")
-    parser.add_argument("--delete-edit-rule", action="store_true")
-    parser.add_argument("--delete-create-rule", action="store_true")
-    parser.add_argument("--create-audience", metavar="JSON_PATH")
+    actions.add_argument("--delete-edit-rule", action="store_true")
+    actions.add_argument("--delete-create-rule", action="store_true")
+    actions.add_argument("--create-audience", metavar="JSON_PATH")
     parser.add_argument("--audience-name", help="Full resource name for audience ops")
-    parser.add_argument("--archive-audience", action="store_true")
+    actions.add_argument("--archive-audience", action="store_true")
     parser.add_argument(
         "--add-custom-dim",
         action="store_true",
@@ -503,11 +553,11 @@ def main():
     parser.add_argument("--scope", default="EVENT")
     parser.add_argument("--measurement-unit")
     parser.add_argument("--description", default="")
-    parser.add_argument("--archive-custom-dim", metavar="NAME")
-    parser.add_argument("--archive-custom-metric", metavar="NAME")
-    parser.add_argument("--add-key-event", metavar="EVENT_NAME")
+    actions.add_argument("--archive-custom-dim", metavar="NAME")
+    actions.add_argument("--archive-custom-metric", metavar="NAME")
+    actions.add_argument("--add-key-event", metavar="EVENT_NAME")
     parser.add_argument("--counting-method", default="ONCE_PER_EVENT")
-    parser.add_argument("--delete-key-event", metavar="NAME")
+    actions.add_argument("--delete-key-event", metavar="NAME")
 
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()

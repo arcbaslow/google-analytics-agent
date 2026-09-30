@@ -22,6 +22,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import ga4_admin
+import pytest
 from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
 
 # Resolve these off the same surface the production code uses, via
@@ -300,3 +301,10 @@ def test_no_module_level_v1beta_type_imports_in_write_helpers():
             f"{fn.__name__} imports message types from admin_v1beta while the client "
             "comes from google.analytics.admin - this fails against the live API"
         )
+
+
+@pytest.fixture(autouse=True)
+def approve_each_test_write(monkeypatch):
+    """Existing transport tests explicitly simulate a person accepting each prompt."""
+    monkeypatch.setattr(ga4_admin.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda: "y")

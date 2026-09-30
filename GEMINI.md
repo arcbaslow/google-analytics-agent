@@ -68,3 +68,9 @@ python scripts/ga4_auth.py --adc --write    # with analytics.edit scope
 ```
 
 Run the printed command, then `--check` again.
+
+Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
+and asks `y/N` for that operation. Run it in an interactive terminal; piped
+input, EOF and cancellation refuse the write. There is no bypass flag. MCP
+stdio tools provide previews; `confirm=true` returns `confirmation_required`
+without terminal approval. Never chain writes.
