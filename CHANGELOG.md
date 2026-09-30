@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Validate each website redirect before following it, preventing context fetches from following a public URL into a private network or non-HTTP(S) target.
+
 - Read retention from its own Admin resource and recognize serialized web streams for enhanced measurement. Report data filters and Search Console links as unsupported manual checks instead of calling nonexistent API methods.
 
 - Replace cache files atomically, tolerate unreadable/corrupt entries, reuse empty results, avoid caching API errors and keep report column order in cache keys. Warn and bypass the entry in the current process when disk invalidation fails after a write.

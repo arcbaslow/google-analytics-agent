@@ -10,6 +10,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _redirect_context_dir(monkeypatch, tmp_path):
+    monkeypatch.setattr(ga4_context, "_resolves_to_private", lambda host: False)
     monkeypatch.setattr(ga4_context, "CONTEXT_DIR", tmp_path / "ga4-context")
 
 
@@ -292,7 +293,7 @@ def test_fetch_success_decodes_with_charset(monkeypatch):
     resp = _FakeResp(
         200, {"Content-Type": "text/html; charset=utf-8", "Server": "nginx"}, b"<html>hi</html>"
     )
-    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout=None: resp)
+    monkeypatch.setattr("ga4_context._open_url", lambda req, timeout=None: resp)
 
     status, headers, body = ga4_context._fetch("https://example.com")
     assert status == 200
@@ -304,7 +305,7 @@ def test_fetch_http_error_returns_code_and_empty_body(monkeypatch):
     def _raise(req, timeout=None):
         raise urllib.error.HTTPError("https://x", 404, "Not Found", {"X-Test": "y"}, None)
 
-    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    monkeypatch.setattr("ga4_context._open_url", _raise)
     status, _headers, body = ga4_context._fetch("https://x")
     assert status == 404
     assert body == ""
@@ -314,7 +315,7 @@ def test_fetch_url_error_returns_minus_one(monkeypatch):
     def _raise(req, timeout=None):
         raise urllib.error.URLError("boom")
 
-    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    monkeypatch.setattr("ga4_context._open_url", _raise)
     status, _headers, body = ga4_context._fetch("https://x")
     assert status == -1
     assert "fetch_error" in body

@@ -89,3 +89,7 @@ block non-browser user agents will return a 4xx — the skill records
 that gracefully and the context is still useful for downstream agents
 (they just lose the inferred vertical, which the user can override on
 the audit command line).
+
+The context fetcher validates every redirect destination before following it.
+Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
+rebinding between address validation and connection remains an open limitation.

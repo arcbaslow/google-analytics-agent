@@ -254,3 +254,7 @@ Property retention is read from `getDataRetentionSettings`. Enhanced
 measurement recognizes the API's snake_case web-stream fields. Data filters
 and Search Console links return `status: unsupported`: inspect these in GA4
 Admin, and never interpret an unavailable check as an empty configuration.
+
+The context fetcher validates every redirect destination before following it.
+Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
+rebinding between address validation and connection remains an open limitation.

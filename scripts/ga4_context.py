@@ -165,6 +165,17 @@ def assert_fetchable(url: str) -> None:
         )
 
 
+class _PublicRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        assert_fetchable(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_url(req, timeout):
+    # A local opener avoids changing redirect behavior for other modules.
+    return urllib.request.build_opener(_PublicRedirectHandler()).open(req, timeout=timeout)
+
+
 def _fetch(
     url: str, timeout: int = FETCH_TIMEOUT_SECONDS, max_bytes: int = MAX_HTML_BYTES
 ) -> tuple[int, dict[str, str], str]:
@@ -172,11 +183,11 @@ def _fetch(
     returns (-1, {}, error-message) on transport failure."""
     try:
         assert_fetchable(url)
-    except UnsafeFetchTarget as e:
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
+    except (UnsafeFetchTarget, ValueError) as e:
         return -1, {}, scrub_pii(str(e))
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _open_url(req, timeout=timeout) as resp:
             raw = resp.read(max_bytes)
             headers = {k.lower(): v for k, v in resp.headers.items()}
             encoding = "utf-8"
@@ -191,8 +202,8 @@ def _fetch(
             return resp.status, headers, body
     except urllib.error.HTTPError as e:
         return e.code, {k.lower(): v for k, v in (e.headers or {}).items()}, ""
-    except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
-        return -1, {}, f"fetch_error: {e}"
+    except (urllib.error.URLError, OSError, UnsafeFetchTarget, ValueError) as e:
+        return -1, {}, scrub_pii(f"fetch_error: {e}")
 
 
 # ---------- Heuristic analyzers ----------

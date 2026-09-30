@@ -51,3 +51,7 @@ rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
 values are redacted; numeric metrics and GA resource names are retained.
 Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
 anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.
+
+The context fetcher validates every redirect destination before following it.
+Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
+rebinding between address validation and connection remains an open limitation.

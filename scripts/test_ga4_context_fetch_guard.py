@@ -61,7 +61,7 @@ def test_allows_ordinary_public_url(monkeypatch):
 def test_fetch_returns_error_tuple_instead_of_raising(monkeypatch):
     """_fetch promises never to raise; the guard must respect that."""
     called = []
-    monkeypatch.setattr(ga4_context.urllib.request, "urlopen", lambda *a, **k: called.append(1))
+    monkeypatch.setattr(ga4_context, "_open_url", lambda *a, **k: called.append(1))
     status, headers, body = ga4_context._fetch("http://169.254.169.254/latest/meta-data/")
     assert status == -1
     assert headers == {}
@@ -76,8 +76,8 @@ def test_sitemap_from_robots_cannot_reach_metadata(monkeypatch):
     assert parsed["sitemaps"] == ["http://169.254.169.254/latest/meta-data/"]
 
     monkeypatch.setattr(
-        ga4_context.urllib.request,
-        "urlopen",
+        ga4_context,
+        "_open_url",
         lambda *a, **k: pytest.fail("urlopen reached for a link-local address"),
     )
     assert ga4_context._fetch_safely(parsed["sitemaps"][0]) is None
@@ -86,3 +86,16 @@ def test_sitemap_from_robots_cannot_reach_metadata(monkeypatch):
 def test_unresolvable_host_is_not_treated_as_private():
     """A DNS failure should fall through to a normal fetch failure."""
     assert ga4_context._resolves_to_private("no-such-host.invalid") is False
+
+
+@pytest.fixture(autouse=True)
+def synthetic_dns(monkeypatch):
+    """Exercise the address validator without doing real DNS lookups."""
+
+    def resolve(host, port):
+        if host == "no-such-host.invalid":
+            raise ga4_context.socket.gaierror("not found")
+        address = "127.0.0.1" if host == "localhost" else host
+        return [(0, 0, 0, "", (address, 0))]
+
+    monkeypatch.setattr(ga4_context.socket, "getaddrinfo", resolve)

@@ -77,3 +77,7 @@ paragraph:
 Findings are optional — surface them only when the site analysis flags a
 concrete tagging or instrumentation risk. Do not invent findings to fill
 the section.
+
+The context fetcher validates every redirect destination before following it.
+Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
+rebinding between address validation and connection remains an open limitation.
