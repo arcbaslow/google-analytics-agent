@@ -83,7 +83,8 @@ def _safe_float(v, default=0.0):
 
 def run_quality(property_id, days=28):
     findings = []
-    data = {}
+    data = {"sampling_pct": None, "not_set_share": None, "direct_share": None}
+    incomplete = []
     summary_bits = []
 
     sampling_pct = 0.0
@@ -100,12 +101,34 @@ def run_quality(property_id, days=28):
         )
         meta = sessions_report.get("metadata", {})
         sm = (meta.get("sampling") or [{}])[0]
-        sampling_pct = 1.0 - (sm.get("sample_rate") or 1.0) if sm else 0.0
+        if not meta:
+            incomplete.append("sampling_metadata")
+        rate = sm.get("sample_rate", 1.0)
+        sampling_pct = 1.0 - rate if rate is not None else 0.0
+        if rate is None:
+            incomplete.append("sampling_metadata")
+        data["response_metadata"] = meta
+        if (
+            meta.get("data_loss_from_other_row")
+            or meta.get("data_truncation_reasons")
+            or meta.get("empty_reason")
+            or meta.get("schema_restriction_response")
+        ):
+            incomplete.append("report_completeness")
+        if meta.get("subject_to_thresholding"):
+            findings.append(
+                {
+                    "severity": "Low",
+                    "title": "Report is subject to thresholding",
+                    "detail": "This flag indicates thresholds apply; it does not prove rows were removed.",
+                }
+            )
         sampling_pct = max(0.0, sampling_pct)
         data["sampling_pct"] = sampling_pct
         data["currency_code"] = meta.get("currency_code")
         data["time_zone"] = meta.get("time_zone")
     except Exception as e:
+        incomplete.append("sampling")
         findings.append(
             {
                 "severity": "High",
@@ -138,7 +161,10 @@ def run_quality(property_id, days=28):
             data["sessions_total"] = total
             data["direct_share"] = direct_share
             data["not_set_share"] = not_set_share
+        else:
+            incomplete.append("session_source_empty")
     except Exception as e:
+        incomplete.append("session_source")
         findings.append(
             {
                 "severity": "Medium",
@@ -151,7 +177,7 @@ def run_quality(property_id, days=28):
         findings.append(
             {
                 "severity": "High",
-                "title": "Sampling rate above 10% on 28-day session report",
+                "title": f"Sampling rate above 10% on {days}-day session report",
                 "detail": "Long-window queries are being sampled. Findings on this window are directional only.",
                 "metric": "sampling_pct",
                 "metric_value": round(sampling_pct, 4),
@@ -161,7 +187,7 @@ def run_quality(property_id, days=28):
         findings.append(
             {
                 "severity": "Medium",
-                "title": "Visible sampling on 28-day session report",
+                "title": f"Visible sampling on {days}-day session report",
                 "detail": f"Sampling rate {sampling_pct:.1%}. Verify high-stakes findings on a shorter window.",
                 "metric": "sampling_pct",
                 "metric_value": round(sampling_pct, 4),
@@ -193,6 +219,18 @@ def run_quality(property_id, days=28):
         )
 
     confidence = ga4_utils.format_confidence(sampling_pct * 100, not_set_share * 100)
+    if incomplete:
+        if confidence != "very_low":
+            confidence = "low"
+        findings.append(
+            {
+                "severity": "Medium",
+                "title": "Quality checks are incomplete",
+                "detail": "Unavailable checks: " + ", ".join(incomplete),
+            }
+        )
+    data["checks_complete"] = not incomplete
+    data["incomplete_checks"] = incomplete
     data["confidence_label"] = confidence
     summary_bits.append(f"data confidence {confidence}")
     if direct_share:

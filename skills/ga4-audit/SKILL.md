@@ -134,3 +134,9 @@ Property retention is read from `getDataRetentionSettings`. Enhanced
 measurement recognizes the API's snake_case web-stream fields. Data filters
 and Search Console links return `status: unsupported`: inspect these in GA4
 Admin, and never interpret an unavailable check as an empty configuration.
+
+Quality output includes `checks_complete` and `incomplete_checks`. Failed or
+empty checks cap confidence at low; a measured zero sample rate stays zero.
+`ga4_data.py --include-metadata` retains available thresholding, empty-result,
+restriction and truncation details. A thresholding flag alone does not prove
+that rows were removed. New metadata fields depend on the installed SDK.

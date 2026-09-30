@@ -258,3 +258,9 @@ Admin, and never interpret an unavailable check as an empty configuration.
 The context fetcher validates every redirect destination before following it.
 Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
 rebinding between address validation and connection remains an open limitation.
+
+Quality output includes `checks_complete` and `incomplete_checks`. Failed or
+empty checks cap confidence at low; a measured zero sample rate stays zero.
+`ga4_data.py --include-metadata` retains available thresholding, empty-result,
+restriction and truncation details. A thresholding flag alone does not prove
+that rows were removed. New metadata fields depend on the installed SDK.
