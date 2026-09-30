@@ -45,3 +45,6 @@ Separate verified configuration, errors and manual checks. Explain relevance
 to the property's goals before assigning severity. A missing product link is
 not automatically a defect. Return the fetched evidence with each finding.
 The query cache lasts 15 minutes; partial error results are not cached.
+
+Cache freshness tolerates up to one second of filesystem clock skew; larger
+future timestamps and entries aged 15 minutes or more are misses.
