@@ -14,7 +14,7 @@ import sys
 from datetime import date, timedelta
 
 from ga4_auth import get_credentials
-from ga4_utils import cache_get, cache_set, scrub_pii
+from ga4_utils import cache_get, cache_set, scrub_pii, scrub_response
 
 _FILTER_RE = re.compile(
     r"^\s*(?P<dim>\w+)\s+(?P<op>=|!=|IN|CONTAINS|BEGINS_WITH)\s+(?P<val>.+?)\s*$",
@@ -122,6 +122,57 @@ def build_dimension_filter(filter_dict):
 
     pb = ParseDict(filter_dict, FilterExpression.pb(FilterExpression()), ignore_unknown_fields=True)
     return FilterExpression.wrap(pb)
+
+
+def _schema_response(response, list_fields):
+    from google.protobuf.json_format import MessageToDict
+
+    out = MessageToDict(response._pb, preserving_proto_field_name=True)
+    for field in list_fields:
+        out.setdefault(field, [])
+    return scrub_pii(out)
+
+
+@scrub_response
+def get_metadata(property_id, use_cache=True):
+    """Discover standard and property-specific fields; property 0 is standard-only."""
+    from google.analytics.data_v1beta.types import GetMetadataRequest
+
+    cache_args = ("report_metadata", property_id)
+    if use_cache:
+        cached = cache_get(*cache_args)
+        if cached is not None:
+            return cached
+    response = _get_data_client().get_metadata(
+        GetMetadataRequest(name=f"properties/{property_id}/metadata")
+    )
+    out = _schema_response(response, ("dimensions", "metrics"))
+    if use_cache:
+        cache_set(out, *cache_args)
+    return out
+
+
+@scrub_response
+def check_compatibility(property_id, metrics, dimensions, filter_expr=None, filter_dict=None):
+    """Explicit, uncached Core compatibility read; no report or automatic preflight.
+
+    Returns candidate field compatibility from the API. Incompatible selected
+    fields may raise an API error. Uses the same dimension-filter precedence
+    as run_report; metric filters are not supported by either adapter.
+    """
+    from google.analytics.data_v1beta.types import CheckCompatibilityRequest, Dimension, Metric
+
+    kwargs = {
+        "property": f"properties/{property_id}",
+        "metrics": [Metric(name=name) for name in metrics],
+        "dimensions": [Dimension(name=name) for name in dimensions],
+    }
+    if filter_dict:
+        kwargs["dimension_filter"] = build_dimension_filter(filter_dict)
+    elif filter_expr:
+        kwargs["dimension_filter"] = _build_filter_expression(parse_filter(filter_expr))
+    response = _get_data_client().check_compatibility(CheckCompatibilityRequest(**kwargs))
+    return _schema_response(response, ("dimension_compatibilities", "metric_compatibilities"))
 
 
 def run_report(
@@ -314,8 +365,14 @@ def _serialize_funnel_report(response, steps):
 def main():
     parser = argparse.ArgumentParser(description="GA4 Data API wrapper")
     parser.add_argument("--property", required=True)
-    parser.add_argument("--report", help="Comma-separated metric names")
-    parser.add_argument("--funnel-report", action="store_true")
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument("--report", help="Comma-separated metric names")
+    actions.add_argument("--funnel-report", action="store_true")
+    actions.add_argument("--metadata", action="store_true", help="Discover available report fields")
+    actions.add_argument(
+        "--check-compatibility", action="store_true", help="Check Core report fields"
+    )
+    parser.add_argument("--metrics", help="Comma-separated metrics for --check-compatibility")
     parser.add_argument("--steps", help="Comma-separated event names for funnel")
     parser.add_argument("--breakdown", help="Optional funnel breakdown dimension")
     parser.add_argument("--dimensions", help="Comma-separated dimension names")
@@ -326,10 +383,21 @@ def main():
     parser.add_argument("--no-cache", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    if args.metrics is not None and not args.check_compatibility:
+        parser.error("--metrics requires --check-compatibility; use --report METRICS for a report")
 
     use_cache = not args.no_cache
     try:
-        if args.funnel_report:
+        if args.metadata:
+            result = get_metadata(args.property, use_cache=use_cache)
+        elif args.check_compatibility:
+            result = check_compatibility(
+                args.property,
+                metrics=[m.strip() for m in (args.metrics or "").split(",") if m.strip()],
+                dimensions=[d.strip() for d in (args.dimensions or "").split(",") if d.strip()],
+                filter_expr=args.filter,
+            )
+        elif args.funnel_report:
             if not args.steps:
                 print("ERROR: --steps required with --funnel-report", file=sys.stderr)
                 return 1
@@ -343,7 +411,10 @@ def main():
             )
         else:
             if not args.report:
-                print("ERROR: --report required (or use --funnel-report)", file=sys.stderr)
+                print(
+                    "ERROR: select --report, --funnel-report, --metadata or --check-compatibility",
+                    file=sys.stderr,
+                )
                 return 1
             metrics = [m.strip() for m in args.report.split(",") if m.strip()]
             dimensions = [d.strip() for d in (args.dimensions or "").split(",") if d.strip()]

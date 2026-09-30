@@ -19,7 +19,7 @@ A Python CLI and MCP server for inspecting Google Analytics 4 properties. It com
 
 | Area | Included capabilities |
 | --- | --- |
-| Data quality | Sampling, missing values, event coverage and confidence labels |
+| Data quality | Sampling, missing values, event coverage, confidence labels, field discovery and Core compatibility checks |
 | Journeys | Ordered event funnels, cohort breakdowns and attribution analysis |
 | Context | Website, platform and vertical inference from the property's web stream |
 | Configuration | Streams, audiences, custom definitions, key events and event rules |
@@ -82,6 +82,11 @@ python scripts/ga4_report.py --property 123456789 --inputs examples/demo/quality
 Inspect the [generated report](examples/demo/report.md) and [source fixtures](examples/demo/). The longer [sample audit](examples/sample-audit.md) is a separately authored illustration.
 
 ## MCP server
+
+Use `ga4_data.py --property 123 --metadata --json` to discover report fields,
+or `--check-compatibility --metrics sessions --dimensions date --json` for
+an explicit Core compatibility check. MCP exposes these as `report_metadata`
+and `check_compatibility`. See [report fields](docs/REPORT_FIELDS.md).
 
 For an MCP client that supports `mcpServers` configuration:
 

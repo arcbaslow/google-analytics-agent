@@ -191,6 +191,32 @@ def report(
     return ga4_data.run_report(property_id, metrics=metrics, dimensions=dimensions, days=days)
 
 
+@mcp.tool()
+@_auth_guarded
+def report_metadata(property_id: str, use_cache: bool = True) -> dict[str, Any]:
+    """Discover standard/custom report fields; property 0 returns standard fields only."""
+    return ga4_data.get_metadata(property_id, use_cache=use_cache)
+
+
+@mcp.tool()
+@_auth_guarded
+def check_compatibility(
+    property_id: str,
+    metrics: list[str],
+    dimensions: list[str],
+    filter_expr: str | None = None,
+    filter_dict: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Explicit uncached Core report compatibility read, not a funnel/realtime check.
+
+    Uses report dimension-filter semantics; filter_dict takes precedence.
+    Incompatible selected fields may return an API error.
+    """
+    return ga4_data.check_compatibility(
+        property_id, metrics, dimensions, filter_expr=filter_expr, filter_dict=filter_dict
+    )
+
+
 def _preview(would_apply: Any) -> dict[str, Any]:
     return {
         "preview": True,
