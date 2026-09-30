@@ -85,7 +85,8 @@ def cache_get(*parts: Any) -> Any:
         return None
     try:
         age = time.time() - path.stat().st_mtime
-        if not 0 <= age < CACHE_TTL_SECONDS:
+        # Filesystem and wall-clock timestamps can differ slightly on Windows.
+        if not -1 <= age < CACHE_TTL_SECONDS:
             return None
         with open(path, encoding="utf-8") as f:
             value = json.load(f)

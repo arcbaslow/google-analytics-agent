@@ -109,3 +109,6 @@ Benchmark tables and comparisons are labeled `source_status: unverified_heuristi
 Their p25/p50/p75 names are legacy band labels, not verified population
 percentiles. Do not present them as evidence of industry performance or use
 them alone to set severity. See [the source review](docs/ROADMAP.md).
+
+Cache freshness tolerates up to one second of filesystem clock skew; larger
+future timestamps and entries aged 15 minutes or more are misses.

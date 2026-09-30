@@ -25,6 +25,14 @@ def test_unreadable_cache_is_a_miss(monkeypatch):
     assert ga4_utils.cache_get("bad") is None
 
 
+@pytest.mark.parametrize("age,hit", [(-0.001, True), (-2, False), (899, True), (900, False)])
+def test_cache_timestamp_boundaries(monkeypatch, age, hit):
+    ga4_utils.cache_set({"ok": True}, "clock")
+    modified = cache_path("clock").stat().st_mtime
+    monkeypatch.setattr(ga4_utils.time, "time", lambda: modified + age)
+    assert (ga4_utils.cache_get("clock") is not None) is hit
+
+
 @pytest.mark.parametrize(
     "value",
     [
