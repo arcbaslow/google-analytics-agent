@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Label benchmark bands and report comparisons as unverified heuristics; preserve existing numbers and legacy band names. Correct deprecated API names, unsupported wrapper options, quota advice and report defaults. Use a property-neutral HTML report title.
+
 - Mark failed or empty quality checks as incomplete instead of high confidence, preserve zero sampling rates, and expose available response thresholding, restrictions, empty reasons and truncation details.
 
 - Validate each website redirect before following it, preventing context fetches from following a public URL into a private network or non-HTTP(S) target.

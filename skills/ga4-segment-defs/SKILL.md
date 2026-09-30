@@ -30,8 +30,8 @@ applied to a runReport via `ga4-custom-report`.
 | Save shorthand | `python scripts/ga4_definitions.py --save-segment "branded-traffic" --field sessionSource --op CONTAINS --value brand` |
 | Save IN-list | `python scripts/ga4_definitions.py --save-segment "us-and-canada" --field country --op IN_LIST --values "United States,Canada"` |
 | Save raw expression | `python scripts/ga4_definitions.py --save-segment-json "complex" path/to/filter.json` |
-| List | `python scripts/ga4_definitions.py --list-segments --json` |
-| Delete | `python scripts/ga4_definitions.py --delete-segment "branded-traffic" --json` |
+| List | `python scripts/ga4_definitions.py --list-segments` |
+| Delete | `python scripts/ga4_definitions.py --delete-segment "branded-traffic"` |
 
 ## Shorthand operators
 

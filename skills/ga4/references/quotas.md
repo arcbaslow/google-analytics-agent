@@ -1,54 +1,38 @@
-# GA4 Data API and Admin API Quotas
+# GA4 API quotas
 
-Reference for the rate-limit-aware fetch logic in `ga4_data.py` and `ga4_admin.py`.
+Verified 2026-09-30. The adapters use the generated clients' default retry
+behavior; they do not implement a custom 2/4/8-second retry loop or a shared
+quota scheduler. Do not promise automatic recovery from exhausted quota.
 
-## Data API (standard properties)
+## Data API
 
-| Quota | Limit | Refresh |
-|-------|-------|---------|
-| Core tokens per project per day | 200,000 | Daily |
-| Core tokens per property per day | 25,000 | Daily |
-| Core tokens per property per hour | 5,000 | Hourly |
-| Concurrent requests per property | 10 | - |
-| Server errors per property per hour | 50 | Hourly |
-| Realtime tokens per property per day | 25,000 | Daily |
+Core, Realtime and Funnel have separate quota categories. For each category:
 
-Each `runReport` call consumes 1+ tokens depending on dimension/metric complexity. Complex breakdowns (5+ dimensions, custom dimensions) can consume 5-10 tokens each.
+| Per-property limit | Standard | 360 |
+|---|---:|---:|
+| Tokens/day | 200,000 | 2,000,000 |
+| Tokens/hour | 40,000 | 400,000 |
+| Tokens/project/hour | 14,000 | 140,000 |
+| Concurrent requests | 10 | 50 |
+| Server errors/project/hour | 10 | 50 |
 
-## Data API (GA4 360 properties)
-
-Same shape, much higher limits:
-
-| Quota | Limit |
-|-------|-------|
-| Core tokens per property per day | 1,000,000 |
-| Core tokens per property per hour | 50,000 |
-| Concurrent requests per property | 50 |
-
-## Funnel Report (v1alpha)
-
-`runFunnelReport` is on the v1alpha endpoint. Quota tier still counts against core tokens but with higher cost per call (typically 10-50 tokens per funnel report depending on step count and breakdowns).
+Potentially thresholded requests have a separate 120/hour allowance.
+`runFunnelReport` charges Funnel quotas. Request cost depends on the query;
+use returned quota metadata instead of assuming a fixed cost. The Chat
+category is separate and this toolkit does not call it.
+[Official Data API quotas](https://developers.google.com/analytics/devguides/reporting/data/v1/quotas).
 
 ## Admin API
 
-| Quota | Limit |
-|-------|-------|
-| Read calls per project per minute | 600 |
-| Read calls per user per minute | 60 |
-| Write calls per project per minute | 60 |
+Per project: 1,200 requests/minute, 600 requests/minute/user;
+600 writes/minute, 180 writes/minute/user. The user-deletion daily limit is
+500/property; this toolkit has no user-deletion adapter.
+[Official Admin quotas](https://developers.google.com/analytics/devguides/config/admin/v1/quotas).
 
-## Backoff strategy
+## Toolkit behavior
 
-On HTTP 429 (quota exceeded):
-1. Read `Retry-After` header if present
-2. Otherwise exponential backoff: 2s, 4s, 8s, 16s, 32s, then fail
-3. Surface as partial result with "rate limited" flag rather than full failure
-
-On HTTP 503 (server error):
-- Same exponential backoff, max 3 retries
-
-## Caching
-
-`ga4_utils.cache_get/cache_set` provide 15-min TTL local JSON cache. For multi-agent parallel audits, this prevents the same property/date-range query from hitting the API multiple times.
-
-Cache key includes property ID, query params, and date range. Different agents querying the same data structure benefit from cross-agent cache hits.
+Use `--include-metadata` for Data API quota balances. The 15-minute cache
+reuses successful identical queries, including empty results. It does not
+cache error-bearing results or deduplicate concurrent in-flight requests.
+Surface auth/quota errors and incomplete checks. Do not retry Admin writes
+automatically: review the outcome before proposing another operation.

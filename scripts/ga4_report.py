@@ -57,7 +57,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </head>
 <body>
 <div class="wrap">
-  <h1>GA4 E-commerce Funnel Audit</h1>
+  <h1>GA4 Property Audit</h1>
   <div class="meta">
     Property __PROPERTY_ID__ - generated __GENERATED_AT__
     <br />Confidence: <span class="conf __CONFIDENCE_CLASS__">__CONFIDENCE__</span>
@@ -73,7 +73,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   __PER_AGENT_HTML__
 
   <div class="footer">
-    claude-ga4-agents v0.1.0 - __GENERATED_AT__
+    google-analytics-agent - __GENERATED_AT__
   </div>
 </div>
 </body>
@@ -98,6 +98,7 @@ def _render_findings(findings):
         cls = _severity_class(sev)
         title = _esc(f.get("title", "(no title)"))
         detail = _esc(f.get("detail", ""))
+        detail += _esc(_format_benchmark_md(f.get("benchmark")))
         source = _esc(f.get("source", ""))
         source_html = (
             f' <span style="color:#888;font-size:12px;">[{source}]</span>' if source else ""
@@ -332,7 +333,7 @@ def _format_benchmark_md(b):
     if not b or "error" in b:
         return ""
     return (
-        f" (value {b.get('value')}, vertical {b.get('vertical')}, "
+        f" (unverified heuristic; value {b.get('value')}, vertical {b.get('vertical')}, "
         f"p25 {b.get('p25')} / p50 {b.get('p50')} / p75 {b.get('p75')}, "
         f"band {b.get('band')}, interpretation {b.get('interpretation')})"
     )

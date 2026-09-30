@@ -11,15 +11,15 @@ exposes `/ga4 <command>` and routes to:
 
 - `conversions`, `attribution`, `quality`, `property` are router-hosted commands with no skill directory of their own (the router verifies auth and spawns the matching agent directly).
 
-The `ga4-audit` orchestrator spawns `ga4-context` and `ga4-quality` in
-parallel as gates before the rest of the audit runs. Every other audit
+The `ga4-audit` orchestrator runs context first, quality and property checks
+in parallel, then events before the remaining analysis. Every other audit
 command can call `ga4-context` first when it needs the inferred vertical
 for benchmark enrichment.
 
 Each skill either calls a Python script directly or spawns a subagent
-defined under `agents/`. The audit orchestrator (`ga4-audit`) runs the
-quality and events agents sequentially as gates, then fans out the rest
-in parallel.
+defined under `agents/`. After events, funnel, key-event and segment checks
+run in parallel. Attribution follows only when key events are configured.
+This ordering matches the Python orchestrator.
 
 ## When to use Bash vs the Skills
 
@@ -53,8 +53,9 @@ Run the printed command, then `--check` again. Write features need the
 
 ## Reports and benchmarks
 
-Audit output defaults to markdown (no emoji) via
-`scripts/ga4_report.py --format md`. The report attaches the property
+The audit CLI defaults to markdown. The standalone renderer defaults to
+HTML; select markdown with `scripts/ga4_report.py --format md`. Saved custom
+reports default to JSON; select `--format md` explicitly. The report attaches the property
 context (from `ga4-context`), the data-confidence label, and benchmark
 band verdicts to every finding that carries a `metric` / `metric_value`
 pair. Benchmarks live in `scripts/ga4_benchmarks.py` (nine verticals).
@@ -107,3 +108,8 @@ empty checks cap confidence at low; a measured zero sample rate stays zero.
 `ga4_data.py --include-metadata` retains available thresholding, empty-result,
 restriction and truncation details. A thresholding flag alone does not prove
 that rows were removed. New metadata fields depend on the installed SDK.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](docs/ROADMAP.md).

@@ -15,10 +15,12 @@ uv venv && uv pip install -e ".[dev]"
 
 ```
 ruff check scripts/
-pytest scripts/ -q
+ruff format --check scripts/
+mypy
+pytest scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=93
 ```
 
-Both must pass. CI runs them on every PR across Python 3.10 / 3.11 /
+All must pass. `.github/workflows/tests.yml` is the source of truth. CI runs them on every PR across Python 3.10 / 3.11 /
 3.12 / 3.13.
 
 ## Commit style
@@ -38,8 +40,12 @@ PR refs `(#NNN)` only when one exists.
 
 ## What I'll accept
 
+The repo is in maintenance mode. New features require an explicit owner
+decision, as described in CLAUDE.md. Bugfixes and documentation corrections
+do not require a new feature decision.
+
 - Bug fixes with a regression test
-- New benchmarks or vertical-specific tables in `scripts/ga4_benchmarks.py`
+- New source-backed benchmarks or vertical-specific tables in `scripts/ga4_benchmarks.py`
 - New write surfaces backed by the official Admin API
 - Documentation fixes
 - CI improvements

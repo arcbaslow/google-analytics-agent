@@ -43,7 +43,9 @@ python scripts/ga4_funnel.py --property <id> --steps view_item,add_to_cart,purch
 python scripts/ga4_report.py --property <id> --inputs a.json,b.json --format md --output audit.md
 ```
 
-For the full command list, see [AGENTS.md](AGENTS.md).
+For the full command list, see [AGENTS.md](AGENTS.md). The full audit runs
+context, quality/property, events, funnel/key-events/segments, then conditional
+attribution. Use `ga4_audit.py` for the implemented orchestration.
 
 ## Benchmark-aware findings
 
@@ -102,3 +104,8 @@ empty checks cap confidence at low; a measured zero sample rate stays zero.
 `ga4_data.py --include-metadata` retains available thresholding, empty-result,
 restriction and truncation details. A thresholding flag alone does not prove
 that rows were removed. New metadata fields depend on the installed SDK.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](docs/ROADMAP.md).

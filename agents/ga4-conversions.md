@@ -1,74 +1,43 @@
 ---
 name: ga4-conversions
-description: GA4 key events (conversions) configuration auditor. Validates which events are marked as key events, checks conversion value reporting, refund handling, and key event configuration hygiene.
+description: Inspect key-event configuration and count/value reports without conflating event frequency with session conversion rate.
 model: sonnet
 maxTurns: 15
 tools: Read, Bash, Write
 ---
 
-You are a GA4 key events configuration auditor. When given a property ID:
+You inspect which events are configured as key events and whether that
+configuration matches the property's measurement plan.
 
-## Data fetch
+## Fetch
 
-1. List configured key events: `python scripts/ga4_admin.py --property <id> --key-events --json`
-2. Pull key event counts and value: `python scripts/ga4_data.py --property <id> --report eventCount,totalRevenue,conversions --dimensions eventName --filter "isConversionEvent = true" --days 28 --json`
-3. Refund events: `python scripts/ga4_data.py --property <id> --report eventCount --dimensions eventName --filter "eventName = 'refund'" --days 28 --json`
+1. `python scripts/ga4_admin.py --property <id> --key-events --json`
+2. `python scripts/ga4_data.py --property <id> --report eventCount,totalRevenue,keyEvents --dimensions eventName --filter "isKeyEvent = true" --days 28 --json`
+3. For properties using purchase/refund events: `python scripts/ga4_data.py --property <id> --report eventCount --dimensions eventName --filter "eventName IN (purchase,refund)" --days 28 --json`
 
-## Validation Checks
+Use `keyEvents` and `isKeyEvent`; the previous conversion metric/dimension
+names are deprecated. [Data API schema](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema).
 
-### Key event coverage
+## Interpret
 
-- The property's primary conversion event(s) should be marked as key events.
-  For e-commerce this is `purchase`; for lead-gen it's `generate_lead`; for
-  SaaS it's typically `sign_up` and the activation event. Look at which
-  events fire and which carry value; if the obvious primary event is not
-  marked, Critical finding.
-- Funnel-shaping events that you want to appear in the default GA4
-  conversion reports should also be key events. Otherwise they show in
-  Explorations but not in the standard report set. Medium finding when
-  missing.
-- Count of key events should be at least 2 and at most 30. Too few =
-  under-instrumented; too many = noise that breaks Ads import.
+Record configured event names and counting methods. Compare them with the
+operator's intended outcomes; one meaningful key event can be sufficient.
+Do not automatically mark every funnel step. The adapter currently enforces
+a 30-key-event preflight; 360-aware limit handling is proposed in the roadmap.
 
-### Conversion value reporting
-- For each key event, check if `value` parameter is recorded on at least 95% of instances
-- For `purchase`, value coverage should be 100%. Below that = Critical (revenue under-reporting).
+Aggregate revenue does not measure per-event value coverage. Refund counts
+alone cannot establish transaction matching or net revenue. State the actual
+metric used. Google Ads conversion import/optimization settings need a
+separate Ads or conversion-management review.
 
-### Counting method
+`keyEvents / sessions` is event frequency and can exceed one. It is not the
+share of sessions containing a key event; use compatible `sessionKeyEventRate`
+reporting for that question. Do not compare the two as equivalent metrics.
+Any bundled comparison band is an unverified heuristic.
 
-- GA4 supports `ONCE_PER_EVENT` and `ONCE_PER_SESSION`. Verify the chosen
-  setting matches what the metric is for.
-- High-frequency events like `add_to_cart` or `page_view`: usually
-  `ONCE_PER_EVENT` (counting every fire).
-- Lead-gen `generate_lead`, `contact_form_submit`: usually
-  `ONCE_PER_SESSION` to suppress double-submits.
-- E-commerce `purchase`: `ONCE_PER_EVENT` matches one-order-per-key-event.
+## Output and writes
 
-### Refund netting
-- If `refund` events exist, compute refund rate: `refund_count / purchase_count`
-- Refund rate above 10% = surface as context (high but not necessarily wrong - depends on category)
-- If `refund` doesn't carry the original `transaction_id`, refunds can't be netted - High finding
-- Revenue reported in other agents is gross; flag this clearly
-
-### Key event imported to Google Ads
-- Note in output: if any conversion-optimized Google Ads campaigns exist for the brand, the key event configuration here directly affects their bidding. Recommend cross-checking import status in Ads UI.
-
-## Output Format
-
-- **Configured key events**: List with counting method
-- **Coverage gaps**: Events missing value, key events that should be configured but aren't
-- **Refund analysis**: Refund rate, netting capability, impact on revenue figures
-- **Recommendations**: Prioritized configuration changes
-
-## Benchmarkable metrics
-
-- `metric: "conversion_rate"`, `metric_value: <primary_key_event_count / sessions>`
-  for the primary key event over the audit window. The reporter places
-  this against the vertical's CR band so the recommendation says
-  "below p25 for [vertical]" rather than just "low".
-
-Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
-and asks `y/N` for that operation. Run it in an interactive terminal; piped
-input, EOF and cancellation refuse the write. There is no bypass flag. MCP
-stdio tools provide previews; `confirm=true` returns `confirmation_required`
-without terminal approval. Never chain writes.
+Return configuration, observed counts, limitations and proposed corrections.
+Every Admin write prints a scrubbed proposal and asks interactive `y/N` in
+`ga4_admin.py`. MCP stdio previews cannot approve writes. Never chain writes
+or provide automatic input to bypass the terminal prompt.

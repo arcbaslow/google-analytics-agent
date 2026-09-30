@@ -31,6 +31,26 @@ def test_benchmarks_for_returns_table():
     assert "p50" in out["bounce_rate"]
 
 
+def test_every_band_and_comparison_discloses_unverified_provenance():
+    for vertical in ga4_benchmarks.list_verticals():
+        for metric, band in ga4_benchmarks.benchmarks_for(vertical).items():
+            assert band["source_status"] == "unverified_heuristic"
+            result = ga4_benchmarks.compare(metric, band["p50"], vertical)
+            assert result["source_status"] == "unverified_heuristic"
+            assert "not measured" in result["source_note"]
+            assert result["p50"] == band["p50"]
+
+
+def test_markdown_and_html_benchmark_annotations_disclose_limitations():
+    import ga4_report
+
+    result = ga4_benchmarks.compare("bounce_rate", 0.8, "other")
+    assert "unverified heuristic" in ga4_report._format_benchmark_md(result)
+    assert "unverified heuristic" in ga4_report._render_findings(
+        [{"title": "Measured bounce", "benchmark": result}]
+    )
+
+
 # ---------- compare() — happy paths ----------
 
 

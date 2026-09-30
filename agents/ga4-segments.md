@@ -40,11 +40,12 @@ Breakdown dimensions to run (one per call):
 
 ### Cohort funnel construction
 
-Without BigQuery you cannot do true user-level cohorts. Instead:
+This wrapper uses aggregated event counts. These do not establish sequential
+user cohorts; the Data API funnel is a different report surface. Here:
 
 - For each breakdown dimension, build a per-segment funnel from event counts
-- Compute step-to-step conversion within each segment
-- Compare segment funnel against the account-wide funnel
+- Report step-count ratios as aggregate proxies, not sequential conversion
+- Compare only like-for-like aggregate ratios against the property average
 
 ### What to surface
 
@@ -64,6 +65,10 @@ Without BigQuery you cannot do true user-level cohorts. Instead:
   confidence in that breakdown to "directional only".
 - If `(not set)` exceeds 20% of any dimension, flag the dimension as
   low-trust and recommend the property/tagging fix.
+
+The Python segment audit uses `keyEvents / sessions` as frequency; this is
+not `sessionKeyEventRate` and may exceed one. Do not label it as a session
+conversion probability. Intended metric semantics remain a roadmap question.
 
 ## Output Format
 
@@ -98,3 +103,8 @@ rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
 values are redacted; numeric metrics and GA resource names are retained.
 Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
 anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](../docs/ROADMAP.md).

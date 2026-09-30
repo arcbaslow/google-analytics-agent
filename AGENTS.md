@@ -101,10 +101,10 @@ Every feature is a Python CLI. Same flags across runtimes.
 |---------|---------|
 | `python scripts/ga4_definitions.py --save-segment "name" --field F --op OP --value V` | Save a reusable filter expression |
 | `python scripts/ga4_definitions.py --save-segment-json "name" path.json` | Save a raw FilterExpression |
-| `python scripts/ga4_definitions.py --list-segments --json` | List stored segments |
+| `python scripts/ga4_definitions.py --list-segments` | List stored segments |
 | `python scripts/ga4_definitions.py --save-report name path.json` | Save a custom report definition |
-| `python scripts/ga4_definitions.py --list-reports --json` | List stored reports |
-| `python scripts/ga4_definitions.py --run-report name --property X [--format html\|pdf\|json\|csv] [--segment NAME] [--output path]` | Run a stored report |
+| `python scripts/ga4_definitions.py --list-reports` | List stored reports |
+| `python scripts/ga4_definitions.py --run-report name --property X [--format md\|html\|pdf\|json\|csv] [--segment NAME] [--output path]` | Run a stored report |
 
 ## Confirmation before writes
 
@@ -114,20 +114,22 @@ user `y/N` before executing. Do not chain writes without confirmation.
 
 ## Funnels
 
-The default funnel is whatever ordered list of event names the user
-supplies via `--steps event1,event2,...`. The e-commerce purchase funnel
+Use an explicit ordered list of event names supplied by the user via `--steps event1,event2,...`. The e-commerce purchase funnel
 (`view_item -> add_to_cart -> begin_checkout -> add_payment_info ->
-purchase`) is available as a preset via `--preset ecomm` in `ga4_funnel.py`.
+purchase`) is the CLI default when `--steps` is omitted and is also available via
+`--preset ecomm` in `ga4_funnel.py`. Missing steps are currently dropped;
+review the returned step list before interpreting the rates.
 
 The `--check-postpayment` flag (opt-in, e-commerce-only) runs a heuristic
-that detects an `add_payment_info` event firing after the payment-gateway
-redirect-back. It is off by default.
+that compares `add_payment_info` and `purchase` counts. It cannot establish
+event order or prove a payment-gateway redirect problem. It is off by default.
 
 ## Caching and PII
 
 The scripts cache responses on disk at `~/.claude/ga4-cache/` for 15
 minutes per unique query. Admin writes drop the cached reads they change,
-so a read right after a write reflects it. PII keys (`email`, `phone`, ID-like fields) are
+so subsequent reads normally refresh it; concurrent requests and disk failures
+can still leave another process stale. PII keys (`email`, `phone`, ID-like fields) are
 scrubbed from responses before any analysis. Both are implemented in
 `scripts/ga4_utils.py`.
 
@@ -141,11 +143,11 @@ Default workflow:
    live site (vertical, platform, framework, sitemap). Cache result for
    downstream agents.
 3. For broad audits ("audit my GA4", "give me an overview"), run the
-   data quality script next, then the events script, then funnel /
-   attribution / property in parallel if your runtime supports it.
+   quality and property checks next, then events, then funnel / key-event /
+   segment checks in parallel. Attribution follows when key events exist.
 4. For targeted questions, call the relevant script directly.
-5. Always pass `--json` and parse the structured output. Never rely on
-   the human-readable form.
+5. Parse JSON output. Use `--json` where supported, or `--format json`
+   for the audit and saved reports. Local-definition lists already emit JSON.
 6. Pass each agent's structured output to `ga4_report.py --format md`
    for the final user-facing artifact. Use the inferred vertical from
    step 2 (or an explicit override) so findings carry benchmark verdicts.
@@ -216,3 +218,8 @@ empty checks cap confidence at low; a measured zero sample rate stays zero.
 `ga4_data.py --include-metadata` retains available thresholding, empty-result,
 restriction and truncation details. A thresholding flag alone does not prove
 that rows were removed. New metadata fields depend on the installed SDK.
+
+Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
+Their p25/p50/p75 names are legacy band labels, not verified population
+percentiles. Do not present them as evidence of industry performance or use
+them alone to set severity. See [the source review](docs/ROADMAP.md).
