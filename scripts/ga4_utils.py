@@ -7,14 +7,18 @@ from __future__ import annotations
 import functools
 import hashlib
 import json
+import os
 import re
+import tempfile
 import time
+import warnings
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 
 CACHE_DIR = Path.home() / ".claude" / "ga4-cache"
 CACHE_TTL_SECONDS = 15 * 60
+_INVALIDATED_PATHS: set[Path] = set()
 
 # PII patterns - drop any param matching these regexes from event data before agent analysis
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -66,23 +70,52 @@ def _cache_key(*parts: Any) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
-def cache_get(*parts: Any) -> dict[str, Any] | None:
+def _has_error(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(
+            (str(k).endswith("error") and bool(v)) or _has_error(v) for k, v in value.items()
+        )
+    return isinstance(value, list) and any(_has_error(v) for v in value)
+
+
+def cache_get(*parts: Any) -> Any:
     """Return cached JSON if present and fresh, else None."""
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = CACHE_DIR / f"{_cache_key(*parts)}.json"
-    if not path.exists():
+    if path in _INVALIDATED_PATHS:
         return None
-    if time.time() - path.stat().st_mtime > CACHE_TTL_SECONDS:
+    try:
+        age = time.time() - path.stat().st_mtime
+        if not 0 <= age < CACHE_TTL_SECONDS:
+            return None
+        with open(path, encoding="utf-8") as f:
+            value = json.load(f)
+        return None if _has_error(value) else scrub_pii(value)
+    except (OSError, ValueError):
         return None
-    with open(path) as f:
-        return scrub_pii(json.load(f))
 
 
-def cache_set(value: dict[str, Any], *parts: Any) -> None:
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+def cache_set(value: Any, *parts: Any) -> None:
+    if _has_error(value):
+        return
     path = CACHE_DIR / f"{_cache_key(*parts)}.json"
-    with open(path, "w") as f:
-        json.dump(scrub_pii(value), f, default=str)
+    temporary = None
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=CACHE_DIR, suffix=".tmp", delete=False
+        ) as f:
+            temporary = Path(f.name)
+            json.dump(scrub_pii(value), f, default=str)
+        os.replace(temporary, path)
+        _INVALIDATED_PATHS.discard(path)
+    except OSError:
+        pass  # Cache availability must not determine whether a read succeeds.
+    finally:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def cache_invalidate(*parts: Any) -> None:
@@ -90,7 +123,16 @@ def cache_invalidate(*parts: Any) -> None:
     every cached read they change, otherwise the read serves the pre-write
     state until the TTL runs out."""
     path = CACHE_DIR / f"{_cache_key(*parts)}.json"
-    path.unlink(missing_ok=True)
+    _INVALIDATED_PATHS.add(path)
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        warnings.warn(
+            "Cache invalidation failed on disk; bypassing this entry in this process. "
+            "Other processes may serve the old entry until its 15-minute TTL expires.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
 
 def scrub_pii(data: Any) -> Any:

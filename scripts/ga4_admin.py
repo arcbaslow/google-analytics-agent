@@ -140,7 +140,7 @@ def _invalidate_for_name(read, name):
 @scrub_response
 def get_property_details(property_id):
     cached = cache_get("property_details", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     prop = client.get_property(name=f"properties/{property_id}")
@@ -152,7 +152,7 @@ def get_property_details(property_id):
 @scrub_response
 def list_data_streams(property_id):
     cached = cache_get("data_streams", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     streams = [
@@ -165,7 +165,7 @@ def list_data_streams(property_id):
 @scrub_response
 def get_enhanced_measurement(property_id):
     cached = cache_get("enhanced_measurement", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     results = []
@@ -187,7 +187,7 @@ def get_enhanced_measurement(property_id):
 @scrub_response
 def list_data_filters(property_id):
     cached = cache_get("data_filters", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_alpha_client()
     try:
@@ -203,7 +203,7 @@ def list_data_filters(property_id):
 @scrub_response
 def list_custom_defs(property_id):
     cached = cache_get("custom_defs", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     dims = [
@@ -220,7 +220,7 @@ def list_custom_defs(property_id):
 @scrub_response
 def list_key_events(property_id):
     cached = cache_get("key_events", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     events = []
@@ -237,7 +237,7 @@ def list_key_events(property_id):
 @scrub_response
 def get_attribution_settings(property_id):
     cached = cache_get("attribution_settings", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     try:
@@ -252,7 +252,7 @@ def get_attribution_settings(property_id):
 @scrub_response
 def list_platform_links(property_id):
     cached = cache_get("platform_links", property_id)
-    if cached:
+    if cached is not None:
         return cached
     client = _get_admin_client()
     alpha = _get_admin_alpha_client()

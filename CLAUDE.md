@@ -85,3 +85,10 @@ rendered reports. Sensitive camelCase/custom-dimension keys and encoded email
 values are redacted; numeric metrics and GA resource names are retained.
 Scrubbing is a defensive filter, not a guarantee that arbitrary free text is
 anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.
+
+The 15-minute query cache uses atomic replacement. Empty results are cached;
+corrupt, expired, unreadable and error-bearing entries are misses. Failed
+cache writes do not fail API reads. If disk invalidation fails after an Admin
+write, a warning is emitted and this process bypasses that entry; other
+processes can remain stale until expiry. Concurrent read/write races and
+separation by credential principal remain open work in docs/ROADMAP.md.

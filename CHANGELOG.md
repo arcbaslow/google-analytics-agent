@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Replace cache files atomically, tolerate unreadable/corrupt entries, reuse empty results, avoid caching API errors and keep report column order in cache keys. Warn and bypass the entry in the current process when disk invalidation fails after a write.
+
 - Scrub Admin, cache, context, rendered report, MCP and CLI error responses. Cover sensitive camelCase/custom-dimension identifiers and encoded email addresses while preserving numeric metrics and GA resource names. Saved-segment reports now use one cached, scrubbed Data API request.
 
 - Require an interactive `y/N` after a printed proposal for every Admin write, including direct Python calls. Refuse piped input and ambiguous CLI actions. MCP previews remain available, but `confirm=true` cannot replace terminal approval.
