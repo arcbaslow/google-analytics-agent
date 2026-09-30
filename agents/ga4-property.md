@@ -71,3 +71,10 @@ You are a GA4 property configuration auditor. When given a property ID:
 - **Platform links**: What's linked, what's missing, business impact
 - **Custom definitions**: Count, headroom, anomalies
 - **Recommendations**: Prioritized Critical > High > Medium > Low
+
+The 15-minute query cache uses atomic replacement. Empty results are cached;
+corrupt, expired, unreadable and error-bearing entries are misses. Failed
+cache writes do not fail API reads. If disk invalidation fails after an Admin
+write, a warning is emitted and this process bypasses that entry; other
+processes can remain stale until expiry. Concurrent read/write races and
+separation by credential principal remain open work in docs/ROADMAP.md.

@@ -148,8 +148,8 @@ def run_report(
     cache_args = (
         "run_report",
         property_id,
-        tuple(sorted(metrics)),
-        tuple(sorted(dimensions)),
+        tuple(metrics),
+        tuple(dimensions),
         filter_expr,
         json.dumps(filter_dict, sort_keys=True) if filter_dict else None,
         start,
@@ -158,7 +158,7 @@ def run_report(
     )
     if use_cache:
         cached = cache_get(*cache_args)
-        if cached:
+        if cached is not None:
             return cached
 
     client = _get_data_client()
@@ -249,7 +249,7 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
     cache_args = ("run_funnel_report", property_id, tuple(steps), breakdown_dimension, start, end)
     if use_cache:
         cached = cache_get(*cache_args)
-        if cached:
+        if cached is not None:
             return cached
 
     funnel_steps = []

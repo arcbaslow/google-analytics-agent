@@ -221,3 +221,10 @@ collapsed raw-JSON appendix per agent. Pass `--format html` or
 After any analysis command, offer:
 - "Generate a custom report? Use `/ga4 report run <name>`"
 - "Run a full audit? Use `/ga4 audit <property-id>`"
+
+The 15-minute query cache uses atomic replacement. Empty results are cached;
+corrupt, expired, unreadable and error-bearing entries are misses. Failed
+cache writes do not fail API reads. If disk invalidation fails after an Admin
+write, a warning is emitted and this process bypasses that entry; other
+processes can remain stale until expiry. Concurrent read/write races and
+separation by credential principal remain open work in docs/ROADMAP.md.
