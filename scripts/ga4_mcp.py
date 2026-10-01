@@ -189,6 +189,20 @@ def property_config(property_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 @_auth_guarded
+def user_provided_data_settings(property_id: str) -> dict[str, Any]:
+    """Read property UPD configuration; does not establish event consent."""
+    return ga4_admin.get_user_provided_data_settings(property_id)
+
+
+@mcp.tool()
+@_auth_guarded
+def consent_diagnostics(property_id: str) -> dict[str, Any]:
+    """Read UPD/identity settings and list the tag/export evidence still needed."""
+    return ga4_admin.get_consent_diagnostics(property_id)
+
+
+@mcp.tool()
+@_auth_guarded
 def report(
     property_id: str, metrics: list[str], dimensions: list[str], days: int = 28
 ) -> dict[str, Any]:

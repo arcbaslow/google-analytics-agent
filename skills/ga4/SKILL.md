@@ -260,3 +260,5 @@ Compatibility is uncached and does not validate funnels or realtime. Metadata
 uses the 15-minute cache; successful custom-definition and key-event writes
 invalidate it. Both reads scrub responses. No report triggers these reads
 automatically. See docs/REPORT_FIELDS.md for filters and limits.
+
+Use ga4_admin.py --property ID --user-provided-data to read alpha UPD settings, or --consent-diagnostics for UPD and reporting identity plus remaining manual evidence. MCP exposes user_provided_data_settings and consent_diagnostics. Settings do not prove event consent; inspect tag/CMP configuration and aggregate export privacy_info separately.

@@ -357,6 +357,60 @@ def get_reporting_identity_settings(property_id):
 
 @scrub_response
 @read_operation
+def get_user_provided_data_settings(property_id):
+    """Property configuration only; this does not observe event-level consent."""
+    client = _get_admin_alpha_client()
+    if not hasattr(client, "get_user_provided_data_settings"):
+        return {
+            "status": "unsupported",
+            "reason": "Installed Admin client lacks user-provided-data settings.",
+        }
+    namespace = cache_namespace(client)
+    cached = cache_get("user_provided_data_settings", property_id, namespace=namespace)
+    if cached is not None:
+        return cached
+    response = read_call(
+        client.get_user_provided_data_settings,
+        name=f"properties/{property_id}/userProvidedDataSettings",
+    )
+    out = _proto_to_dict(response)
+    for field in (
+        "user_provided_data_collection_enabled",
+        "automatically_detected_data_collection_enabled",
+    ):
+        out[field] = bool(getattr(response, field))
+    cache_set(out, "user_provided_data_settings", property_id, namespace=namespace)
+    return out
+
+
+@scrub_response
+@read_operation
+def get_consent_diagnostics(property_id):
+    """Separate API-observable settings from evidence requiring tag/export review."""
+    settings = {}
+    for name, reader in (
+        ("user_provided_data", get_user_provided_data_settings),
+        ("reporting_identity", get_reporting_identity_settings),
+    ):
+        try:
+            settings[name] = reader(property_id)
+        except Exception as exc:
+            settings[name] = error_result(exc)
+    return {
+        "property_id": property_id,
+        "settings": settings,
+        "event_consent_status": "not_observed",
+        "manual_evidence_required": [
+            "Inspect consent defaults and updates for analytics_storage, ad_storage, ad_user_data and ad_personalization in the tag/CMP configuration.",
+            "Compare granted, denied and unset privacy_info aggregates in BigQuery where an export is available.",
+            "Review user-provided-data collection configuration separately; an enabled property setting does not prove event consent or legal compliance.",
+            "Reporting identity selects how users are counted; it is not evidence of consent or complete modeling.",
+        ],
+    }
+
+
+@scrub_response
+@read_operation
 def list_event_rules(property_id, stream_id):
     """List both edit rules and create rules for one data stream. Not cached;
     caching it would require the rule writes below to invalidate it."""
@@ -656,6 +710,8 @@ def main():
     actions.add_argument("--key-events", action="store_true")
     actions.add_argument("--attribution-settings", action="store_true")
     actions.add_argument("--reporting-identity", action="store_true")
+    actions.add_argument("--user-provided-data", action="store_true")
+    actions.add_argument("--consent-diagnostics", action="store_true")
     actions.add_argument("--links", action="store_true")
     actions.add_argument("--list-event-rules", action="store_true")
     actions.add_argument("--list-audiences", action="store_true")
@@ -723,6 +779,10 @@ def _dispatch(args):
         return get_attribution_settings(args.property)
     if args.reporting_identity:
         return get_reporting_identity_settings(args.property)
+    if args.user_provided_data:
+        return get_user_provided_data_settings(args.property)
+    if args.consent_diagnostics:
+        return get_consent_diagnostics(args.property)
     if args.links:
         return list_platform_links(args.property)
     if args.list_event_rules:
