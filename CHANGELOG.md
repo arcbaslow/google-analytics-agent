@@ -4,6 +4,8 @@
 
 ### Added
 
+- Read annotations and property-scoped configuration history for explicit dates, with bounded pagination and private actor/snapshot fields omitted.
+
 - Read uncached realtime reports and same-property group/date comparisons, preserving quota, completeness and comparison columns.
 
 - Add optional BigQuery aggregate evidence for parameter coverage, consent, observed freshness and sequential funnels, with dry-run defaults, byte caps and no individual exports.

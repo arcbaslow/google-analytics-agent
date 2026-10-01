@@ -174,6 +174,22 @@ def comparison_report(
 
 
 @mcp.tool()
+@_auth_guarded
+def reporting_annotations(property_id: str, start_date: str, end_date: str) -> dict[str, Any]:
+    """Read annotations in an explicit date range; annotations do not prove causation."""
+    return ga4_admin.list_annotations(property_id, start_date, end_date)
+
+
+@mcp.tool()
+@_auth_guarded
+def change_history(
+    account_id: str, property_id: str, start_date: str, end_date: str
+) -> dict[str, Any]:
+    """Read API-supported changes in UTC dates. Requires edit scope but performs no write."""
+    return ga4_admin.search_change_history(account_id, property_id, start_date, end_date)
+
+
+@mcp.tool()
 def benchmarks(vertical: str = "other") -> dict[str, Any]:
     """Return unverified heuristic bands for a vertical, with provenance labels."""
     v = ga4_benchmarks.normalize_vertical(vertical)

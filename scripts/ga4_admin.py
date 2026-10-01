@@ -19,6 +19,7 @@ import json
 import re
 import sys
 from contextvars import ContextVar
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -129,6 +130,75 @@ def _dict_to_proto(d, proto_cls):
 
     pb = ParseDict(d, proto_cls.pb(proto_cls()), ignore_unknown_fields=True)
     return proto_cls.wrap(pb)
+
+
+def _history_range(property_id, start_date, end_date):
+    if not isinstance(property_id, str) or not re.fullmatch(r"\d+", property_id):
+        raise ValueError("property_id must be numeric")
+    for value in (start_date, end_date):
+        if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("explicit start_date and end_date (YYYY-MM-DD) are required")
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    if not 0 <= (end - start).days <= 365:
+        raise ValueError("history date range must contain 1–366 days")
+
+
+@scrub_response
+@read_operation
+def list_annotations(property_id, start_date, end_date):
+    """Uncached alpha annotation reads; missing client support is explicit."""
+    from google.analytics.admin_v1alpha import types
+
+    _history_range(property_id, start_date, end_date)
+    if not hasattr(types, "ListReportingDataAnnotationsRequest"):
+        return {"status": "unsupported", "reason": "Installed Admin client lacks annotations."}
+    request = types.ListReportingDataAnnotationsRequest(
+        parent=f"properties/{property_id}",
+        page_size=200,
+        filter=f'is_annotation_in_range("{start_date}", "{end_date}") = true',
+    )
+    rows = read_list(_get_admin_alpha_client().list_reporting_data_annotations, request=request)
+    return {
+        "annotations": [_proto_to_dict(row) for row in rows],
+        "complete": True,
+        "warning": "Annotations provide context, not proof of causation.",
+    }
+
+
+@scrub_response
+@read_operation
+def search_change_history(account_id, property_id, start_date, end_date):
+    """Read-only beta endpoint requiring analytics.edit scope. Never expose actor identities or snapshots."""
+    from google.analytics.admin_v1beta.types import SearchChangeHistoryEventsRequest
+
+    _history_range(property_id, start_date, end_date)
+    if not isinstance(account_id, str) or not re.fullmatch(r"\d+", account_id):
+        raise ValueError("account_id must be numeric")
+    request = SearchChangeHistoryEventsRequest(
+        account=f"accounts/{account_id}",
+        property=f"properties/{property_id}",
+        page_size=200,
+        earliest_change_time=start_date + "T00:00:00Z",
+        latest_change_time=end_date + "T23:59:59.999999999Z",
+    )
+    rows = read_list(_get_admin_client(write=True).search_change_history_events, request=request)
+    events = []
+    for row in rows:
+        data = _proto_to_dict(row)
+        event = {
+            k: data[k] for k in ("id", "change_time", "actor_type", "changes_filtered") if k in data
+        }
+        event["changes"] = [
+            {k: change[k] for k in ("resource", "action") if k in change}
+            for change in data.get("changes", [])
+        ]
+        events.append(event)
+    return {
+        "events": events,
+        "complete": True,
+        "time_zone": "UTC",
+        "warning": "Only API-supported changes are included. Temporal proximity does not establish causation.",
+    }
 
 
 def _read_json_file(path: str):
@@ -746,6 +816,11 @@ def main():
     actions.add_argument("--reporting-identity", action="store_true")
     actions.add_argument("--user-provided-data", action="store_true")
     actions.add_argument("--consent-diagnostics", action="store_true")
+    actions.add_argument("--annotations", action="store_true")
+    actions.add_argument("--change-history", action="store_true")
+    parser.add_argument("--account", help="Account ID for change history")
+    parser.add_argument("--start-date", help="Inclusive history/annotation date, YYYY-MM-DD")
+    parser.add_argument("--end-date", help="Inclusive history/annotation date, YYYY-MM-DD")
     actions.add_argument("--links", action="store_true")
     actions.add_argument("--list-event-rules", action="store_true")
     actions.add_argument("--list-audiences", action="store_true")
@@ -817,6 +892,10 @@ def _dispatch(args):
         return get_user_provided_data_settings(args.property)
     if args.consent_diagnostics:
         return get_consent_diagnostics(args.property)
+    if args.annotations:
+        return list_annotations(args.property, args.start_date, args.end_date)
+    if args.change_history:
+        return search_change_history(args.account, args.property, args.start_date, args.end_date)
     if args.links:
         return list_platform_links(args.property)
     if args.list_event_rules:
