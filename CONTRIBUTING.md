@@ -34,6 +34,19 @@ every transitive dependency. Keep them aligned with the lower bounds in
 `pyproject.toml`. Optional reporting-identity contract tests skip on clients
 without that method; the unsupported-result test still runs.
 
+Coverage measures production modules only: `scripts/test_*.py` and
+`scripts/conftest.py` are omitted by `pyproject.toml`. The floor remains 93%
+for both dependency jobs. Do not remove production files from the denominator
+to accommodate optional SDK methods. Use real SDK messages and client specs
+with mocked transports to test request contracts. Optional annotation,
+reporting-identity, UPD and advertising fields skip only when absent; their
+unsupported behavior is tested separately.
+
+The dev extra includes the optional BigQuery client, SQLGlot and DuckDB for
+synthetic in-memory SQL tests. These tests do not submit jobs or use ADC.
+They check generated-query semantics after dialect translation; they do not
+prove live BigQuery SQL compatibility or cost estimates.
+
 ## Commit style
 
 Plain imperative sentence, sentence-case acceptable. No Conventional

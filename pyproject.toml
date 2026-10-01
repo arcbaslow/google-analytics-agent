@@ -84,6 +84,14 @@ select = ["E4", "E7", "E9", "F", "I"]
 testpaths = ["scripts"]
 python_files = ["test_*.py"]
 
+[tool.coverage.run]
+source = ["scripts"]
+omit = ["scripts/test_*.py", "scripts/conftest.py"]
+
+[tool.coverage.report]
+fail_under = 93
+precision = 2
+
 [tool.mypy]
 python_version = "3.10"
 files = ["scripts"]

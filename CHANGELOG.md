@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Measure production-only coverage at the existing 93% CI floor, with real SDK request contracts for all 15 Admin writers and offline SQL semantics tests.
+
 ### Added
 
 - Build offline audience proposals for event participation, a same-event numeric threshold, or an ordered event sequence; creation retains the existing y/N gate.

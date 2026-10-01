@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import duckdb
 import ga4_bigquery as bq
+import ga4_mcp
 import pytest
 import sqlglot
 from google.cloud import bigquery
@@ -223,3 +224,43 @@ def test_cli_dry_run_and_error_are_scrubbed(client, monkeypatch, capsys):
     client.query.side_effect = RuntimeError("person@example.com")
     assert bq.main() == 1
     assert "person@example.com" not in capsys.readouterr().err
+
+
+def test_mcp_cannot_request_execution(client):
+    out = ga4_mcp.bigquery_dry_run(**BASE)
+    assert out["status"] == "dry_run" and client.query.call_count == 1
+    with pytest.raises(TypeError):
+        bq.aggregate_evidence(**BASE, arbitrary_sql="SELECT *")
+
+
+def test_client_uses_bigquery_scope_and_explicit_project(monkeypatch):
+    import google.auth
+    from google.auth.credentials import AnonymousCredentials
+
+    credentials = AnonymousCredentials()
+    resolver = Mock(return_value=(credentials, "ignored-adc-project"))
+    factory = Mock()
+    monkeypatch.setattr(google.auth, "default", resolver)
+    monkeypatch.setattr(bigquery, "Client", factory)
+    bq._get_client("billing-project", "EU")
+    resolver.assert_called_once_with(scopes=["https://www.googleapis.com/auth/bigquery"])
+    factory.assert_called_once_with(
+        project="billing-project", credentials=credentials, location="EU"
+    )
+
+
+def test_missing_optional_client_does_not_resolve_credentials(monkeypatch):
+    import builtins
+
+    original = builtins.__import__
+
+    def importing(name, *args, **kwargs):
+        if name == "google.cloud":
+            raise ImportError("optional client absent")
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", importing)
+    factory = Mock()
+    monkeypatch.setattr(bq, "_get_client", factory)
+    assert bq.aggregate_evidence(**BASE)["status"] == "unsupported"
+    factory.assert_not_called()
