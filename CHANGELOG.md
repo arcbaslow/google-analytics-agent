@@ -4,6 +4,8 @@
 
 ### Added
 
+- Add bounded alpha advertising conversion reports and conversion-action metadata, with attribution-model selection, explicit dates and Advertising section verification.
+
 - Prepare expiring Admin proposals through MCP for one-use terminal approval bound to the exact arguments and digest. Preserve the y/N gate and expose outcome receipts without adding an MCP execute tool.
 
 - Read user-provided-data settings and report consent evidence gaps through CLI and MCP, with optional-client support and explicit false values.

@@ -41,3 +41,5 @@ Return settings, session-channel counts, unavailable checks, hypotheses and
 specific follow-up checks. Keep API errors visible. Any benchmark annotation
 is an unverified heuristic, not an industry percentile. Configuration changes
 remain proposals and require one printed change and interactive `y/N` each.
+
+Advertising conversions use the separate ga4_advertising.py alpha adapter and MCP advertising_report/conversion_metadata. Require explicit dates, select DATA_DRIVEN or LAST_CLICK, and discover conversionActions IDs from alpha metadata. Do not substitute key events or session-acquisition metrics. Check complete and section_verified; eligibility and live access remain unverified. Reads are bounded and uncached. See docs/ADVERTISING.md.

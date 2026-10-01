@@ -304,7 +304,7 @@ def scrub_pii(data: Any) -> Any:
             return data
         # GA resource IDs are structural identifiers, not phone numbers.
         if re.fullmatch(
-            r"(?:accounts|properties)/\d+(?:/[A-Za-z][A-Za-z0-9]*/\d+)*(?:/[A-Za-z][A-Za-z0-9]*)?",
+            r"(?:accounts|properties|conversionActions)/\d+(?:/[A-Za-z][A-Za-z0-9]*/\d+)*(?:/[A-Za-z][A-Za-z0-9]*)?",
             data,
         ):
             return data

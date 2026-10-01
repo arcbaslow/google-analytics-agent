@@ -262,3 +262,5 @@ invalidate it. Both reads scrub responses. No report triggers these reads
 automatically. See docs/REPORT_FIELDS.md for filters and limits.
 
 Use ga4_admin.py --property ID --user-provided-data to read alpha UPD settings, or --consent-diagnostics for UPD and reporting identity plus remaining manual evidence. MCP exposes user_provided_data_settings and consent_diagnostics. Settings do not prove event consent; inspect tag/CMP configuration and aggregate export privacy_info separately.
+
+Advertising conversions use the separate ga4_advertising.py alpha adapter and MCP advertising_report/conversion_metadata. Require explicit dates, select DATA_DRIVEN or LAST_CLICK, and discover conversionActions IDs from alpha metadata. Do not substitute key events or session-acquisition metrics. Check complete and section_verified; eligibility and live access remain unverified. Reads are bounded and uncached. See docs/ADVERTISING.md.
