@@ -114,3 +114,5 @@ Parameter aggregate metrics return `coverage_pct: null` with `status: not_measur
 Use ga4_explore.py --realtime for uncached minute-range reports or --comparisons JSON with --date-ranges JSON for named same-property groups and dates. MCP exposes realtime_report/comparison_report. Realtime has no pagination; inspect complete and quota. Minute bounds over 29 require GA360. Preserve comparison/date columns and never sum overlapping user populations. See docs/EXPLORATION.md.
 
 Saved CSV report files preserve their rendered line endings on Windows, including quoted multiline fields, without introducing blank rows.
+
+Saved comparison resource names in the official comparisons/ID format remain usable in scrubbed metadata and report output; display text still passes through PII filters.

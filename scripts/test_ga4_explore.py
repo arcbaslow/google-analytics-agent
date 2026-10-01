@@ -146,3 +146,21 @@ def test_cli_modes_and_rejected_ignored_flags(client, monkeypatch, capsys):
     )
     assert explore.main() == 0
     assert json.loads(capsys.readouterr().out)["report_type"] == "same_property_comparisons"
+
+
+def test_long_comparison_resource_ids_survive_metadata_and_reports(client):
+    from ga4_utils import scrub_pii
+
+    resource = "comparisons/1234567890"
+    client.get_metadata.return_value = types.Metadata(
+        comparisons=[{"api_name": resource, "ui_name": "person@example.com"}]
+    )
+    metadata = ga4_data.get_metadata("123", use_cache=False)
+    assert metadata["comparisons"][0]["api_name"] == resource
+    assert "person@example.com" not in str(metadata)
+    client.run_report.return_value = types.RunReportResponse()
+    out = explore.comparison_report(
+        "123", ["activeUsers"], [], [{"name": "saved", "comparison": resource}], DATES
+    )
+    assert out["comparisons"][0]["comparison"] == resource
+    assert "[phone-redacted]" in scrub_pii("Call +1 212 555 0100")

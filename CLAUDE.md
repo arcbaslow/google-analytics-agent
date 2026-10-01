@@ -170,3 +170,7 @@ Website-context fetches validate and pin the numeric destination at socket creat
 Account/property discovery through ga4_auth.py --properties also uses the bounded read transport, including every account-summary page. Quota failures are not retried and partial lists are not returned as complete.
 
 Saved CSV report files preserve their rendered line endings on Windows, including quoted multiline fields, without introducing blank rows.
+
+CI measures production modules only, excluding test_*.py and conftest.py, with a 93% floor for minimum/current Analytics clients. Dev dependencies include the optional BigQuery client and offline SQL test tools. No live property or job is required. The completed implementation and remaining evidence/intent questions are recorded in docs/ROADMAP.md and docs/VERIFICATION.md.
+
+Saved comparison resource names in the official comparisons/ID format remain usable in scrubbed metadata and report output; display text still passes through PII filters.
