@@ -4,6 +4,8 @@
 
 ### Added
 
+- Read user-provided-data settings and report consent evidence gaps through CLI and MCP, with optional-client support and explicit false values.
+
 - Bound read retries and requests across audit workers and Admin pagination; expose scrubbed auth, permission, quota and request-budget errors.
 
 - Bound report pagination and expose incomplete results; apply validated saved-report filters, ordering, limits, dates and default formats.
