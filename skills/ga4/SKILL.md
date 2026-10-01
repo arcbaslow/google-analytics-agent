@@ -270,3 +270,5 @@ BigQuery evidence is optional: install .[bigquery] and use ga4_bigquery.py with 
 Use ga4_explore.py --realtime for uncached minute-range reports or --comparisons JSON with --date-ranges JSON for named same-property groups and dates. MCP exposes realtime_report/comparison_report. Realtime has no pagination; inspect complete and quota. Minute bounds over 29 require GA360. Preserve comparison/date columns and never sum overlapping user populations. See docs/EXPLORATION.md.
 
 Read dated context with ga4_admin.py --annotations or --change-history, supplying --property, --start-date and --end-date; history also requires --account. MCP tools are reporting_annotations/change_history. These bounded, uncached reads are not causal evidence. History requires analytics.edit scope despite being read-only, and omits actor emails and before/after snapshots. Older clients may not support annotations. See docs/CHANGE_HISTORY.md.
+
+Account/property discovery through ga4_auth.py --properties also uses the bounded read transport, including every account-summary page. Quota failures are not retried and partial lists are not returned as complete.

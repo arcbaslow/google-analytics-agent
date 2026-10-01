@@ -28,6 +28,8 @@
 
 ### Fixed
 
+- Apply the read retry and request budget to account/property discovery, including subsequent account-summary pages.
+
 - Pin website-context connections to validated public socket addresses, preserve HTTPS hostname verification, and disable proxy redirection to close the DNS validation/connection race.
 
 - Apply Standard/360 custom key-event limits without counting default events. Reject missing or unknown edit scopes and stop inventing consented scopes in legacy OAuth.

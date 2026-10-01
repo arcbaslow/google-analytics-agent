@@ -288,12 +288,14 @@ def check_auth(write=False) -> bool:
 
 @scrub_response
 def list_properties() -> list[dict[str, Any]]:
+    from ga4_transport import read_list
+
     creds = get_credentials(write=False)
     from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
 
     client = AnalyticsAdminServiceClient(credentials=creds)
     properties = []
-    for account_summary in client.list_account_summaries():
+    for account_summary in read_list(client.list_account_summaries):
         for prop in account_summary.property_summaries:
             properties.append(
                 {
