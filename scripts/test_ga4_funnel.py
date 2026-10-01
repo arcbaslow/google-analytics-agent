@@ -1,6 +1,7 @@
 """Tests for ga4_funnel: rate computation, leakiest step, opt-in post-payment check."""
 
 import ga4_funnel
+import pytest
 
 
 def test_step_rates_basic():
@@ -100,8 +101,12 @@ def test_compute_rates_with_breakdown():
         {"funnelStepName": "view_item", "deviceCategory": "desktop", "activeUsers": "200"},
         {"funnelStepName": "purchase", "deviceCategory": "mobile", "activeUsers": "20"},
         {"funnelStepName": "purchase", "deviceCategory": "desktop", "activeUsers": "40"},
+        {"funnelStepName": "view_item", "deviceCategory": "RESERVED_TOTAL", "activeUsers": "1000"},
+        {"funnelStepName": "purchase", "deviceCategory": "RESERVED_TOTAL", "activeUsers": "60"},
     ]
-    out = ga4_funnel._compute_rates(rows, ["view_item", "purchase"], has_breakdown=True)
+    out = ga4_funnel._compute_rates(
+        rows, ["view_item", "purchase"], has_breakdown=True, breakdown_dimension="deviceCategory"
+    )
     # Aggregate: 1000 -> 60 = 6%
     assert out["aggregate"]["overall_conversion_pct"] == 6.0
     # Mobile: 800 -> 20 = 2.5%
@@ -110,8 +115,8 @@ def test_compute_rates_with_breakdown():
     assert out["by_segment"]["desktop"]["overall_conversion_pct"] == 20.0
 
 
-def test_build_funnel_drops_postpayment_api_when_opted_in(monkeypatch):
-    """With check_postpayment=True and a post_payment verdict, the step is dropped."""
+def test_build_funnel_retains_postpayment_step_when_opted_in(monkeypatch):
+    """Similar counts cannot establish order or authorize changing a funnel."""
     monkeypatch.setattr(
         ga4_funnel,
         "check_events",
@@ -145,7 +150,7 @@ def test_build_funnel_drops_postpayment_api_when_opted_in(monkeypatch):
     )
 
     out = ga4_funnel.build_funnel("123", days=28, check_postpayment=True)
-    assert "add_payment_info" not in out["steps"]
+    assert "add_payment_info" in out["steps"]
     assert any("after payment" in w.lower() for w in out["warnings"])
     assert out["postpayment_check"]["verdict"] == "post_payment"
 
@@ -229,3 +234,71 @@ def test_build_funnel_keeps_postpayment_api_when_check_ok(monkeypatch):
 
     out = ga4_funnel.build_funnel("123", days=28, check_postpayment=True)
     assert "add_payment_info" in out["steps"]
+
+
+def test_numbered_proto_steps_and_reserved_totals():
+    from ga4_data import _serialize_funnel_report
+    from google.analytics.data_v1alpha.types import RunFunnelReportResponse
+
+    response = RunFunnelReportResponse(
+        funnel_table={
+            "dimension_headers": [{"name": "funnelStepName"}, {"name": "deviceCategory"}],
+            "metric_headers": [{"name": "activeUsers"}, {"name": "funnelStepCompletionRate"}],
+            "rows": [
+                {
+                    "dimension_values": [{"value": step}, {"value": segment}],
+                    "metric_values": [{"value": count}, {"value": "0.2"}],
+                }
+                for step, segment, count in [
+                    ("1. start", "RESERVED_TOTAL", "100"),
+                    ("2. finish", "RESERVED_TOTAL", "20"),
+                    ("1. start", "mobile", "80"),
+                    ("2. finish", "mobile", "10"),
+                ]
+            ],
+        }
+    )
+    rows = _serialize_funnel_report(response, ["start", "finish"])["rows"]
+    out = ga4_funnel._compute_rates(rows, ["start", "finish"], True, "deviceCategory")
+    assert out["aggregate"]["overall_conversion_pct"] == 20
+    assert out["by_segment"]["mobile"]["overall_conversion_pct"] == 12.5
+    assert "RESERVED_TOTAL" not in out["by_segment"]
+
+
+@pytest.mark.parametrize(
+    "rows,breakdown",
+    [
+        ([{"funnelStepName": "wrong", "activeUsers": "1"}], None),
+        ([{"funnelStepName": "a", "activeUsers": "1"}] * 2, None),
+        (
+            [{"funnelStepName": "a", "deviceCategory": "mobile", "activeUsers": "1"}],
+            "deviceCategory",
+        ),
+        ([{"funnelStepName": "a", "activeUsers": "1"}], "deviceCategory"),
+    ],
+)
+def test_unrecognized_or_incomplete_contract_does_not_invent_rates(rows, breakdown):
+    out = ga4_funnel._compute_rates(rows, ["a", "b"], bool(breakdown), breakdown)
+    assert "error" in out["aggregate"]
+
+
+def test_missing_steps_are_retained_until_explicitly_removed(monkeypatch):
+    seen = []
+
+    def check(pid, steps, days):
+        seen.append(days)
+        return {"events": {"a": {"present": True}, "b": {"present": False}}}
+
+    monkeypatch.setattr(ga4_funnel, "check_events", check)
+    assert ga4_funnel.validate_steps("123", ["a", "b"], 90)["validated_steps"] == ["a", "b"]
+    assert ga4_funnel.validate_steps("123", ["a", "b"], 90, True)["dropped_steps"] == ["b"]
+    assert seen == [90, 90]
+
+
+def test_invalid_closed_funnel_counts():
+    assert "error" in ga4_funnel._step_rates_from_counts({"a": 1, "b": 2}, ["a", "b"])
+
+
+def test_duplicate_steps_fail_before_reads():
+    with pytest.raises(ValueError, match="unique"):
+        ga4_funnel.build_funnel("123", ["a", "a"])

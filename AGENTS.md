@@ -117,8 +117,8 @@ user `y/N` before executing. Do not chain writes without confirmation.
 Use an explicit ordered list of event names supplied by the user via `--steps event1,event2,...`. The e-commerce purchase funnel
 (`view_item -> add_to_cart -> begin_checkout -> add_payment_info ->
 purchase`) is the CLI default when `--steps` is omitted and is also available via
-`--preset ecomm` in `ga4_funnel.py`. Missing steps are currently dropped;
-review the returned step list before interpreting the rates.
+`--preset ecomm` in `ga4_funnel.py`. Missing steps are retained by default;
+--drop-missing explicitly requests a shorter funnel.
 
 The `--check-postpayment` flag (opt-in, e-commerce-only) runs a heuristic
 that compares `add_payment_info` and `purchase` counts. It cannot establish
@@ -252,3 +252,5 @@ automatically. See docs/REPORT_FIELDS.md for filters and limits.
 Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.
 
 Reports accept --limit (default 10000, maximum 250000), --page-size and --max-pages (default 10, maximum 100), --start-date/--end-date, --metric-filter JSON and --order-bys JSON. Responses expose complete, pages_fetched and incomplete_reason; do not treat partial results as totals. Partial results are not cached. Saved reports validate their schema, apply these options plus dimension_filter, and honor default_format unless --format overrides it. A saved segment is ANDed with the report filter. See docs/REPORT_FIELDS.md.
+
+Funnel reports accept 2-10 unique steps and retain missing steps by default. --drop-missing explicitly changes the requested funnel. --check-postpayment is advisory and never removes steps. Validation uses the complete requested date window. Numbered API step names are normalized; breakdown rates use the named dimension and RESERVED_TOTAL rows, never summed segment populations. Missing totals or malformed rows produce an error instead of fabricated rates.
