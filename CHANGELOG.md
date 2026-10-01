@@ -4,6 +4,8 @@
 
 ### Added
 
+- Read uncached realtime reports and same-property group/date comparisons, preserving quota, completeness and comparison columns.
+
 - Add optional BigQuery aggregate evidence for parameter coverage, consent, observed freshness and sequential funnels, with dry-run defaults, byte caps and no individual exports.
 
 - Add bounded alpha advertising conversion reports and conversion-action metadata, with attribution-model selection, explicit dates and Advertising section verification.

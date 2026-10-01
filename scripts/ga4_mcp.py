@@ -23,6 +23,7 @@ import ga4_context
 import ga4_data
 import ga4_definitions
 import ga4_events
+import ga4_explore
 import ga4_funnel
 from ga4_transport import error_result, read_budget
 from ga4_utils import scrub_pii
@@ -134,6 +135,41 @@ def bigquery_dry_run(
         window_seconds,
         max_bytes,
         execute=False,
+    )
+
+
+@mcp.tool()
+@_auth_guarded
+def realtime_report(
+    property_id: str,
+    metrics: list[str],
+    dimensions: list[str],
+    start_minutes_ago: int = 29,
+    end_minutes_ago: int = 0,
+    filter_dict: dict[str, Any] | None = None,
+    limit: int = 10000,
+) -> dict[str, Any]:
+    """Read uncached realtime rows; inspect completeness. Minute 30–59 needs GA360."""
+    return ga4_explore.realtime_report(
+        property_id, metrics, dimensions, start_minutes_ago, end_minutes_ago, filter_dict, limit
+    )
+
+
+@mcp.tool()
+@_auth_guarded
+def comparison_report(
+    property_id: str,
+    metrics: list[str],
+    dimensions: list[str],
+    comparisons: list[dict[str, Any]],
+    date_ranges: list[dict[str, str]],
+    limit: int = 10000,
+    page_size: int = 10000,
+    max_pages: int = 10,
+) -> dict[str, Any]:
+    """Compare named groups and dates within one property, preserving API rows and metadata."""
+    return ga4_explore.comparison_report(
+        property_id, metrics, dimensions, comparisons, date_ranges, limit, page_size, max_pages
     )
 
 
