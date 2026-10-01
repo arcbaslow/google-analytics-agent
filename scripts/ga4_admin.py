@@ -37,6 +37,13 @@ _PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
 PARAMETER_NAME_LIMITS = {"EVENT": 40, "USER": 24, "ITEM": 40}
 AUDIENCE_DURATION_MAX_DAYS = 540
 KEY_EVENT_LIMIT = 30
+DEFAULT_KEY_EVENTS = {
+    "purchase",
+    "first_open",
+    "in_app_purchase",
+    "app_store_subscription_convert",
+    "app_store_subscription_renew",
+}
 
 
 class ConfirmationRequiredError(RuntimeError):
@@ -133,15 +140,16 @@ def _invalidate_for_name(read, name):
 
 @scrub_response
 @read_operation
-def get_property_details(property_id):
+def get_property_details(property_id, use_cache=True):
     client = _get_admin_client()
     namespace = cache_namespace(client)
-    cached = cache_get("property_details", property_id, namespace=namespace)
+    cached = cache_get("property_details", property_id, namespace=namespace) if use_cache else None
     if cached is not None:
         return cached
     prop = read_call(client.get_property, name=f"properties/{property_id}")
     out = _proto_to_dict(prop)
-    cache_set(out, "property_details", property_id, namespace=namespace)
+    if use_cache:
+        cache_set(out, "property_details", property_id, namespace=namespace)
     return out
 
 
@@ -235,7 +243,10 @@ def list_key_events(property_id, use_cache=True):
     events = []
     if hasattr(client, "list_key_events"):
         for e in read_list(client.list_key_events, parent=f"properties/{property_id}"):
-            events.append(_proto_to_dict(e))
+            event = _proto_to_dict(e)
+            if isinstance(event, dict) and hasattr(e, "custom"):
+                event["custom"] = bool(e.custom)
+            events.append(event)
     else:
         for e in read_list(client.list_conversion_events, parent=f"properties/{property_id}"):
             events.append(_proto_to_dict(e))
@@ -655,6 +666,19 @@ def archive_custom_metric(name):
 # ---------- key events (v1beta) ----------
 
 
+def custom_key_event_count(events):
+    """Unknown legacy flags count conservatively; real SDK reads preserve false."""
+    return sum(
+        not isinstance(event, dict) or event.get("custom", True) is not False for event in events
+    )
+
+
+def key_event_limit(property_id, use_cache=True):
+    details = get_property_details(property_id, use_cache=use_cache)
+    level = details.get("service_level", details.get("serviceLevel"))
+    return {"GOOGLE_ANALYTICS_STANDARD": 30, "GOOGLE_ANALYTICS_360": 50}.get(level)
+
+
 @_confirmed_write
 @scrub_response
 @read_operation
@@ -664,9 +688,11 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     # Count against the live list. A cached one can predate a delete made
     # elsewhere (GA4 UI, another host) and block a create that fits the limit.
     existing = list_key_events(property_id, use_cache=False)
-    if len(existing) >= KEY_EVENT_LIMIT:
+    count = custom_key_event_count(existing)
+    limit = key_event_limit(property_id, use_cache=False) if count >= 30 else None
+    if limit is not None and count >= limit and event_name not in DEFAULT_KEY_EVENTS:
         raise ValueError(
-            f"property already has {len(existing)} key events (limit {KEY_EVENT_LIMIT}); "
+            f"property already has {count} custom key events (limit {limit}); "
             "delete one before creating another"
         )
     client = _get_admin_client(write=True)

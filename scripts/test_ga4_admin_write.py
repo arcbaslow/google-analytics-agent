@@ -59,12 +59,17 @@ def test_create_audience_rejects_over_540_days(monkeypatch):
 
 def test_create_key_event_blocks_at_limit(monkeypatch):
     monkeypatch.setattr(
+        ga4_admin,
+        "get_property_details",
+        lambda *a, **kw: {"service_level": "GOOGLE_ANALYTICS_STANDARD"},
+    )
+    monkeypatch.setattr(
         ga4_admin, "list_key_events", lambda pid, **kw: [{"name": f"ke-{i}"} for i in range(30)]
     )
     mock_client = MagicMock()
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: mock_client)
     with pytest.raises(ValueError, match="limit 30"):
-        ga4_admin.create_key_event("123", "purchase")
+        ga4_admin.create_key_event("123", "new_event")
     mock_client.create_key_event.assert_not_called()
 
 

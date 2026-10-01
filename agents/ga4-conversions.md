@@ -41,3 +41,5 @@ Return configuration, observed counts, limitations and proposed corrections.
 Every Admin write prints a scrubbed proposal and asks interactive `y/N` in
 `ga4_admin.py`. MCP stdio previews cannot approve writes. Never chain writes
 or provide automatic input to bypass the terminal prompt.
+
+Key-event capacity uses the API custom flag: default key events do not consume the custom limit. At the Standard boundary, creation reads the current property service level: Standard permits 30 custom key events and Analytics 360 permits 50. Unknown service levels defer enforcement to the API. Auth --check --write reports edit-scope evidence and rejects missing or unknown edit scopes; declared scopes are distinguished from granted scopes and do not establish a property role. Legacy OAuth never adds unconsented scopes to stored credentials. Each write still requires its own y/N approval.

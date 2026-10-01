@@ -53,3 +53,5 @@ and asks `y/N` for that operation. Run it in an interactive terminal; piped
 input, EOF and cancellation refuse the write. There is no bypass flag. MCP
 stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
+
+Key-event capacity uses the API custom flag: default key events do not consume the custom limit. At the Standard boundary, creation reads the current property service level: Standard permits 30 custom key events and Analytics 360 permits 50. Unknown service levels defer enforcement to the API. Auth --check --write reports edit-scope evidence and rejects missing or unknown edit scopes; declared scopes are distinguished from granted scopes and do not establish a property role. Legacy OAuth never adds unconsented scopes to stored credentials. Each write still requires its own y/N approval.

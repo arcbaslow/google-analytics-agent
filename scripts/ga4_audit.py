@@ -450,6 +450,15 @@ def run_conversions(property_id):
     names = [k.get("eventName") or k.get("event_name") for k in key_events]
     count = len(key_events)
     data = {"key_event_count": count, "key_event_names": names}
+    custom_count = ga4_admin.custom_key_event_count(key_events)
+    data["custom_key_event_count"] = custom_count
+    limit = None
+    if custom_count >= 30:
+        try:
+            limit = ga4_admin.key_event_limit(property_id)
+        except Exception as exc:
+            data["limit_error"] = error_result(exc)
+    data["custom_key_event_limit"] = limit
 
     if count == 0:
         findings.append(
@@ -467,12 +476,12 @@ def run_conversions(property_id):
                 "detail": "Add a funnel-shaping event (begin_checkout, add_to_cart, generate_lead) so default GA4 conversion reports cover more of the funnel.",
             }
         )
-    elif count > 30:
+    elif limit is not None and custom_count > limit:
         findings.append(
             {
                 "severity": "High",
                 "title": "Too many key events configured",
-                "detail": f"{count} key events on this property (limit 30). Ads import will reject the overflow; thinning the list improves bid-signal quality.",
+                "detail": f"{custom_count} custom key events on this property (current service-level limit {limit}). Review existing configuration before adding another.",
             }
         )
 

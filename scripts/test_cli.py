@@ -355,13 +355,13 @@ def test_auth_main_quota_project(monkeypatch):
 
 
 def test_auth_main_check_ok(monkeypatch):
-    monkeypatch.setattr(ga4_auth, "check_auth", lambda: True)
+    monkeypatch.setattr(ga4_auth, "check_auth", lambda **kw: True)
     _argv(monkeypatch, "--check")
     assert ga4_auth.main() == 0
 
 
 def test_auth_main_check_fail(monkeypatch):
-    monkeypatch.setattr(ga4_auth, "check_auth", lambda: False)
+    monkeypatch.setattr(ga4_auth, "check_auth", lambda **kw: False)
     _argv(monkeypatch, "--check")
     assert ga4_auth.main() == 1
 

@@ -16,6 +16,8 @@
 
 ### Fixed
 
+- Apply Standard/360 custom key-event limits without counting default events. Reject missing or unknown edit scopes and stop inventing consented scopes in legacy OAuth.
+
 - Isolate cached reads by credential identity and scopes; invalidate all property queries after writes and prevent stale concurrent refills. Expire context after 24 hours and add cleanup of expired toolkit cache files.
 
 - Parse numbered funnel steps and API totals correctly. Retain missing steps unless --drop-missing is requested; post-payment diagnostics no longer remove steps.
