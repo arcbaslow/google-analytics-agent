@@ -62,3 +62,5 @@ and asks `y/N` for that operation. Run it in an interactive terminal; piped
 input, EOF and cancellation refuse the write. There is no bypass flag. MCP
 stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
+
+MCP propose_admin_write saves one exact Admin proposal for an expiring, single-use terminal approval. The user must run its approval_command and answer the existing y/N prompt themselves; agents must not supply approval. admin_proposal_status only reads the outcome. There is no MCP execute tool, and confirm=true remains insufficient. Refused or failed proposals cannot be replayed; applied:null means the result is unknown. See docs/APPROVALS.md.

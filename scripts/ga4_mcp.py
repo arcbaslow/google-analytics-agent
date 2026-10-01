@@ -13,6 +13,7 @@ import functools
 from typing import Any, Callable, TypeVar, cast
 
 import ga4_admin
+import ga4_approval
 import ga4_audit
 import ga4_auth
 import ga4_benchmarks
@@ -243,6 +244,22 @@ def _preview(would_apply: Any) -> dict[str, Any]:
         "would_apply": would_apply,
         "note": "Dry run. No API call made. Apply in an interactive CLI terminal after reviewing its y/N prompt; confirm=true is not terminal approval.",
     }
+
+
+@mcp.tool()
+@_auth_guarded
+def propose_admin_write(
+    operation: str, arguments: dict[str, Any], expires_seconds: int = 300
+) -> dict[str, Any]:
+    """Save one exact write for the user's terminal approval; never execute it."""
+    return ga4_approval.propose(operation, arguments, expires_seconds)
+
+
+@mcp.tool()
+@_auth_guarded
+def admin_proposal_status(proposal_id: str, digest: str) -> dict[str, Any]:
+    """Inspect a proposal's outcome. This tool cannot approve or execute a write."""
+    return ga4_approval.proposal_status(proposal_id, digest)
 
 
 def _applied(result: Any) -> dict[str, Any]:

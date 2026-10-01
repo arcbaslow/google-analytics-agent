@@ -55,3 +55,5 @@ stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
 
 Key-event capacity uses the API custom flag: default key events do not consume the custom limit. At the Standard boundary, creation reads the current property service level: Standard permits 30 custom key events and Analytics 360 permits 50. Unknown service levels defer enforcement to the API. Auth --check --write reports edit-scope evidence and rejects missing or unknown edit scopes; declared scopes are distinguished from granted scopes and do not establish a property role. Legacy OAuth never adds unconsented scopes to stored credentials. Each write still requires its own y/N approval.
+
+MCP propose_admin_write saves one exact Admin proposal for an expiring, single-use terminal approval. The user must run its approval_command and answer the existing y/N prompt themselves; agents must not supply approval. admin_proposal_status only reads the outcome. There is no MCP execute tool, and confirm=true remains insufficient. Refused or failed proposals cannot be replayed; applied:null means the result is unknown. See docs/APPROVALS.md.
