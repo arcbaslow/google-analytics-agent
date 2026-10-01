@@ -348,8 +348,13 @@ evidence that their outputs are accurate.
 - Leave FX defaults unchanged: they are dated mid-2025 static estimates and
   are not wired to a real `--base-currency` flag. Currency history needs explicit
   dates/rate provenance before any financial comparison feature.
-- The website fetch guard still has a DNS validation/connection race after
-  redirect checks; full address pinning is a larger transport change.
+- Resolved after authorization of larger work: website connections now use
+  the exact validated numeric socket address, with no second DNS lookup at
+  connect time. HTTP Host and HTTPS SNI/certificate checks retain the original
+  hostname. Proxy routing is disabled for this fetcher. Mocked rebinding,
+  mixed-answer, TLS and redirect tests cover the transport contract.
+  Evidence: `scripts/ga4_context.py:_public_connection` and
+  `scripts/test_ga4_pinned_fetch.py`. No network exploit was attempted.
 - Live scopes, roles, quotas, propagation delays, API eligibility, property
   custom-field compatibility and end-to-end writes remain unverified by design.
 - New cache writes are scrubbed and old entries are scrubbed when returned.

@@ -28,6 +28,8 @@
 
 ### Fixed
 
+- Pin website-context connections to validated public socket addresses, preserve HTTPS hostname verification, and disable proxy redirection to close the DNS validation/connection race.
+
 - Apply Standard/360 custom key-event limits without counting default events. Reject missing or unknown edit scopes and stop inventing consented scopes in legacy OAuth.
 
 - Isolate cached reads by credential identity and scopes; invalidate all property queries after writes and prevent stale concurrent refills. Expire context after 24 hours and add cleanup of expired toolkit cache files.
