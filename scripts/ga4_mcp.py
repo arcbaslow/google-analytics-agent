@@ -13,6 +13,7 @@ import functools
 from typing import Any, Callable, TypeVar, cast
 
 import ga4_admin
+import ga4_advertising
 import ga4_approval
 import ga4_audit
 import ga4_auth
@@ -216,6 +217,38 @@ def report(
 def report_metadata(property_id: str, use_cache: bool = True) -> dict[str, Any]:
     """Discover standard/custom report fields; property 0 returns standard fields only."""
     return ga4_data.get_metadata(property_id, use_cache=use_cache)
+
+
+@mcp.tool()
+@_auth_guarded
+def conversion_metadata(property_id: str) -> dict[str, Any]:
+    """Discover alpha conversion action identifiers and advertising report fields."""
+    return ga4_advertising.conversion_metadata(property_id)
+
+
+@mcp.tool()
+@_auth_guarded
+def advertising_report(
+    property_id: str,
+    metrics: list[str],
+    dimensions: list[str],
+    start_date: str,
+    end_date: str,
+    conversion_actions: list[str] | None = None,
+    attribution_model: str = "DATA_DRIVEN",
+    limit: int = 10000,
+) -> dict[str, Any]:
+    """Explicit alpha advertising conversion report, separate from key-event reports."""
+    return ga4_advertising.run_conversion_report(
+        property_id,
+        metrics,
+        dimensions,
+        start_date,
+        end_date,
+        conversion_actions,
+        attribution_model,
+        limit,
+    )
 
 
 @mcp.tool()

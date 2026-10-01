@@ -270,6 +270,17 @@ def run_report(
         if parsed:
             req_kwargs["dimension_filter"] = _build_filter_expression(parsed)
 
+    out = _paged_report(
+        client, RunReportRequest, req_kwargs, limit, page_size, max_pages, include_metadata
+    )
+    if use_cache and out["complete"]:
+        cache_set(out, *cache_args, namespace=namespace)
+    return out
+
+
+def _paged_report(
+    client, request_type, req_kwargs, limit, page_size, max_pages, include_metadata=True
+):
     out = None
     page_metadata = []
     reason = None
@@ -277,7 +288,7 @@ def run_report(
         offset = len(out["rows"]) if out else 0
         response = read_call(
             client.run_report,
-            RunReportRequest(**req_kwargs, offset=offset, limit=min(page_size, limit - offset)),
+            request_type(**req_kwargs, offset=offset, limit=min(page_size, limit - offset)),
         )
         page = _serialize_run_report(response, include_metadata=include_metadata)
         if out is None:
@@ -305,8 +316,6 @@ def run_report(
     if include_metadata:
         out["metadata"]["pages"] = page_metadata
     out = scrub_pii(out)
-    if use_cache and out["complete"]:
-        cache_set(out, *cache_args, namespace=namespace)
     return out
 
 
@@ -375,6 +384,7 @@ def _serialize_run_report(response, include_metadata=False):
         if isinstance(metadata_pb, Message):
             raw_meta = MessageToDict(metadata_pb, preserving_proto_field_name=True)
             for field in (
+                "section",
                 "subject_to_thresholding",
                 "empty_reason",
                 "schema_restriction_response",
