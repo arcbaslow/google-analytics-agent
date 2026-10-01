@@ -83,7 +83,7 @@ def test_get_credentials_tags_gcloud_adc_source(monkeypatch):
 
 
 def test_get_credentials_tags_env_source_when_env_var_set(monkeypatch):
-    fake = mock.MagicMock()
+    fake = mock.MagicMock(scopes=ga4_auth.SCOPES_EDIT, granted_scopes=None)
     monkeypatch.setattr("google.auth.default", lambda **kw: (fake, "proj"))
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "/some/sa.json")
     creds = ga4_auth.get_credentials(write=True)

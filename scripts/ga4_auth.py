@@ -154,9 +154,9 @@ def _legacy_credentials(write: bool):
     cd = _load_credentials()
     if not cd:
         return None
-    # Re-request scopes if upgrading to write. The refresh token usually carries
-    # the consented scopes already; this lets the SDK send the right intersection.
-    cd["scopes"] = sorted(set(cd.get("scopes", []) + scopes_for(write)))
+    # Requesting another scope cannot grant consent to an existing refresh token.
+    if write and SCOPES_EDIT[0] not in cd.get("scopes", []):
+        raise AuthRequiredError("Edit scope is missing. Reauthenticate with " + adc_command(True))
     refresh_if_needed(cd)
     return Credentials(
         token=cd["token"],
@@ -185,6 +185,8 @@ def get_credentials(write: bool = False):
                 source = "env_GOOGLE_APPLICATION_CREDENTIALS"
             else:
                 source = "gcloud_adc"
+            if write:
+                require_edit_scope(creds)
             return _tagged(creds, source)
         except DefaultCredentialsError:
             pass
@@ -194,6 +196,8 @@ def get_credentials(write: bool = False):
     # 3: legacy OAuth flow
     legacy = _legacy_credentials(write)
     if legacy is not None:
+        if write:
+            require_edit_scope(legacy)
         return _tagged(legacy, "legacy_oauth")
 
     raise AuthRequiredError(
@@ -218,6 +222,30 @@ def credentials_source(creds) -> str:
     return getattr(creds, "_ga4_source", "unknown")
 
 
+def edit_scope_status(creds):
+    granted = getattr(creds, "granted_scopes", None)
+    declared = getattr(creds, "scopes", None)
+    for scopes, evidence in ((granted, "granted"), (declared, "declared")):
+        if isinstance(scopes, (list, tuple, set)):
+            return {
+                "edit_scope": "present" if SCOPES_EDIT[0] in scopes else "missing",
+                "scope_evidence": evidence,
+                "property_access": "not_checked",
+            }
+    return {
+        "edit_scope": "unknown",
+        "scope_evidence": "unavailable",
+        "property_access": "not_checked",
+    }
+
+
+def require_edit_scope(creds):
+    if edit_scope_status(creds)["edit_scope"] != "present":
+        raise AuthRequiredError(
+            "Edit scope is missing or unknown. Reauthenticate with " + adc_command(True)
+        )
+
+
 # ---------- ADC quota project ----------
 
 
@@ -238,10 +266,10 @@ def set_quota_project(project_id: str) -> dict[str, Any]:
 # ---------- CLI ----------
 
 
-def check_auth() -> bool:
+def check_auth(write=False) -> bool:
     """Verify credentials resolve. Print which path was used."""
     try:
-        creds = get_credentials(write=False)
+        creds = get_credentials(write=write)
     except AuthRequiredError as e:
         print(json.dumps({"status": "no_credentials", "hint": scrub_pii(e.hint)}))
         return False
@@ -249,7 +277,7 @@ def check_auth() -> bool:
         print(json.dumps({"status": "error", "type": type(e).__name__, "error": scrub_pii(str(e))}))
         return False
 
-    info = {"status": "ok", "source": credentials_source(creds)}
+    info = {"status": "ok", "source": credentials_source(creds), **edit_scope_status(creds)}
     # google.auth user creds expose .expiry; SA creds don't
     expiry = getattr(creds, "expiry", None)
     if expiry:
@@ -307,7 +335,7 @@ def main() -> int:
         return 0
 
     if args.check:
-        return 0 if check_auth() else 1
+        return 0 if check_auth(write=args.write) else 1
 
     if args.properties:
         try:
