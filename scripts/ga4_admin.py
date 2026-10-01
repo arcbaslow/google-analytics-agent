@@ -18,7 +18,9 @@ import inspect
 import json
 import re
 import sys
+from contextvars import ContextVar
 from pathlib import Path
+from typing import Callable
 
 from ga4_auth import get_credentials
 from ga4_transport import error_result, read_call, read_list, read_operation
@@ -44,6 +46,9 @@ DEFAULT_KEY_EVENTS = {
     "app_store_subscription_convert",
     "app_store_subscription_renew",
 }
+_WRITE_PRECONDITION: ContextVar[Callable[[dict], None] | None] = ContextVar(
+    "ga4_write_precondition", default=None
+)
 
 
 class ConfirmationRequiredError(RuntimeError):
@@ -71,6 +76,9 @@ def _confirmed_write(fn):
             approved = False
         if not approved:
             raise ConfirmationRequiredError("Write cancelled; no API call made.")
+        precondition = _WRITE_PRECONDITION.get()
+        if precondition is not None:
+            precondition(proposal)
         return fn(*bound.args, **bound.kwargs)
 
     return wrapper
