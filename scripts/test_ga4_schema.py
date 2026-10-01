@@ -57,7 +57,9 @@ def test_metadata_real_contract_scrubbing_and_cache(client):
     assert first["dimensions"][0]["custom_definition"] is True
     assert first["metrics"][0]["type_"] == "TYPE_INTEGER"
     assert "a@example.com" not in json.dumps(first)
-    client.get_metadata.assert_called_once_with(GetMetadataRequest(name="properties/123/metadata"))
+    client.get_metadata.assert_called_once_with(
+        GetMetadataRequest(name="properties/123/metadata"), retry=None, timeout=30
+    )
     cached = next(ga4_utils.CACHE_DIR.glob("*.json")).read_text()
     assert "a@example.com" not in cached
     assert len(client.method_calls) == 1
@@ -147,8 +149,9 @@ def test_mcp_quota_error_scrubbed_and_not_cached(client, tool):
     method.side_effect = ResourceExhausted("a@example.com quota")
     args = ("123",) if tool == "report_metadata" else ("123", ["sessions"], [])
     for _ in range(2):
-        with pytest.raises(RuntimeError, match="email-redacted"):
-            getattr(ga4_mcp, tool)(*args)
+        out = getattr(ga4_mcp, tool)(*args)
+        assert out["error"] == "quota_exhausted"
+        assert "email-redacted" in out["message"]
     assert method.call_count == 2
 
 

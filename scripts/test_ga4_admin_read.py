@@ -70,7 +70,7 @@ def test_list_key_events_uses_key_events_method_when_available(monkeypatch, tmp_
 
 def test_list_key_events_falls_back_to_conversion_events(monkeypatch, tmp_cache_dir):
     # An older client without list_key_events should use list_conversion_events.
-    client = SimpleNamespace(list_conversion_events=lambda parent: ["ce1"])
+    client = SimpleNamespace(list_conversion_events=mock.Mock(return_value=["ce1"]))
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: client)
     _identity_ptd(monkeypatch)
 
@@ -86,7 +86,8 @@ def test_get_attribution_settings_wraps_error(monkeypatch, tmp_cache_dir):
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
 
     out = ga4_admin.get_attribution_settings("123")
-    assert out["error"] == "nope"
+    assert out["error"] == "unexpected_error"
+    assert out["message"] == "nope"
 
 
 def test_data_filters_are_explicitly_unsupported(monkeypatch):
@@ -164,6 +165,7 @@ def test_list_platform_links_aggregates_with_per_type_errors(monkeypatch, tmp_ca
 
     out = ga4_admin.list_platform_links("123")
     assert out["google_ads_links"] == ["gads"]
-    assert out["search_ads_360_links"] == [{"error": "sa360 fail"}]
+    assert out["search_ads_360_links"][0]["error"] == "unexpected_error"
+    assert out["search_ads_360_links"][0]["message"] == "sa360 fail"
     assert out["bigquery_links"] == ["bq"]
     assert out["search_console_links"][0]["status"] == "unsupported"

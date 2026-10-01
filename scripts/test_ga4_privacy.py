@@ -112,9 +112,9 @@ def test_mcp_preview_results_and_errors_are_scrubbed(monkeypatch):
         raise ValueError("rejected person@example.com")
 
     monkeypatch.setattr(ga4_data, "run_report", fail)
-    with pytest.raises(RuntimeError) as exc:
-        ga4_mcp.report("123", ["activeUsers"], [])
-    assert "person@example.com" not in str(exc.value)
+    out = ga4_mcp.report("123", ["activeUsers"], [])
+    assert out["error"] == "invalid_request"
+    assert "person@example.com" not in str(out)
 
 
 def test_cli_error_does_not_echo_personal_values(monkeypatch, capsys):

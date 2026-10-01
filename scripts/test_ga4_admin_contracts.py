@@ -27,7 +27,7 @@ def test_real_web_stream_serialization_fetches_enhanced_measurement(monkeypatch)
     out = ga4_admin.get_enhanced_measurement("123")
     assert out[0]["enhanced_measurement"]["stream_enabled"] is True
     client.get_enhanced_measurement_settings.assert_called_once_with(
-        name="properties/123/dataStreams/9/enhancedMeasurementSettings"
+        name="properties/123/dataStreams/9/enhancedMeasurementSettings", retry=None, timeout=30
     )
 
 
@@ -40,7 +40,7 @@ def test_retention_uses_separate_resource_and_cache(monkeypatch):
     assert ga4_admin.get_data_retention_settings("123")["event_data_retention"] == "TWO_MONTHS"
     ga4_admin.get_data_retention_settings("123")
     client.get_data_retention_settings.assert_called_once_with(
-        name="properties/123/dataRetentionSettings"
+        name="properties/123/dataRetentionSettings", retry=None, timeout=30
     )
 
 

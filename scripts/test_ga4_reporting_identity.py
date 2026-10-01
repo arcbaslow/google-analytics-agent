@@ -27,7 +27,7 @@ def test_reporting_identity_read_is_cached_and_never_writes(monkeypatch, identit
     assert ga4_mcp.reporting_identity("123")["reporting_identity"] == identity
     factory.assert_called_once_with()
     client.get_reporting_identity_settings.assert_called_once_with(
-        name="properties/123/reportingIdentitySettings"
+        name="properties/123/reportingIdentitySettings", retry=None, timeout=30
     )
     assert len(client.method_calls) == 1
 

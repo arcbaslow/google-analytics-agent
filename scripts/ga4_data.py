@@ -14,6 +14,7 @@ import sys
 from datetime import date, timedelta
 
 from ga4_auth import get_credentials
+from ga4_transport import error_result, read_call, read_operation
 from ga4_utils import cache_get, cache_set, scrub_pii, scrub_response
 
 _FILTER_RE = re.compile(
@@ -143,6 +144,7 @@ def _schema_response(response, list_fields):
 
 
 @scrub_response
+@read_operation
 def get_metadata(property_id, use_cache=True):
     """Discover standard and property-specific fields; property 0 is standard-only."""
     from google.analytics.data_v1beta.types import GetMetadataRequest
@@ -152,8 +154,9 @@ def get_metadata(property_id, use_cache=True):
         cached = cache_get(*cache_args)
         if cached is not None:
             return cached
-    response = _get_data_client().get_metadata(
-        GetMetadataRequest(name=f"properties/{property_id}/metadata")
+    response = read_call(
+        _get_data_client().get_metadata,
+        GetMetadataRequest(name=f"properties/{property_id}/metadata"),
     )
     out = _schema_response(response, ("dimensions", "metrics"))
     if use_cache:
@@ -162,6 +165,7 @@ def get_metadata(property_id, use_cache=True):
 
 
 @scrub_response
+@read_operation
 def check_compatibility(property_id, metrics, dimensions, filter_expr=None, filter_dict=None):
     """Explicit, uncached Core compatibility read; no report or automatic preflight.
 
@@ -180,10 +184,13 @@ def check_compatibility(property_id, metrics, dimensions, filter_expr=None, filt
         kwargs["dimension_filter"] = build_dimension_filter(filter_dict)
     elif filter_expr:
         kwargs["dimension_filter"] = _build_filter_expression(parse_filter(filter_expr))
-    response = _get_data_client().check_compatibility(CheckCompatibilityRequest(**kwargs))
+    response = read_call(
+        _get_data_client().check_compatibility, CheckCompatibilityRequest(**kwargs)
+    )
     return _schema_response(response, ("dimension_compatibilities", "metric_compatibilities"))
 
 
+@read_operation
 def run_report(
     property_id,
     metrics,
@@ -265,8 +272,9 @@ def run_report(
     reason = None
     for page_index in range(max_pages):
         offset = len(out["rows"]) if out else 0
-        response = client.run_report(
-            RunReportRequest(**req_kwargs, offset=offset, limit=min(page_size, limit - offset))
+        response = read_call(
+            client.run_report,
+            RunReportRequest(**req_kwargs, offset=offset, limit=min(page_size, limit - offset)),
         )
         page = _serialize_run_report(response, include_metadata=include_metadata)
         if out is None:
@@ -381,6 +389,7 @@ def _serialize_run_report(response, include_metadata=False):
     return out
 
 
+@read_operation
 def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use_cache=True):
     """Run a v1alpha funnel report keyed on eventName per step."""
     if not 2 <= len(steps) <= 10 or len(set(steps)) != len(steps):
@@ -422,7 +431,7 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
         )
 
     client = _get_data_alpha_client()
-    response = client.run_funnel_report(RunFunnelReportRequest(**req_kwargs))
+    response = read_call(client.run_funnel_report, RunFunnelReportRequest(**req_kwargs))
     out = _serialize_funnel_report(response, steps=steps)
     out = scrub_pii(out)
     if use_cache:
@@ -527,7 +536,7 @@ def main():
                 order_bys=json.loads(args.order_bys) if args.order_bys else None,
             )
     except Exception as e:
-        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps(error_result(e)), file=sys.stderr)
         return 1
 
     print(json.dumps(result, indent=2, default=str))

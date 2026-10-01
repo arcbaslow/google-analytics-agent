@@ -15,6 +15,7 @@ import sys
 
 from ga4_data import run_funnel_report
 from ga4_events import check_events, detect_postpayment_api
+from ga4_transport import read_operation
 from ga4_utils import scrub_pii, scrub_response
 
 # E-commerce purchase funnel preset. Users running non-ecomm funnels pass
@@ -31,6 +32,7 @@ ECOMM_FUNNEL_PRESET = [
 DEFAULT_FUNNEL_STEPS = ECOMM_FUNNEL_PRESET
 
 
+@read_operation
 def validate_steps(property_id, steps, days=7, drop_missing=False):
     """Keep missing steps unless explicitly asked to change the funnel."""
     check = check_events(property_id, steps, days=days)
@@ -52,6 +54,7 @@ def validate_steps(property_id, steps, days=7, drop_missing=False):
 
 
 @scrub_response
+@read_operation
 def build_funnel(
     property_id, steps=None, days=28, breakdown=None, check_postpayment=False, drop_missing=False
 ):
@@ -199,6 +202,7 @@ def _step_rates_from_counts(counts, steps):
     }
 
 
+@read_operation
 def main():
     parser = argparse.ArgumentParser(description="GA4 funnel constructor")
     parser.add_argument("--property", required=True)
