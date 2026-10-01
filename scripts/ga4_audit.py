@@ -650,7 +650,7 @@ SEGMENT_HIGH_SHARE = 0.25
 def _cohort_rate(row, mode):
     sessions = _safe_int(row.get("sessions"))
     if mode == "conversion":
-        return (_safe_int(row.get("keyEvents")) / sessions) if sessions else 0.0, sessions
+        return _safe_float(row.get("sessionKeyEventRate")), sessions
     return _safe_float(row.get("engagementRate")), sessions
 
 
@@ -698,7 +698,7 @@ def run_segments(property_id, days=28):
     data = {"cohorts": {}}
 
     mode = "conversion"
-    metrics = ["sessions", "keyEvents"]
+    metrics = ["sessions", "sessionKeyEventRate"]
     probe = None
     try:
         probe = ga4_data.run_report(
@@ -707,7 +707,7 @@ def run_segments(property_id, days=28):
             dimensions=[SEGMENT_COHORT_DIMENSIONS[0]],
             days=days,
         )
-        if sum(_safe_int(r.get("keyEvents")) for r in probe["rows"]) == 0:
+        if not any(_safe_float(r.get("sessionKeyEventRate")) > 0 for r in probe["rows"]):
             mode = "engagement"
     except Exception:
         mode = "engagement"
@@ -715,7 +715,7 @@ def run_segments(property_id, days=28):
     if mode == "engagement":
         metrics = ["sessions", "engagementRate"]
         probe = None
-    metric_label = "conversion_rate" if mode == "conversion" else "engagement_rate"
+    metric_label = "session_key_event_rate" if mode == "conversion" else "engagement_rate"
     data["mode"] = mode
     baseline = None
 

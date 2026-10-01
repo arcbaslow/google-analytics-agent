@@ -40,3 +40,5 @@ payment or after a redirect. Confirm ordering with appropriate tag evidence.
 List observed events, supported proxy results, unavailable checks and follow-up
 questions. Distinguish absent events from events that were not expected for
 this property's goals. Preserve privacy scrubbing in all output.
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.

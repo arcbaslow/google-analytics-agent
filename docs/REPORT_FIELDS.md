@@ -54,3 +54,5 @@ The MCP/Python `filter_dict` accepts the same shorthand or raw dimension
 FilterExpression as `run_report` and takes precedence over `filter_expr`.
 Metric filters are not exposed by these adapters. Use the existing report
 path after inspecting the result; no field is automatically removed or replaced.
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.

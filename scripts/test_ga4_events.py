@@ -196,10 +196,10 @@ def test_event_params_coverage_purchase_mixes_dim_and_metric_params(monkeypatch)
     assert cov["currency"]["coverage_pct"] == 95.0
     assert cov["transaction_id"]["coverage_pct"] == 100.0
 
-    # metric-backed param: aggregate > 0 reads as full coverage; 0 reads as none
-    assert cov["value"]["coverage_pct"] == 100.0
+    # Aggregate metrics cannot establish event-level coverage.
+    assert cov["value"]["coverage_pct"] is None
     assert cov["value"]["aggregate"] == 54321.0
-    assert cov["items"]["coverage_pct"] == 0.0
+    assert cov["items"]["coverage_pct"] is None
 
 
 def test_event_params_coverage_non_purchase_uses_item_revenue_metric(monkeypatch):
@@ -227,9 +227,9 @@ def test_event_params_coverage_non_purchase_uses_item_revenue_metric(monkeypatch
 
     # non-purchase events map "items" to the itemRevenue metric, not itemsPurchased
     assert any(m and m[0] == "itemRevenue" for m in calls)
-    assert out["coverage"]["items"]["coverage_pct"] == 100.0
-    # totalRevenue aggregated to 0 -> "value" reads as no coverage
-    assert out["coverage"]["value"]["coverage_pct"] == 0.0
+    assert out["coverage"]["items"]["coverage_pct"] is None
+    # A zero aggregate does not establish missing parameter values.
+    assert out["coverage"]["value"]["coverage_pct"] is None
 
 
 def test_param_coverage_dimension_with_zero_total_is_zero(monkeypatch):

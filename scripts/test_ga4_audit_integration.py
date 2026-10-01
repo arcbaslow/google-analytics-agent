@@ -47,10 +47,10 @@ def _wire(monkeypatch, scenario):
         dims = kwargs.get("dimensions") or (args[2] if len(args) > 2 else [])
         metrics = kwargs.get("metrics") or (args[1] if len(args) > 1 else [])
         key = dims[0] if dims else "date"
-        # The segments agent reads the channel breakdown with sessions/keyEvents,
+        # The segments agent reads sessions/sessionKeyEventRate,
         # while attribution reads it with eventCount. Route them to distinct
         # fixtures so each gets the metric shape it expects.
-        if key == "sessionDefaultChannelGroup" and "keyEvents" in metrics:
+        if key == "sessionDefaultChannelGroup" and "sessionKeyEventRate" in metrics:
             key = "sessionDefaultChannelGroup_segments"
         return scenario["run_report"][key]
 

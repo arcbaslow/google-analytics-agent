@@ -108,3 +108,5 @@ Benchmark tables and comparisons are labeled `source_status: unverified_heuristi
 Their p25/p50/p75 names are legacy band labels, not verified population
 percentiles. Do not present them as evidence of industry performance or use
 them alone to set severity. See [the source review](../docs/ROADMAP.md).
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.

@@ -138,3 +138,5 @@ Compatibility is uncached and does not validate funnels or realtime. Metadata
 uses the 15-minute cache; successful custom-definition and key-event writes
 invalidate it. Both reads scrub responses. No report triggers these reads
 automatically. See docs/REPORT_FIELDS.md for filters and limits.
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.

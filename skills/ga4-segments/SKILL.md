@@ -30,3 +30,5 @@ If a recent ga4-quality run reports sampling >10% or `(not set)` density >20% on
 ## After analysis
 
 Offer: "Want to drill into a specific segment? Re-run with `--breakdown <dim>` for the dimension that caught your eye."
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.
