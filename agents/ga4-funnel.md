@@ -22,9 +22,8 @@ no list is supplied:
    acquisition / activation / conversion flow.
 3. Ask the user to confirm before running the funnel.
 
-If a proposed step has no events in the validation window, drop it
-gracefully and flag it as a Critical finding (the funnel is then shorter
-than intended).
+If a proposed step has no events, retain it and report the missing data.
+Use --drop-missing only when the caller explicitly requests that change.
 
 ## Data fetch
 
@@ -62,8 +61,7 @@ When the caller passes `--check-postpayment` and `add_payment_info` is in
 the funnel:
 
 - Similar `add_payment_info` and `purchase` counts are a hypothesis to
-  investigate, not evidence of ordering. The current helper may remove the
-  step when this opt-in heuristic triggers; disclose the changed step list.
+  investigate, not evidence of ordering. The helper retains the step.
 
 This check is only relevant to e-commerce flows where a payment provider
 redirects the user out of the page; it is off by default.
@@ -103,3 +101,5 @@ denominator from this funnel; do not present it as an industry percentile. If
 the leakiest step is upstream of the conversion event, also surface the
 step-level conversion rate as a qualitative finding (no metric/value
 pair — benchmark bands don't exist for per-step CRs).
+
+Funnel reports accept 2-10 unique steps and retain missing steps by default. --drop-missing explicitly changes the requested funnel. --check-postpayment is advisory and never removes steps. Validation uses the complete requested date window. Numbered API step names are normalized; breakdown rates use the named dimension and RESERVED_TOTAL rows, never summed segment populations. Missing totals or malformed rows produce an error instead of fabricated rates.

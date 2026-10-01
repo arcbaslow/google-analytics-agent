@@ -383,6 +383,8 @@ def _serialize_run_report(response, include_metadata=False):
 
 def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use_cache=True):
     """Run a v1alpha funnel report keyed on eventName per step."""
+    if not 2 <= len(steps) <= 10 or len(set(steps)) != len(steps):
+        raise ValueError("funnel needs 2 to 10 unique steps")
     from google.analytics.data_v1alpha.types import (
         DateRange,
         Dimension,

@@ -32,8 +32,7 @@ metadata:
 
 - `--check-postpayment` (off by default): runs the post-payment heuristic
   against `add_payment_info`. If the count is within 10% of `purchase`, the
-  event fires after the payment-gateway redirect-back and the step is
-  dropped from the funnel with a Critical finding.
+  result is a hypothesis to investigate; it neither proves order nor removes a step.
 - `--breakdown <dim>` — funnel split by one dimension (e.g.
   `deviceCategory`, `sessionDefaultChannelGroup`).
 
@@ -44,3 +43,5 @@ Default 28 days. Override with `--days N`.
 ## After analysis
 
 Offer: "Want to break down the drop-off by segment? Use `/ga4 segments <property-id>`"
+
+Funnel reports accept 2-10 unique steps and retain missing steps by default. --drop-missing explicitly changes the requested funnel. --check-postpayment is advisory and never removes steps. Validation uses the complete requested date window. Numbered API step names are normalized; breakdown rates use the named dimension and RESERVED_TOTAL rows, never summed segment populations. Missing totals or malformed rows produce an error instead of fabricated rates.
