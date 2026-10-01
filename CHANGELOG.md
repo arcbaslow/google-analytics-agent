@@ -14,6 +14,8 @@
 
 ### Fixed
 
+- Isolate cached reads by credential identity and scopes; invalidate all property queries after writes and prevent stale concurrent refills. Expire context after 24 hours and add cleanup of expired toolkit cache files.
+
 - Parse numbered funnel steps and API totals correctly. Retain missing steps unless --drop-missing is requested; post-payment diagnostics no longer remove steps.
 
 - Return unknown parameter coverage for aggregate metrics and use session key-event rates in segment audits.

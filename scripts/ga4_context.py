@@ -28,18 +28,22 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import os
 import re
 import socket
 import sys
+import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
 
-from ga4_utils import scrub_pii, scrub_response
+from ga4_utils import cache_namespace, scrub_pii, scrub_response
 
 CONTEXT_DIR = Path.home() / ".claude" / "ga4-context"
+CONTEXT_TTL_SECONDS = 24 * 60 * 60
 FETCH_TIMEOUT_SECONDS = 12
 USER_AGENT = "google-analytics-agent/0.3 (+context-extractor)"
 MAX_HTML_BYTES = 800_000  # ~800 KB cap on homepage download
@@ -53,22 +57,51 @@ def _ensure_dir():
     CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _context_namespace():
+    from ga4_admin import _get_admin_client
+
+    return cache_namespace(_get_admin_client())
+
+
+def _context_path(property_id):
+    if not property_id or not re.fullmatch(r"[A-Za-z0-9_-]+", property_id):
+        raise ValueError("invalid property identifier")
+    return CONTEXT_DIR / f"{property_id}_{_context_namespace()}.json"
+
+
 def save_context(property_id: str, context: dict[str, Any]) -> Path:
     _ensure_dir()
-    path = CONTEXT_DIR / f"{property_id}.json"
-    path.write_text(json.dumps(scrub_pii(context), indent=2, default=str), encoding="utf-8")
+    path = _context_path(property_id)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=CONTEXT_DIR, suffix=".tmp", delete=False
+        ) as f:
+            temporary = Path(f.name)
+            json.dump(scrub_pii(context), f, default=str)
+        os.replace(temporary, path)
+    finally:
+        if temporary:
+            temporary.unlink(missing_ok=True)
     return path
 
 
 def load_context(property_id: str) -> dict[str, Any] | None:
-    path = CONTEXT_DIR / f"{property_id}.json"
-    if not path.exists():
+    path = _context_path(property_id)
+    try:
+        age = time.time() - path.stat().st_mtime
+        if not -1 <= age < CONTEXT_TTL_SECONDS:
+            return None
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict) or value.get("error"):
+            return None
+        return scrub_pii(value)
+    except (OSError, ValueError):
         return None
-    return scrub_pii(json.loads(path.read_text(encoding="utf-8")))
 
 
 def delete_context(property_id: str) -> dict[str, Any]:
-    path = CONTEXT_DIR / f"{property_id}.json"
+    path = _context_path(property_id)
     if not path.exists():
         return {"status": "absent", "property_id": property_id}
     path.unlink()

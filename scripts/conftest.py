@@ -15,9 +15,11 @@ def tmp_cache_dir(monkeypatch, tmp_path):
     cache_dir = tmp_path / "ga4-cache"
     creds_path = tmp_path / "ga4-credentials.json"
     import ga4_auth
+    import ga4_context
     import ga4_utils
 
     monkeypatch.setattr(ga4_utils, "CACHE_DIR", cache_dir)
+    monkeypatch.setattr(ga4_context, "_context_namespace", lambda: "test-identity")
     monkeypatch.setattr(ga4_auth, "CREDENTIALS_PATH", creds_path)
     return tmp_path
 

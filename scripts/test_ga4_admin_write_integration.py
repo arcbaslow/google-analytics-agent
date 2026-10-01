@@ -259,7 +259,7 @@ def test_create_custom_metric_builds_request_and_parses_response(monkeypatch):
 
 
 def test_create_key_event_under_limit_builds_request_and_parses_response(monkeypatch):
-    monkeypatch.setattr(ga4_admin, "list_key_events", lambda pid: [])
+    monkeypatch.setattr(ga4_admin, "list_key_events", lambda pid, **kw: [])
     client = _beta(monkeypatch, "create_key_event", _load(KeyEvent, "key_event_created.json"))
 
     out = ga4_admin.create_key_event("123", "purchase")

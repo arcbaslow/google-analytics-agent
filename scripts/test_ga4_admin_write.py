@@ -59,7 +59,7 @@ def test_create_audience_rejects_over_540_days(monkeypatch):
 
 def test_create_key_event_blocks_at_limit(monkeypatch):
     monkeypatch.setattr(
-        ga4_admin, "list_key_events", lambda pid: [{"name": f"ke-{i}"} for i in range(30)]
+        ga4_admin, "list_key_events", lambda pid, **kw: [{"name": f"ke-{i}"} for i in range(30)]
     )
     mock_client = MagicMock()
     monkeypatch.setattr(ga4_admin, "_get_admin_client", lambda write=False: mock_client)
@@ -69,7 +69,7 @@ def test_create_key_event_blocks_at_limit(monkeypatch):
 
 
 def test_create_key_event_under_limit_calls_api(monkeypatch):
-    monkeypatch.setattr(ga4_admin, "list_key_events", lambda pid: [])
+    monkeypatch.setattr(ga4_admin, "list_key_events", lambda pid, **kw: [])
     mock_client = MagicMock()
     fake_resp = MagicMock()
     fake_resp._pb = {"name": "properties/123/keyEvents/abc", "eventName": "purchase"}

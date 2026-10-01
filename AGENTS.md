@@ -128,7 +128,7 @@ event order or prove a payment-gateway redirect problem. It is off by default.
 
 The scripts cache responses on disk at `~/.claude/ga4-cache/` for 15
 minutes per unique query. Admin writes drop the cached reads they change,
-so subsequent reads normally refresh it; concurrent requests and disk failures
+so subsequent reads normally refresh it; disk failures
 can still leave another process stale. PII keys (`email`, `phone`, ID-like fields) are
 scrubbed from responses before any analysis. Both are implemented in
 `scripts/ga4_utils.py`.
@@ -256,3 +256,5 @@ Reports accept --limit (default 10000, maximum 250000), --page-size and --max-pa
 Funnel reports accept 2-10 unique steps and retain missing steps by default. --drop-missing explicitly changes the requested funnel. --check-postpayment is advisory and never removes steps. Validation uses the complete requested date window. Numbered API step names are normalized; breakdown rates use the named dimension and RESERVED_TOTAL rows, never summed segment populations. Missing totals or malformed rows produce an error instead of fabricated rates.
 
 Read operations share a 100-request budget, including retries and Admin pages; a full audit shares it across workers. Python callers can use ga4_transport.read_budget(max_requests=N), with N from 1 to 1000. Transient reads have at most three attempts with a 30-second RPC timeout and GAPIC retries disabled. Auth, permission and quota failures are not retried. CLI/MCP and partial Admin errors expose stable categories; partial failures are not successful checks or cached results. Admin writes do not use this retry helper.
+
+API cache entries expire after 15 minutes and are isolated by resolved account/token identity, granted or declared scopes, and quota project. Only hashes are stored; credential files are never opened by the cache. Unidentified clients use a process-local random namespace. Every successful Admin write invalidates all API queries for that property across namespaces. Locked generation checks prevent older in-flight reads from refilling invalidated entries. Cache I/O failure disables reuse in the current process; other processes can remain stale until expiry if the shared disk cannot be updated. Role revocations cannot be verified offline. Context uses a separate 24-hour expiry and the same identity isolation; --refresh still forces refresh. Run python scripts/ga4_utils.py --cleanup-cache to remove only expired toolkit cache JSON files, including legacy entries; unrelated files and generation markers are retained.

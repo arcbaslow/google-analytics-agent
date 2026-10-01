@@ -36,7 +36,7 @@ def test_each_write_requires_one_approval(monkeypatch, capsys, name, args, answe
     client = factory.return_value
     monkeypatch.setattr(ga4_admin, "_get_admin_client", factory)
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", factory)
-    monkeypatch.setattr(ga4_admin, "list_key_events", lambda _: [])
+    monkeypatch.setattr(ga4_admin, "list_key_events", lambda _, **kw: [])
     monkeypatch.setattr(ga4_admin, "_proto_to_dict", lambda _: {"ok": True})
     monkeypatch.setattr(ga4_admin.sys.stdin, "isatty", lambda: True)
     prompt = MagicMock(return_value=answer)

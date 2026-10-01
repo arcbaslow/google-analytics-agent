@@ -22,7 +22,14 @@ from pathlib import Path
 
 from ga4_auth import get_credentials
 from ga4_transport import error_result, read_call, read_list, read_operation
-from ga4_utils import cache_get, cache_invalidate, cache_set, scrub_pii, scrub_response
+from ga4_utils import (
+    cache_get,
+    cache_invalidate,
+    cache_namespace,
+    cache_set,
+    scrub_pii,
+    scrub_response,
+)
 
 _PARAM_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 _PROPERTY_IN_NAME_RE = re.compile(r"^properties/([^/]+)/")
@@ -127,38 +134,41 @@ def _invalidate_for_name(read, name):
 @scrub_response
 @read_operation
 def get_property_details(property_id):
-    cached = cache_get("property_details", property_id)
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("property_details", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_client()
     prop = read_call(client.get_property, name=f"properties/{property_id}")
     out = _proto_to_dict(prop)
-    cache_set(out, "property_details", property_id)
+    cache_set(out, "property_details", property_id, namespace=namespace)
     return out
 
 
 @scrub_response
 @read_operation
 def list_data_streams(property_id):
-    cached = cache_get("data_streams", property_id)
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("data_streams", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_client()
     streams = [
         _proto_to_dict(s)
         for s in read_list(client.list_data_streams, parent=f"properties/{property_id}")
     ]
-    cache_set(streams, "data_streams", property_id)
+    cache_set(streams, "data_streams", property_id, namespace=namespace)
     return streams
 
 
 @scrub_response
 @read_operation
 def get_enhanced_measurement(property_id):
-    cached = cache_get("enhanced_measurement", property_id)
+    client = _get_admin_alpha_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("enhanced_measurement", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_alpha_client()
     results = []
     for s in read_list(client.list_data_streams, parent=f"properties/{property_id}"):
         stream_d = _proto_to_dict(s)
@@ -176,7 +186,7 @@ def get_enhanced_measurement(property_id):
             except Exception as e:
                 stream_d["enhanced_measurement_error"] = error_result(e)
         results.append(stream_d)
-    cache_set(results, "enhanced_measurement", property_id)
+    cache_set(results, "enhanced_measurement", property_id, namespace=namespace)
     return results
 
 
@@ -196,10 +206,11 @@ def list_data_filters(property_id):
 @scrub_response
 @read_operation
 def list_custom_defs(property_id):
-    cached = cache_get("custom_defs", property_id)
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("custom_defs", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_client()
     dims = [
         _proto_to_dict(d)
         for d in read_list(client.list_custom_dimensions, parent=f"properties/{property_id}")
@@ -209,17 +220,18 @@ def list_custom_defs(property_id):
         for m in read_list(client.list_custom_metrics, parent=f"properties/{property_id}")
     ]
     out = {"custom_dimensions": dims, "custom_metrics": mets}
-    cache_set(out, "custom_defs", property_id)
+    cache_set(out, "custom_defs", property_id, namespace=namespace)
     return out
 
 
 @scrub_response
 @read_operation
-def list_key_events(property_id):
-    cached = cache_get("key_events", property_id)
+def list_key_events(property_id, use_cache=True):
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("key_events", property_id, namespace=namespace) if use_cache else None
     if cached is not None:
         return cached
-    client = _get_admin_client()
     events = []
     if hasattr(client, "list_key_events"):
         for e in read_list(client.list_key_events, parent=f"properties/{property_id}"):
@@ -227,17 +239,19 @@ def list_key_events(property_id):
     else:
         for e in read_list(client.list_conversion_events, parent=f"properties/{property_id}"):
             events.append(_proto_to_dict(e))
-    cache_set(events, "key_events", property_id)
+    if use_cache:
+        cache_set(events, "key_events", property_id, namespace=namespace)
     return events
 
 
 @scrub_response
 @read_operation
 def get_attribution_settings(property_id):
-    cached = cache_get("attribution_settings", property_id)
+    client = _get_admin_alpha_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("attribution_settings", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_alpha_client()
     try:
         att = read_call(
             client.get_attribution_settings, name=f"properties/{property_id}/attributionSettings"
@@ -245,17 +259,18 @@ def get_attribution_settings(property_id):
         out = _proto_to_dict(att)
     except Exception as e:
         out = error_result(e)
-    cache_set(out, "attribution_settings", property_id)
+    cache_set(out, "attribution_settings", property_id, namespace=namespace)
     return out
 
 
 @scrub_response
 @read_operation
 def list_platform_links(property_id):
-    cached = cache_get("platform_links", property_id)
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("platform_links", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_client()
     alpha = _get_admin_alpha_client()
     out = {}
 
@@ -290,7 +305,7 @@ def list_platform_links(property_id):
         }
     ]
 
-    cache_set(out, "platform_links", property_id)
+    cache_set(out, "platform_links", property_id, namespace=namespace)
     return out
 
 
@@ -298,17 +313,18 @@ def list_platform_links(property_id):
 @read_operation
 def get_data_retention_settings(property_id):
     """Retention is a separate resource, not a field on Property."""
-    cached = cache_get("data_retention_settings", property_id)
+    client = _get_admin_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("data_retention_settings", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_client()
     out = _proto_to_dict(
         read_call(
             client.get_data_retention_settings,
             name=f"properties/{property_id}/dataRetentionSettings",
         )
     )
-    cache_set(out, "data_retention_settings", property_id)
+    cache_set(out, "data_retention_settings", property_id, namespace=namespace)
     return out
 
 
@@ -316,10 +332,11 @@ def get_data_retention_settings(property_id):
 @read_operation
 def get_reporting_identity_settings(property_id):
     """Read the selected identity. Older SDKs may not expose this alpha method."""
-    cached = cache_get("reporting_identity_settings", property_id)
+    client = _get_admin_alpha_client()
+    namespace = cache_namespace(client)
+    cached = cache_get("reporting_identity_settings", property_id, namespace=namespace)
     if cached is not None:
         return cached
-    client = _get_admin_alpha_client()
     if not hasattr(client, "get_reporting_identity_settings"):
         return {
             "status": "unsupported",
@@ -331,7 +348,7 @@ def get_reporting_identity_settings(property_id):
             name=f"properties/{property_id}/reportingIdentitySettings",
         )
     )
-    cache_set(out, "reporting_identity_settings", property_id)
+    cache_set(out, "reporting_identity_settings", property_id, namespace=namespace)
     return out
 
 
@@ -360,6 +377,7 @@ def create_event_edit_rule(property_id, stream_id, definition):
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     rule = _dict_to_proto(definition, EventEditRule)
     created = client.create_event_edit_rule(parent=parent, event_edit_rule=rule)
+    cache_invalidate("property", property_id)
     return _proto_to_dict(created)
 
 
@@ -374,6 +392,7 @@ def update_event_edit_rule(rule_name, definition):
     rule = _dict_to_proto({**definition, "name": rule_name}, EventEditRule)
     mask = FieldMask(paths=list(definition.keys()))
     updated = client.update_event_edit_rule(event_edit_rule=rule, update_mask=mask)
+    _invalidate_for_name("property", rule_name)
     return _proto_to_dict(updated)
 
 
@@ -383,6 +402,7 @@ def update_event_edit_rule(rule_name, definition):
 def delete_event_edit_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_edit_rule(name=rule_name)
+    _invalidate_for_name("property", rule_name)
     return {"status": "deleted", "name": rule_name}
 
 
@@ -393,6 +413,7 @@ def reorder_event_edit_rules(property_id, stream_id, ordered_names):
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     client.reorder_event_edit_rules(parent=parent, event_edit_rules=list(ordered_names))
+    cache_invalidate("property", property_id)
     return {"status": "reordered", "count": len(ordered_names)}
 
 
@@ -406,6 +427,7 @@ def create_event_create_rule(property_id, stream_id, definition):
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
     rule = _dict_to_proto(definition, EventCreateRule)
     created = client.create_event_create_rule(parent=parent, event_create_rule=rule)
+    cache_invalidate("property", property_id)
     return _proto_to_dict(created)
 
 
@@ -415,6 +437,7 @@ def create_event_create_rule(property_id, stream_id, definition):
 def delete_event_create_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_create_rule(name=rule_name)
+    _invalidate_for_name("property", rule_name)
     return {"status": "deleted", "name": rule_name}
 
 
@@ -451,6 +474,7 @@ def create_audience(property_id, definition):
     client = _get_admin_alpha_client(write=True)
     audience = _dict_to_proto(definition, Audience)
     created = client.create_audience(parent=f"properties/{property_id}", audience=audience)
+    cache_invalidate("property", property_id)
     return _proto_to_dict(created)
 
 
@@ -474,6 +498,7 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
     audience = _dict_to_proto({**fields, "name": audience_name}, Audience)
     mask = FieldMask(paths=list(fields.keys()))
     updated = client.update_audience(audience=audience, update_mask=mask)
+    _invalidate_for_name("property", audience_name)
     return _proto_to_dict(updated)
 
 
@@ -484,6 +509,7 @@ def archive_audience(audience_name):
     client = _get_admin_alpha_client(write=True)
     # archive_audience is not a flattened method; it takes a request object.
     client.archive_audience(request={"name": audience_name})
+    _invalidate_for_name("property", audience_name)
     return {"status": "archived", "name": audience_name}
 
 
@@ -583,8 +609,7 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
 
     # Count against the live list. A cached one can predate a delete made
     # elsewhere (GA4 UI, another host) and block a create that fits the limit.
-    cache_invalidate("key_events", property_id)
-    existing = list_key_events(property_id)
+    existing = list_key_events(property_id, use_cache=False)
     if len(existing) >= KEY_EVENT_LIMIT:
         raise ValueError(
             f"property already has {len(existing)} key events (limit {KEY_EVENT_LIMIT}); "

@@ -15,7 +15,7 @@ from datetime import date, timedelta
 
 from ga4_auth import get_credentials
 from ga4_transport import error_result, read_call, read_operation
-from ga4_utils import cache_get, cache_set, scrub_pii, scrub_response
+from ga4_utils import cache_get, cache_namespace, cache_set, scrub_pii, scrub_response
 
 _FILTER_RE = re.compile(
     r"^\s*(?P<dim>[\w:]+)\s+(?P<op>=|!=|IN|CONTAINS|BEGINS_WITH)\s+(?P<val>.+?)\s*$",
@@ -149,18 +149,20 @@ def get_metadata(property_id, use_cache=True):
     """Discover standard and property-specific fields; property 0 is standard-only."""
     from google.analytics.data_v1beta.types import GetMetadataRequest
 
+    client = _get_data_client()
+    namespace = cache_namespace(client)
     cache_args = ("report_metadata", property_id)
     if use_cache:
-        cached = cache_get(*cache_args)
+        cached = cache_get(*cache_args, namespace=namespace)
         if cached is not None:
             return cached
     response = read_call(
-        _get_data_client().get_metadata,
+        client.get_metadata,
         GetMetadataRequest(name=f"properties/{property_id}/metadata"),
     )
     out = _schema_response(response, ("dimensions", "metrics"))
     if use_cache:
-        cache_set(out, *cache_args)
+        cache_set(out, *cache_args, namespace=namespace)
     return out
 
 
@@ -227,6 +229,8 @@ def run_report(
         dimensions = ["date", *dimensions]
 
     start, end = (start_date, end_date) if start_date else date_range(days)
+    client = _get_data_client()
+    namespace = cache_namespace(client)
     cache_args = (
         "run_report",
         property_id,
@@ -244,11 +248,10 @@ def run_report(
         json.dumps(order_bys, sort_keys=True),
     )
     if use_cache:
-        cached = cache_get(*cache_args)
+        cached = cache_get(*cache_args, namespace=namespace)
         if cached is not None:
             return cached
 
-    client = _get_data_client()
     req_kwargs = {
         "property": f"properties/{property_id}",
         "metrics": [Metric(name=m) for m in metrics],
@@ -303,7 +306,7 @@ def run_report(
         out["metadata"]["pages"] = page_metadata
     out = scrub_pii(out)
     if use_cache and out["complete"]:
-        cache_set(out, *cache_args)
+        cache_set(out, *cache_args, namespace=namespace)
     return out
 
 
@@ -406,9 +409,11 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
     )
 
     start, end = date_range(days)
+    client = _get_data_alpha_client()
+    namespace = cache_namespace(client)
     cache_args = ("run_funnel_report", property_id, tuple(steps), breakdown_dimension, start, end)
     if use_cache:
-        cached = cache_get(*cache_args)
+        cached = cache_get(*cache_args, namespace=namespace)
         if cached is not None:
             return cached
 
@@ -430,12 +435,11 @@ def run_funnel_report(property_id, steps, days=28, breakdown_dimension=None, use
             breakdown_dimension=Dimension(name=breakdown_dimension)
         )
 
-    client = _get_data_alpha_client()
     response = read_call(client.run_funnel_report, RunFunnelReportRequest(**req_kwargs))
     out = _serialize_funnel_report(response, steps=steps)
     out = scrub_pii(out)
     if use_cache:
-        cache_set(out, *cache_args)
+        cache_set(out, *cache_args, namespace=namespace)
     return out
 
 

@@ -50,8 +50,8 @@ def test_atomic_replace_keeps_previous_complete_entry_on_failure(monkeypatch):
     ga4_utils.cache_set({"old": True}, "atomic")
 
     def blocked(source, destination):
-        assert json.loads(Path(source).read_text()) == {"new": True}
-        assert json.loads(Path(destination).read_text()) == {"old": True}
+        assert json.loads(Path(source).read_text())["value"] == {"new": True}
+        assert json.loads(Path(destination).read_text())["value"] == {"old": True}
         raise PermissionError
 
     monkeypatch.setattr(ga4_utils.os, "replace", blocked)

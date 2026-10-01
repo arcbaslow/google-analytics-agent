@@ -10,8 +10,11 @@ import json
 import os
 import re
 import tempfile
+import threading
 import time
+import uuid
 import warnings
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
@@ -19,6 +22,9 @@ from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 CACHE_DIR = Path.home() / ".claude" / "ga4-cache"
 CACHE_TTL_SECONDS = 15 * 60
 _INVALIDATED_PATHS: set[Path] = set()
+_DISABLED_SCOPES: set[Path] = set()
+_CACHE_TICKETS = threading.local()
+_PROCESS_NAMESPACE = uuid.uuid4().hex
 
 # PII patterns - drop any param matching these regexes from event data before agent analysis
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -78,39 +84,146 @@ def _has_error(value: Any) -> bool:
     return isinstance(value, list) and any(_has_error(v) for v in value)
 
 
-def cache_get(*parts: Any) -> Any:
-    """Return cached JSON if present and fresh, else None."""
-    path = CACHE_DIR / f"{_cache_key(*parts)}.json"
-    if path in _INVALIDATED_PATHS:
+def cache_namespace(client):
+    """Hash resolved in-memory identity/scope, never inspect credential files.
+
+    Token material never appears in a filename or stored value. If neither an
+    account nor an access token identifies the caller, isolate this client in
+    this process instead of sharing anonymous entries across callers.
+    """
+    creds = getattr(getattr(client, "transport", None), "_credentials", None)
+    principal = next(
+        (
+            value
+            for value in (
+                getattr(creds, "service_account_email", None),
+                getattr(creds, "account", None),
+            )
+            if isinstance(value, str) and value
+        ),
+        None,
+    )
+    token = getattr(creds, "token", None)
+    scopes = getattr(creds, "granted_scopes", None) or getattr(creds, "scopes", None)
+    scopes = sorted(scopes) if isinstance(scopes, (list, tuple, set)) else []
+    quota_project = getattr(creds, "quota_project_id", None)
+    quota_project = quota_project if isinstance(quota_project, str) else None
+    identity = principal or (
+        hashlib.sha256(token.encode()).hexdigest() if isinstance(token, str) and token else None
+    )
+    if not identity:
+        nonce = getattr(client, "_ga4_cache_nonce", None)
+        if not isinstance(nonce, str):
+            nonce = uuid.uuid4().hex
+            try:
+                client._ga4_cache_nonce = nonce
+            except (AttributeError, TypeError):
+                pass
+        identity = f"{_PROCESS_NAMESPACE}:{nonce}"
+    return _cache_key("identity-v2", identity, scopes, quota_project)
+
+
+def _cache_paths(parts, namespace=None):
+    scope = _cache_key("property", str(parts[1])) if len(parts) > 1 else _cache_key(*parts)
+    name = _cache_key(*parts)
+    if namespace is not None:
+        name = f"{scope}_{_cache_key(namespace)}_{name}"
+    return CACHE_DIR / f"{name}.json", CACHE_DIR / f"{scope}.epoch"
+
+
+def _generation(path):
+    try:
+        return path.read_text(encoding="ascii")
+    except FileNotFoundError:
+        return "0"
+
+
+@contextmanager
+def _cache_lock(epoch):
+    """Exclusive creation is atomic on supported local filesystems.
+
+    Contention or an orphaned lock disables the cache after one second; never
+    remove another process's lock or use an unlocked fallback.
+    """
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    lock = epoch.with_suffix(".lock")
+    for attempt in range(100):
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            break
+        except FileExistsError:
+            if attempt == 99:
+                raise OSError("cache lock unavailable")
+            time.sleep(0.01)
+    try:
+        os.close(descriptor)
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+def _tickets():
+    if not hasattr(_CACHE_TICKETS, "values"):
+        _CACHE_TICKETS.values = {}
+    return _CACHE_TICKETS.values
+
+
+def cache_get(*parts: Any, namespace=None) -> Any:
+    """Read a fresh generation and remember it for this thread's in-flight read."""
+    path, epoch = _cache_paths(parts, namespace)
+    if epoch in _DISABLED_SCOPES:
         return None
     try:
-        age = time.time() - path.stat().st_mtime
-        # Filesystem and wall-clock timestamps can differ slightly on Windows.
-        if not -1 <= age < CACHE_TTL_SECONDS:
-            return None
-        with open(path, encoding="utf-8") as f:
-            value = json.load(f)
-        return None if _has_error(value) else scrub_pii(value)
-    except (OSError, ValueError):
+        with _cache_lock(epoch):
+            generation = _generation(epoch)
+            _tickets()[path] = generation
+            if path in _INVALIDATED_PATHS:
+                return None
+            age = time.time() - path.stat().st_mtime
+            if not -1 <= age < CACHE_TTL_SECONDS:
+                return None
+            with open(path, encoding="utf-8") as f:
+                entry = json.load(f)
+            if isinstance(entry, dict) and entry.get("_ga4_cache") == 2:
+                if entry.get("generation") != generation:
+                    return None
+                value = entry["value"]
+            elif namespace is None and generation == "0":
+                value = entry  # compatibility for direct utility callers only
+            else:
+                return None
+            return None if _has_error(value) else scrub_pii(value)
+    except (OSError, ValueError, KeyError):
+        _tickets().setdefault(path, None)
         return None
 
 
-def cache_set(value: Any, *parts: Any) -> None:
+def cache_set(value: Any, *parts: Any, namespace=None) -> None:
     if _has_error(value):
         return
-    path = CACHE_DIR / f"{_cache_key(*parts)}.json"
+    path, epoch = _cache_paths(parts, namespace)
+    if epoch in _DISABLED_SCOPES:
+        return
     temporary = None
     try:
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", dir=CACHE_DIR, suffix=".tmp", delete=False
-        ) as f:
-            temporary = Path(f.name)
-            json.dump(scrub_pii(value), f, default=str)
-        os.replace(temporary, path)
-        _INVALIDATED_PATHS.discard(path)
+        with _cache_lock(epoch):
+            generation = _generation(epoch)
+            expected = _tickets().pop(path, generation)
+            if expected != generation:
+                return  # a write completed after this read started
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=CACHE_DIR, suffix=".tmp", delete=False
+            ) as f:
+                temporary = Path(f.name)
+                json.dump(
+                    {"_ga4_cache": 2, "generation": generation, "value": scrub_pii(value)},
+                    f,
+                    default=str,
+                )
+            os.replace(temporary, path)
+            _INVALIDATED_PATHS.discard(path)
     except OSError:
-        pass  # Cache availability must not determine whether a read succeeds.
+        pass
     finally:
         if temporary is not None:
             try:
@@ -120,20 +233,39 @@ def cache_set(value: Any, *parts: Any) -> None:
 
 
 def cache_invalidate(*parts: Any) -> None:
-    """Drop the cached entry for these key parts, if any. Writes call this for
-    every cached read they change, otherwise the read serves the pre-write
-    state until the TTL runs out."""
-    path = CACHE_DIR / f"{_cache_key(*parts)}.json"
+    """Invalidate all queries and principals for this property, under one lock."""
+    path, epoch = _cache_paths(parts)
     _INVALIDATED_PATHS.add(path)
     try:
-        path.unlink(missing_ok=True)
+        with _cache_lock(epoch):
+            epoch.write_text(uuid.uuid4().hex, encoding="ascii")
+            _DISABLED_SCOPES.discard(epoch)
+            path.unlink(missing_ok=True)
     except OSError:
+        _DISABLED_SCOPES.add(epoch)
         warnings.warn(
-            "Cache invalidation failed on disk; bypassing this entry in this process. "
-            "Other processes may serve the old entry until its 15-minute TTL expires.",
+            "Cache invalidation failed on disk; other processes may serve old entries "
+            "until expiry. Repair cache permissions before relying on freshness.",
             RuntimeWarning,
             stacklevel=2,
         )
+
+
+def cleanup_cache():
+    """Delete only expired toolkit JSON entries; never inspect their contents."""
+    removed = 0
+    if not CACHE_DIR.exists():
+        return {"removed": 0}
+    for path in CACHE_DIR.iterdir():
+        if not re.fullmatch(r"(?:[0-9a-f]{16}_[0-9a-f]{16}_)?[0-9a-f]{16}\.json", path.name):
+            continue
+        try:
+            if not path.is_symlink() and time.time() - path.stat().st_mtime >= CACHE_TTL_SECONDS:
+                path.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return {"removed": removed}
 
 
 def scrub_pii(data: Any) -> Any:
@@ -257,3 +389,22 @@ def format_confidence(sampling_pct: float | None, not_set_pct: float | None = No
     if s > 1 or ns > 10:
         return "medium"
     return "high"
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="GA4 cache maintenance")
+    parser.add_argument(
+        "--cleanup-cache",
+        action="store_true",
+        required=True,
+        help="Remove expired toolkit JSON entries only",
+    )
+    parser.parse_args()
+    print(json.dumps(cleanup_cache()))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
