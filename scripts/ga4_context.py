@@ -13,7 +13,7 @@ reachable), and infers:
   - language, region, canonical host
   - rough catalogue size and page-type inventory from the sitemap
 
-The result is stored under `~/.claude/ga4-context/<property-id>.json` so
+The result is stored under `~/.claude/ga4-context/<property-id>_<identity-hash>.json` so
 every other agent can attach it to its findings.
 
 CLI:
@@ -26,6 +26,7 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import http.client
 import ipaddress
 import json
 import os
@@ -191,6 +192,8 @@ def assert_fetchable(url: str) -> None:
         raise UnsafeFetchTarget(f"refusing to fetch non-http(s) URL: {url!r}")
     if not parsed.hostname:
         raise UnsafeFetchTarget(f"refusing to fetch URL with no host: {url!r}")
+    if parsed.username is not None or parsed.password is not None:
+        raise UnsafeFetchTarget("refusing to fetch a URL containing credentials")
     if _resolves_to_private(parsed.hostname):
         raise UnsafeFetchTarget(
             f"refusing to fetch {parsed.hostname!r}: resolves to a private, "
@@ -204,9 +207,66 @@ class _PublicRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+def _public_connection(address, timeout=FETCH_TIMEOUT_SECONDS, source_address=None):
+    """Resolve, validate and connect to the same sockaddr without a second DNS lookup."""
+    host, port = address
+    infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    for _, _, _, _, sockaddr in infos:
+        ip = ipaddress.ip_address(sockaddr[0].split("%", 1)[0])
+        if not ip.is_global or ip.is_private or ip.is_loopback or ip.is_link_local:
+            raise UnsafeFetchTarget("refusing to connect to a non-public address")
+    deadline = time.monotonic() + timeout
+    last_error = OSError("no public address resolved")
+    for family, kind, proto, _, sockaddr in infos:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("public connection deadline exceeded")
+        sock = socket.socket(family, kind, proto)
+        try:
+            sock.settimeout(remaining)
+            if source_address:
+                sock.bind(source_address)
+            sock.connect(sockaddr)
+            return sock
+        except OSError as exc:
+            sock.close()
+            last_error = exc
+    raise last_error
+
+
+class _PublicHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._create_connection = _public_connection
+
+
+class _PublicHTTPSConnection(http.client.HTTPSConnection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # HTTPSConnection still wraps TLS with the original host for SNI and
+        # certificate verification; only socket creation is replaced.
+        self._create_connection = _public_connection
+
+
+class _PublicHTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_PublicHTTPConnection, req)
+
+
+class _PublicHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_PublicHTTPSConnection, req, context=self._context)
+
+
 def _open_url(req, timeout):
-    # A local opener avoids changing redirect behavior for other modules.
-    return urllib.request.build_opener(_PublicRedirectHandler()).open(req, timeout=timeout)
+    # Proxies would select a different destination and defeat address pinning.
+    # Keep the original URL/Host/SNI; the connection uses a validated numeric IP.
+    return urllib.request.build_opener(
+        _PublicRedirectHandler(),
+        urllib.request.ProxyHandler({}),
+        _PublicHTTPHandler(),
+        _PublicHTTPSHandler(),
+    ).open(req, timeout=timeout)
 
 
 def _fetch(

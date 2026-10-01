@@ -55,3 +55,5 @@ anonymous. Saved-segment reports use one normal cached, scrubbed Data API call.
 The context fetcher validates every redirect destination before following it.
 Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
 rebinding between address validation and connection remains an open limitation.
+
+Website-context fetches validate and pin the numeric destination at socket creation, including every redirect. HTTPS keeps the original hostname for SNI and certificate verification. Proxy environment settings are intentionally ignored for context fetches, and URLs containing credentials are rejected. This may prevent fetching sites reachable only through a proxy; do not bypass the public-address guard. DNS resolution still uses the operating system resolver.
