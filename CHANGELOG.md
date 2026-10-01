@@ -4,6 +4,8 @@
 
 ### Added
 
+- Bound report pagination and expose incomplete results; apply validated saved-report filters, ordering, limits, dates and default formats.
+
 - Discover report fields with `ga4_data.py --metadata` and MCP `report_metadata`; inspect Core compatibility with `--check-compatibility --metrics ...` and MCP `check_compatibility`. Metadata is cached and invalidated after relevant Admin writes; compatibility reads are explicit and uncached. Data CLI actions are mutually exclusive.
 
 - Read reporting identity with `ga4_admin.py --reporting-identity` and MCP `reporting_identity`, including caching, scrubbing and an explicit unsupported result for older clients.

@@ -233,6 +233,7 @@ def test_segment_report_uses_one_scrubbed_cached_request(monkeypatch):
 
     client = MagicMock()
     client.run_report.return_value = RunReportResponse(
+        row_count=1,
         dimension_headers=[{"name": "pageLocation"}],
         metric_headers=[{"name": "activeUsers"}],
         rows=[
