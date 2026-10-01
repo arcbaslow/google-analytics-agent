@@ -18,6 +18,7 @@ import ga4_approval
 import ga4_audit
 import ga4_auth
 import ga4_benchmarks
+import ga4_bigquery
 import ga4_context
 import ga4_data
 import ga4_definitions
@@ -100,6 +101,40 @@ def _auth_guarded(fn: F) -> F:
             raise RuntimeError(f"{type(e).__name__}: {scrub_pii(str(e))}") from None
 
     return cast(F, wrapper)
+
+
+@mcp.tool()
+@_auth_guarded
+def bigquery_dry_run(
+    billing_project: str,
+    source_project: str,
+    dataset: str,
+    location: str,
+    start_date: str,
+    end_date: str,
+    template: str,
+    event_name: str | None = None,
+    parameters: list[str] | None = None,
+    steps: list[str] | None = None,
+    window_seconds: int = 3600,
+    max_bytes: int = 1073741824,
+) -> dict[str, Any]:
+    """Estimate a fixed GA4 export aggregate query. Execution is CLI-only and may incur costs."""
+    return ga4_bigquery.aggregate_evidence(
+        billing_project,
+        source_project,
+        dataset,
+        location,
+        start_date,
+        end_date,
+        template,
+        event_name,
+        parameters,
+        steps,
+        window_seconds,
+        max_bytes,
+        execute=False,
+    )
 
 
 @mcp.tool()
