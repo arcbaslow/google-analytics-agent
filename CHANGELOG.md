@@ -32,6 +32,8 @@
 
 ### Fixed
 
+- Preserve official saved-comparison resource IDs in scrubbed metadata and reports so long IDs remain usable.
+
 - Preserve rendered CSV line endings when saving reports on Windows, preventing blank rows from double newline translation.
 
 - Apply the read retry and request budget to account/property discovery, including subsequent account-summary pages.

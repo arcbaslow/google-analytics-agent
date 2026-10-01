@@ -29,6 +29,8 @@ Comparisons accept 1–4 unique named groups and 1–4 unique named, explicit
 date ranges. Each group supplies either `dimension_filter` or a saved
 `comparison` resource such as `comparisons/123`, discovered from that property's
 metadata. Saved-resource ownership and compatibility are checked by the API.
+Official `comparisons/ID` resource names are preserved during scrubbing;
+comparison display text still passes through the normal PII filters.
 There is one property per request. Arbitrary cross-property joins are not
 supported. The API adds comparison/date-range columns to the response; retain
 those columns when displaying results. Groups and dates can overlap: never

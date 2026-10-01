@@ -70,7 +70,7 @@ Every feature is a Python CLI. Same flags across runtimes.
 | `python scripts/ga4_data.py --property X --funnel-report --steps event1,event2,event3 --days 28 --json` | Funnel report |
 | `python scripts/ga4_events.py --property X --list-events --days 7 --json` | Distinct events |
 | `python scripts/ga4_events.py --property X --check-events e1,e2 --days 7 --json` | Presence check |
-| `python scripts/ga4_events.py --property X --event-params purchase --days 7 --json` | Per-parameter coverage for one event |
+| `python scripts/ga4_events.py --property X --event-params purchase --days 7 --json` | Parameter proxies and unmeasurable coverage for one event |
 | `python scripts/ga4_funnel.py --property X --steps e1,e2,e3 --days 28 --json` | Funnel with rates and leakiest-step |
 | `python scripts/ga4_admin.py --property X --details --json` | Property summary |
 | `python scripts/ga4_admin.py --property X --streams --json` | Data streams |
@@ -280,3 +280,7 @@ Website-context fetches validate and pin the numeric destination at socket creat
 Account/property discovery through ga4_auth.py --properties also uses the bounded read transport, including every account-summary page. Quota failures are not retried and partial lists are not returned as complete.
 
 Saved CSV report files preserve their rendered line endings on Windows, including quoted multiline fields, without introducing blank rows.
+
+CI measures production modules only, excluding test_*.py and conftest.py, with a 93% floor for minimum/current Analytics clients. Dev dependencies include the optional BigQuery client and offline SQL test tools. No live property or job is required. The completed implementation and remaining evidence/intent questions are recorded in docs/ROADMAP.md and docs/VERIFICATION.md.
+
+Saved comparison resource names in the official comparisons/ID format remain usable in scrubbed metadata and report output; display text still passes through PII filters.
