@@ -43,26 +43,26 @@
     },
     "deviceCategory": {
       "dimensions": ["deviceCategory"],
-      "metrics": ["sessions", "keyEvents"],
+      "metrics": ["sessions", "sessionKeyEventRate"],
       "rows": [
-        { "deviceCategory": "mobile", "sessions": "7000", "keyEvents": "21" },
-        { "deviceCategory": "desktop", "sessions": "3000", "keyEvents": "90" }
+        { "deviceCategory": "mobile", "sessions": "7000", "sessionKeyEventRate": "0.003" },
+        { "deviceCategory": "desktop", "sessions": "3000", "sessionKeyEventRate": "0.03" }
       ]
     },
     "newVsReturning": {
       "dimensions": ["newVsReturning"],
-      "metrics": ["sessions", "keyEvents"],
+      "metrics": ["sessions", "sessionKeyEventRate"],
       "rows": [
-        { "newVsReturning": "new", "sessions": "6000", "keyEvents": "60" },
-        { "newVsReturning": "returning", "sessions": "4000", "keyEvents": "51" }
+        { "newVsReturning": "new", "sessions": "6000", "sessionKeyEventRate": "0.01" },
+        { "newVsReturning": "returning", "sessions": "4000", "sessionKeyEventRate": "0.01275" }
       ]
     },
     "sessionDefaultChannelGroup_segments": {
       "dimensions": ["sessionDefaultChannelGroup"],
-      "metrics": ["sessions", "keyEvents"],
+      "metrics": ["sessions", "sessionKeyEventRate"],
       "rows": [
-        { "sessionDefaultChannelGroup": "Direct", "sessions": "6000", "keyEvents": "60" },
-        { "sessionDefaultChannelGroup": "Organic Search", "sessions": "4000", "keyEvents": "51" }
+        { "sessionDefaultChannelGroup": "Direct", "sessions": "6000", "sessionKeyEventRate": "0.01" },
+        { "sessionDefaultChannelGroup": "Organic Search", "sessions": "4000", "sessionKeyEventRate": "0.01275" }
       ]
     }
   },

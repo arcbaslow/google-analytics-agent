@@ -2,8 +2,7 @@
 GA4 event taxonomy validator. Built on ga4_data.run_report.
 
 The REQUIRED_PARAMS table covers Google's recommended e-commerce events as one
-example preset. For non-ecomm taxonomies pass `--required-params` JSON on the
-CLI or call event_params_coverage() with a custom required-params dict.
+example preset. Aggregate revenue/item metrics do not measure parameter coverage.
 
 CLI:
   python scripts/ga4_events.py --property <id> --list-events --days 7 --json
@@ -22,7 +21,7 @@ from ga4_data import run_report
 from ga4_utils import scrub_pii, scrub_response
 
 # Preset for Google's recommended e-commerce events. Other taxonomies are
-# supported by passing a custom required-params dict to event_params_coverage().
+# can be checked with explicit event names via check_events().
 REQUIRED_PARAMS = {
     "view_item": ["currency", "value", "items"],
     "add_to_cart": ["currency", "value", "items"],
@@ -88,7 +87,6 @@ def _param_coverage(property_id, event_name, param, total, days):
     dim_map = {
         "currency": "currencyCode",
         "transaction_id": "transactionId",
-        "payment_type": "paymentType",
     }
     metric_map = {
         "value": "totalRevenue",
@@ -128,8 +126,9 @@ def _param_coverage(property_id, event_name, param, total, days):
         aggregate = sum(float(row.get(metric_map[param], 0)) for row in report["rows"])
         return {
             "aggregate": aggregate,
-            "coverage_pct": 100.0 if aggregate > 0 else 0.0,
-            "note": "approximated via aggregate metric > 0; exact per-event coverage requires BQ export",
+            "coverage_pct": None,
+            "status": "not_measurable",
+            "note": "Aggregate metrics do not measure parameter presence; use aggregate BigQuery evidence for event-level coverage.",
         }
     return {"coverage_pct": None, "note": f"param {param} not mapped to a Data API field"}
 

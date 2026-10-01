@@ -19,7 +19,15 @@ def _wire(monkeypatch, by_dim):
 
 
 def _conv(dim, rows):
-    return {"dimensions": [dim], "metrics": ["sessions", "keyEvents"], "rows": rows}
+    return {"dimensions": [dim], "metrics": ["sessions", "sessionKeyEventRate"], "rows": rows}
+
+
+def test_session_rate_does_not_count_multiple_key_events_per_session():
+    rate, sessions = ga4_audit._cohort_rate(
+        {"sessions": "10", "keyEvents": "50", "sessionKeyEventRate": "0.2"}, "conversion"
+    )
+    assert rate == 0.2
+    assert sessions == 10
 
 
 def test_conversion_mode_flags_high_for_dominant_low_cohort(monkeypatch):
@@ -27,21 +35,25 @@ def test_conversion_mode_flags_high_for_dominant_low_cohort(monkeypatch):
         "deviceCategory": _conv(
             "deviceCategory",
             [
-                {"deviceCategory": "mobile", "sessions": "6000", "keyEvents": "24"},
-                {"deviceCategory": "desktop", "sessions": "4000", "keyEvents": "76"},
+                {"deviceCategory": "mobile", "sessions": "6000", "sessionKeyEventRate": "0.004"},
+                {"deviceCategory": "desktop", "sessions": "4000", "sessionKeyEventRate": "0.019"},
             ],
         ),
         "newVsReturning": _conv(
             "newVsReturning",
             [
-                {"newVsReturning": "new", "sessions": "5000", "keyEvents": "50"},
-                {"newVsReturning": "returning", "sessions": "5000", "keyEvents": "50"},
+                {"newVsReturning": "new", "sessions": "5000", "sessionKeyEventRate": "0.01"},
+                {"newVsReturning": "returning", "sessions": "5000", "sessionKeyEventRate": "0.01"},
             ],
         ),
         "sessionDefaultChannelGroup": _conv(
             "sessionDefaultChannelGroup",
             [
-                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "100"},
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "sessionKeyEventRate": "0.01",
+                },
             ],
         ),
     }
@@ -54,7 +66,7 @@ def test_conversion_mode_flags_high_for_dominant_low_cohort(monkeypatch):
     assert any("deviceCategory = mobile" in t for t in titles)
     dev = next(f for f in out["findings"] if "deviceCategory = mobile" in f["title"])
     assert dev["severity"] == "High"
-    assert dev["metric"] == "conversion_rate"
+    assert dev["metric"] == "session_key_event_rate"
     assert dev["metric_value"] < 0.01
 
 
@@ -63,20 +75,24 @@ def test_conversion_mode_medium_for_small_share_cohort(monkeypatch):
         "deviceCategory": _conv(
             "deviceCategory",
             [
-                {"deviceCategory": "desktop", "sessions": "8500", "keyEvents": "170"},
-                {"deviceCategory": "tablet", "sessions": "1500", "keyEvents": "3"},
+                {"deviceCategory": "desktop", "sessions": "8500", "sessionKeyEventRate": "0.02"},
+                {"deviceCategory": "tablet", "sessions": "1500", "sessionKeyEventRate": "0.002"},
             ],
         ),
         "newVsReturning": _conv(
             "newVsReturning",
             [
-                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "150"},
+                {"newVsReturning": "new", "sessions": "10000", "sessionKeyEventRate": "0.015"},
             ],
         ),
         "sessionDefaultChannelGroup": _conv(
             "sessionDefaultChannelGroup",
             [
-                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "150"},
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "sessionKeyEventRate": "0.015",
+                },
             ],
         ),
     }
@@ -91,20 +107,24 @@ def test_cohorts_below_min_share_are_ignored(monkeypatch):
         "deviceCategory": _conv(
             "deviceCategory",
             [
-                {"deviceCategory": "desktop", "sessions": "9500", "keyEvents": "190"},
-                {"deviceCategory": "smarttv", "sessions": "500", "keyEvents": "0"},
+                {"deviceCategory": "desktop", "sessions": "9500", "sessionKeyEventRate": "0.02"},
+                {"deviceCategory": "smarttv", "sessions": "500", "sessionKeyEventRate": "0.0"},
             ],
         ),
         "newVsReturning": _conv(
             "newVsReturning",
             [
-                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "190"},
+                {"newVsReturning": "new", "sessions": "10000", "sessionKeyEventRate": "0.019"},
             ],
         ),
         "sessionDefaultChannelGroup": _conv(
             "sessionDefaultChannelGroup",
             [
-                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "190"},
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "sessionKeyEventRate": "0.019",
+                },
             ],
         ),
     }
@@ -121,8 +141,8 @@ def test_engagement_fallback_when_no_key_events(monkeypatch):
     # probe returns keyEvents total 0 -> engagement mode; cohorts then carry engagementRate
     probe_zero = {
         "dimensions": ["deviceCategory"],
-        "metrics": ["sessions", "keyEvents"],
-        "rows": [{"deviceCategory": "mobile", "sessions": "5000", "keyEvents": "0"}],
+        "metrics": ["sessions", "sessionKeyEventRate"],
+        "rows": [{"deviceCategory": "mobile", "sessions": "5000", "sessionKeyEventRate": "0.0"}],
     }
     eng_by_dim = {
         "deviceCategory": _eng(
@@ -153,7 +173,7 @@ def test_engagement_fallback_when_no_key_events(monkeypatch):
     def fake_run_report(*args, **kwargs):
         dims = kwargs.get("dimensions") or []
         metrics = kwargs.get("metrics") or []
-        if metrics[:2] == ["sessions", "keyEvents"]:
+        if metrics[:2] == ["sessions", "sessionKeyEventRate"]:
             return probe_zero  # the probe
         return eng_by_dim[dims[0]]
 
@@ -171,27 +191,31 @@ def test_saved_segment_underperformance_flagged(monkeypatch):
         "deviceCategory": _conv(
             "deviceCategory",
             [
-                {"deviceCategory": "desktop", "sessions": "10000", "keyEvents": "200"},
+                {"deviceCategory": "desktop", "sessions": "10000", "sessionKeyEventRate": "0.02"},
             ],
         ),
         "newVsReturning": _conv(
             "newVsReturning",
             [
-                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "200"},
+                {"newVsReturning": "new", "sessions": "10000", "sessionKeyEventRate": "0.02"},
             ],
         ),
         "sessionDefaultChannelGroup": _conv(
             "sessionDefaultChannelGroup",
             [
-                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "200"},
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "sessionKeyEventRate": "0.02",
+                },
             ],
         ),
     }
     # site baseline = 200/10000 = 2%. Segment converts at 0.5% -> well under 0.5x.
     seg_report = {
         "dimensions": [],
-        "metrics": ["sessions", "keyEvents"],
-        "rows": [{"sessions": "2000", "keyEvents": "10"}],
+        "metrics": ["sessions", "sessionKeyEventRate"],
+        "rows": [{"sessions": "2000", "sessionKeyEventRate": "0.005"}],
     }
     monkeypatch.setattr(ga4_definitions, "list_segments", lambda: [{"name": "paid social"}])
     monkeypatch.setattr(
@@ -222,19 +246,23 @@ def test_saved_segment_run_error_is_captured(monkeypatch):
         "deviceCategory": _conv(
             "deviceCategory",
             [
-                {"deviceCategory": "desktop", "sessions": "10000", "keyEvents": "200"},
+                {"deviceCategory": "desktop", "sessions": "10000", "sessionKeyEventRate": "0.02"},
             ],
         ),
         "newVsReturning": _conv(
             "newVsReturning",
             [
-                {"newVsReturning": "new", "sessions": "10000", "keyEvents": "200"},
+                {"newVsReturning": "new", "sessions": "10000", "sessionKeyEventRate": "0.02"},
             ],
         ),
         "sessionDefaultChannelGroup": _conv(
             "sessionDefaultChannelGroup",
             [
-                {"sessionDefaultChannelGroup": "Organic", "sessions": "10000", "keyEvents": "200"},
+                {
+                    "sessionDefaultChannelGroup": "Organic",
+                    "sessions": "10000",
+                    "sessionKeyEventRate": "0.02",
+                },
             ],
         ),
     }

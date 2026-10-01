@@ -20,3 +20,5 @@ The required-parameter table is fixed in `ga4_events.py`; there is no custom
 parameter completeness. Duplicate-ID detection and nested payload validation
 are not implemented. The optional post-payment count comparison does not
 establish event order. Return unavailable checks and errors explicitly.
+
+Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.
