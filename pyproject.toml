@@ -56,7 +56,8 @@ py-modules = [
   "ga4_funnel",
   "ga4_mcp",
   "ga4_report",
-  "ga4_utils"
+  "ga4_utils",
+  "ga4_transport"
 ]
 
 [tool.ruff]

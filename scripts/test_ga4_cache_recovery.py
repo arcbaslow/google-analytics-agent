@@ -81,7 +81,7 @@ def test_transient_admin_error_does_not_poison_next_read(monkeypatch):
 
 def test_report_cache_preserves_requested_header_order(monkeypatch):
     client = MagicMock()
-    client.run_report.side_effect = lambda req: RunReportResponse(
+    client.run_report.side_effect = lambda req, **kwargs: RunReportResponse(
         dimension_headers=[{"name": d.name} for d in req.dimensions],
         metric_headers=[{"name": m.name} for m in req.metrics],
     )

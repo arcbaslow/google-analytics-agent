@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 from ga4_auth import get_credentials
+from ga4_transport import error_result, read_call, read_list, read_operation
 from ga4_utils import cache_get, cache_invalidate, cache_set, scrub_pii, scrub_response
 
 _PARAM_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
@@ -124,38 +125,42 @@ def _invalidate_for_name(read, name):
 
 
 @scrub_response
+@read_operation
 def get_property_details(property_id):
     cached = cache_get("property_details", property_id)
     if cached is not None:
         return cached
     client = _get_admin_client()
-    prop = client.get_property(name=f"properties/{property_id}")
+    prop = read_call(client.get_property, name=f"properties/{property_id}")
     out = _proto_to_dict(prop)
     cache_set(out, "property_details", property_id)
     return out
 
 
 @scrub_response
+@read_operation
 def list_data_streams(property_id):
     cached = cache_get("data_streams", property_id)
     if cached is not None:
         return cached
     client = _get_admin_client()
     streams = [
-        _proto_to_dict(s) for s in client.list_data_streams(parent=f"properties/{property_id}")
+        _proto_to_dict(s)
+        for s in read_list(client.list_data_streams, parent=f"properties/{property_id}")
     ]
     cache_set(streams, "data_streams", property_id)
     return streams
 
 
 @scrub_response
+@read_operation
 def get_enhanced_measurement(property_id):
     cached = cache_get("enhanced_measurement", property_id)
     if cached is not None:
         return cached
     client = _get_admin_alpha_client()
     results = []
-    for s in client.list_data_streams(parent=f"properties/{property_id}"):
+    for s in read_list(client.list_data_streams, parent=f"properties/{property_id}"):
         stream_d = _proto_to_dict(s)
         if (
             "web_stream_data" in stream_d
@@ -163,18 +168,20 @@ def get_enhanced_measurement(property_id):
             or stream_d.get("type", stream_d.get("type_")) == "WEB_DATA_STREAM"
         ):
             try:
-                em = client.get_enhanced_measurement_settings(
-                    name=f"{s.name}/enhancedMeasurementSettings"
+                em = read_call(
+                    client.get_enhanced_measurement_settings,
+                    name=f"{s.name}/enhancedMeasurementSettings",
                 )
                 stream_d["enhanced_measurement"] = _proto_to_dict(em)
             except Exception as e:
-                stream_d["enhanced_measurement_error"] = scrub_pii(str(e))
+                stream_d["enhanced_measurement_error"] = error_result(e)
         results.append(stream_d)
     cache_set(results, "enhanced_measurement", property_id)
     return results
 
 
 @scrub_response
+@read_operation
 def list_data_filters(property_id):
     """No public Admin API method exists for property data filters."""
     return [
@@ -187,16 +194,19 @@ def list_data_filters(property_id):
 
 
 @scrub_response
+@read_operation
 def list_custom_defs(property_id):
     cached = cache_get("custom_defs", property_id)
     if cached is not None:
         return cached
     client = _get_admin_client()
     dims = [
-        _proto_to_dict(d) for d in client.list_custom_dimensions(parent=f"properties/{property_id}")
+        _proto_to_dict(d)
+        for d in read_list(client.list_custom_dimensions, parent=f"properties/{property_id}")
     ]
     mets = [
-        _proto_to_dict(m) for m in client.list_custom_metrics(parent=f"properties/{property_id}")
+        _proto_to_dict(m)
+        for m in read_list(client.list_custom_metrics, parent=f"properties/{property_id}")
     ]
     out = {"custom_dimensions": dims, "custom_metrics": mets}
     cache_set(out, "custom_defs", property_id)
@@ -204,6 +214,7 @@ def list_custom_defs(property_id):
 
 
 @scrub_response
+@read_operation
 def list_key_events(property_id):
     cached = cache_get("key_events", property_id)
     if cached is not None:
@@ -211,31 +222,35 @@ def list_key_events(property_id):
     client = _get_admin_client()
     events = []
     if hasattr(client, "list_key_events"):
-        for e in client.list_key_events(parent=f"properties/{property_id}"):
+        for e in read_list(client.list_key_events, parent=f"properties/{property_id}"):
             events.append(_proto_to_dict(e))
     else:
-        for e in client.list_conversion_events(parent=f"properties/{property_id}"):
+        for e in read_list(client.list_conversion_events, parent=f"properties/{property_id}"):
             events.append(_proto_to_dict(e))
     cache_set(events, "key_events", property_id)
     return events
 
 
 @scrub_response
+@read_operation
 def get_attribution_settings(property_id):
     cached = cache_get("attribution_settings", property_id)
     if cached is not None:
         return cached
     client = _get_admin_alpha_client()
     try:
-        att = client.get_attribution_settings(name=f"properties/{property_id}/attributionSettings")
+        att = read_call(
+            client.get_attribution_settings, name=f"properties/{property_id}/attributionSettings"
+        )
         out = _proto_to_dict(att)
     except Exception as e:
-        out = {"error": scrub_pii(str(e))}
+        out = error_result(e)
     cache_set(out, "attribution_settings", property_id)
     return out
 
 
 @scrub_response
+@read_operation
 def list_platform_links(property_id):
     cached = cache_get("platform_links", property_id)
     if cached is not None:
@@ -248,20 +263,26 @@ def list_platform_links(property_id):
         try:
             out[name] = [_proto_to_dict(x) for x in fn()]
         except Exception as e:
-            out[name] = [{"error": scrub_pii(str(e))}]
+            out[name] = [error_result(e)]
 
     _try(
-        "google_ads_links", lambda: client.list_google_ads_links(parent=f"properties/{property_id}")
+        "google_ads_links",
+        lambda: read_list(client.list_google_ads_links, parent=f"properties/{property_id}"),
     )
     _try(
         "search_ads_360_links",
-        lambda: alpha.list_search_ads360_links(parent=f"properties/{property_id}"),
+        lambda: read_list(alpha.list_search_ads360_links, parent=f"properties/{property_id}"),
     )
     _try(
         "display_video_360_advertiser_links",
-        lambda: alpha.list_display_video360_advertiser_links(parent=f"properties/{property_id}"),
+        lambda: read_list(
+            alpha.list_display_video360_advertiser_links, parent=f"properties/{property_id}"
+        ),
     )
-    _try("bigquery_links", lambda: alpha.list_big_query_links(parent=f"properties/{property_id}"))
+    _try(
+        "bigquery_links",
+        lambda: read_list(alpha.list_big_query_links, parent=f"properties/{property_id}"),
+    )
     out["search_console_links"] = [
         {
             "status": "unsupported",
@@ -274,6 +295,7 @@ def list_platform_links(property_id):
 
 
 @scrub_response
+@read_operation
 def get_data_retention_settings(property_id):
     """Retention is a separate resource, not a field on Property."""
     cached = cache_get("data_retention_settings", property_id)
@@ -281,13 +303,17 @@ def get_data_retention_settings(property_id):
         return cached
     client = _get_admin_client()
     out = _proto_to_dict(
-        client.get_data_retention_settings(name=f"properties/{property_id}/dataRetentionSettings")
+        read_call(
+            client.get_data_retention_settings,
+            name=f"properties/{property_id}/dataRetentionSettings",
+        )
     )
     cache_set(out, "data_retention_settings", property_id)
     return out
 
 
 @scrub_response
+@read_operation
 def get_reporting_identity_settings(property_id):
     """Read the selected identity. Older SDKs may not expose this alpha method."""
     cached = cache_get("reporting_identity_settings", property_id)
@@ -300,8 +326,9 @@ def get_reporting_identity_settings(property_id):
             "reason": "Installed Admin client does not expose getReportingIdentitySettings.",
         }
     out = _proto_to_dict(
-        client.get_reporting_identity_settings(
-            name=f"properties/{property_id}/reportingIdentitySettings"
+        read_call(
+            client.get_reporting_identity_settings,
+            name=f"properties/{property_id}/reportingIdentitySettings",
         )
     )
     cache_set(out, "reporting_identity_settings", property_id)
@@ -312,18 +339,20 @@ def get_reporting_identity_settings(property_id):
 
 
 @scrub_response
+@read_operation
 def list_event_rules(property_id, stream_id):
     """List both edit rules and create rules for one data stream. Not cached;
     caching it would require the rule writes below to invalidate it."""
     client = _get_admin_alpha_client()
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
-    edits = [_proto_to_dict(r) for r in client.list_event_edit_rules(parent=parent)]
-    creates = [_proto_to_dict(r) for r in client.list_event_create_rules(parent=parent)]
+    edits = [_proto_to_dict(r) for r in read_list(client.list_event_edit_rules, parent=parent)]
+    creates = [_proto_to_dict(r) for r in read_list(client.list_event_create_rules, parent=parent)]
     return {"edit_rules": edits, "create_rules": creates}
 
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_event_edit_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
 
@@ -336,6 +365,7 @@ def create_event_edit_rule(property_id, stream_id, definition):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def update_event_edit_rule(rule_name, definition):
     from google.analytics.admin_v1alpha.types import EventEditRule
     from google.protobuf.field_mask_pb2 import FieldMask
@@ -349,6 +379,7 @@ def update_event_edit_rule(rule_name, definition):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def delete_event_edit_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_edit_rule(name=rule_name)
@@ -357,6 +388,7 @@ def delete_event_edit_rule(rule_name):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def reorder_event_edit_rules(property_id, stream_id, ordered_names):
     client = _get_admin_alpha_client(write=True)
     parent = f"properties/{property_id}/dataStreams/{stream_id}"
@@ -366,6 +398,7 @@ def reorder_event_edit_rules(property_id, stream_id, ordered_names):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_event_create_rule(property_id, stream_id, definition):
     from google.analytics.admin_v1alpha.types import EventCreateRule
 
@@ -378,6 +411,7 @@ def create_event_create_rule(property_id, stream_id, definition):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def delete_event_create_rule(rule_name):
     client = _get_admin_alpha_client(write=True)
     client.delete_event_create_rule(name=rule_name)
@@ -388,21 +422,27 @@ def delete_event_create_rule(rule_name):
 
 
 @scrub_response
+@read_operation
 def list_audiences(property_id):
     """Not cached; caching it would require the audience writes below to
     invalidate it."""
     client = _get_admin_alpha_client()
-    return [_proto_to_dict(a) for a in client.list_audiences(parent=f"properties/{property_id}")]
+    return [
+        _proto_to_dict(a)
+        for a in read_list(client.list_audiences, parent=f"properties/{property_id}")
+    ]
 
 
 @scrub_response
+@read_operation
 def get_audience(audience_name):
     client = _get_admin_alpha_client()
-    return _proto_to_dict(client.get_audience(name=audience_name))
+    return _proto_to_dict(read_call(client.get_audience, name=audience_name))
 
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_audience(property_id, definition):
     from google.analytics.admin_v1alpha.types import Audience
 
@@ -416,6 +456,7 @@ def create_audience(property_id, definition):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def update_audience_metadata(audience_name, display_name=None, description=None):
     """Only display_name and description are mutable post-create. Filter clauses
     cannot be edited — archive and recreate to change them."""
@@ -438,6 +479,7 @@ def update_audience_metadata(audience_name, display_name=None, description=None)
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def archive_audience(audience_name):
     client = _get_admin_alpha_client(write=True)
     # archive_audience is not a flattened method; it takes a request object.
@@ -465,6 +507,7 @@ def _validate_parameter_name(parameter_name, scope):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_custom_dimension(property_id, parameter_name, display_name, scope, description=""):
     CustomDimension = _admin_type("CustomDimension")
 
@@ -486,6 +529,7 @@ def create_custom_dimension(property_id, parameter_name, display_name, scope, de
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def archive_custom_dimension(name):
     client = _get_admin_client(write=True)
     client.archive_custom_dimension(name=name)
@@ -496,6 +540,7 @@ def archive_custom_dimension(name):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_custom_metric(
     property_id, parameter_name, display_name, measurement_unit, scope="EVENT", description=""
 ):
@@ -518,6 +563,7 @@ def create_custom_metric(
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def archive_custom_metric(name):
     client = _get_admin_client(write=True)
     client.archive_custom_metric(name=name)
@@ -531,6 +577,7 @@ def archive_custom_metric(name):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
     KeyEvent = _admin_type("KeyEvent")
 
@@ -556,6 +603,7 @@ def create_key_event(property_id, event_name, counting_method="ONCE_PER_EVENT"):
 
 @_confirmed_write
 @scrub_response
+@read_operation
 def delete_key_event(name):
     client = _get_admin_client(write=True)
     client.delete_key_event(name=name)
@@ -623,7 +671,7 @@ def main():
     try:
         out = _dispatch(args)
     except Exception as e:
-        print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)
+        print(json.dumps(error_result(e)), file=sys.stderr)
         return 1
 
     if out is None:

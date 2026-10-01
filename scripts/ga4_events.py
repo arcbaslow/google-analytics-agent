@@ -18,6 +18,7 @@ import json
 import sys
 
 from ga4_data import run_report
+from ga4_transport import read_operation
 from ga4_utils import scrub_pii, scrub_response
 
 # Preset for Google's recommended e-commerce events. Other taxonomies are
@@ -32,6 +33,7 @@ REQUIRED_PARAMS = {
 
 
 @scrub_response
+@read_operation
 def list_events(property_id, days=7):
     """Distinct event names with counts."""
     return run_report(
@@ -40,6 +42,7 @@ def list_events(property_id, days=7):
 
 
 @scrub_response
+@read_operation
 def check_events(property_id, event_names, days=7):
     """Check which listed events fired in the window."""
     in_list = ",".join(event_names)
@@ -59,6 +62,7 @@ def check_events(property_id, event_names, days=7):
 
 
 @scrub_response
+@read_operation
 def event_params_coverage(property_id, event_name, days=7):
     """Per-parameter coverage for a single event."""
     required = REQUIRED_PARAMS.get(event_name, [])
@@ -134,6 +138,7 @@ def _param_coverage(property_id, event_name, param, total, days):
 
 
 @scrub_response
+@read_operation
 def detect_postpayment_api(property_id, days=7):
     """Post-payment heuristic for the `add_payment_info` event.
 
@@ -194,6 +199,7 @@ def detect_postpayment_api(property_id, days=7):
     }
 
 
+@read_operation
 def main():
     parser = argparse.ArgumentParser(description="GA4 e-commerce event validator")
     parser.add_argument("--property", required=True)

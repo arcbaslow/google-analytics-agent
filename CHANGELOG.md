@@ -4,6 +4,8 @@
 
 ### Added
 
+- Bound read retries and requests across audit workers and Admin pagination; expose scrubbed auth, permission, quota and request-budget errors.
+
 - Bound report pagination and expose incomplete results; apply validated saved-report filters, ordering, limits, dates and default formats.
 
 - Discover report fields with `ga4_data.py --metadata` and MCP `report_metadata`; inspect Core compatibility with `--check-compatibility --metrics ...` and MCP `check_compatibility`. Metadata is cached and invalidated after relevant Admin writes; compatibility reads are explicit and uncached. Data CLI actions are mutually exclusive.

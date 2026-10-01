@@ -36,6 +36,7 @@ import argparse
 import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -49,6 +50,7 @@ import ga4_events
 import ga4_funnel
 import ga4_report
 import ga4_utils
+from ga4_transport import error_result, read_operation
 from ga4_utils import scrub_pii, scrub_response
 
 # ---------- Helpers ----------
@@ -57,6 +59,9 @@ from ga4_utils import scrub_pii, scrub_response
 @scrub_response
 def _ok(agent, summary, findings=None, data=None):
     return {
+        "status": "incomplete"
+        if ga4_utils._has_error(data) or ga4_utils._has_error(findings)
+        else "complete",
         "agent": agent,
         "summary": summary,
         "findings": findings or [],
@@ -81,6 +86,7 @@ def _safe_float(v, default=0.0):
 # ---------- Quality ----------
 
 
+@read_operation
 def run_quality(property_id, days=28):
     findings = []
     data = {"sampling_pct": None, "not_set_share": None, "direct_share": None}
@@ -99,6 +105,8 @@ def run_quality(property_id, days=28):
             days=days,
             include_metadata=True,
         )
+        if sessions_report.get("complete") is False:
+            incomplete.append("report_pagination")
         meta = sessions_report.get("metadata", {})
         sm = (meta.get("sampling") or [{}])[0]
         if not meta:
@@ -144,6 +152,8 @@ def run_quality(property_id, days=28):
             dimensions=["sessionSource"],
             days=days,
         )
+        if src_report.get("complete") is False:
+            raise ValueError("session-source report is incomplete")
         total = 0
         not_set = 0
         direct = 0
@@ -246,6 +256,7 @@ def run_quality(property_id, days=28):
 # ---------- Events ----------
 
 
+@read_operation
 def run_events(property_id, days=7):
     findings = []
     data = {}
@@ -264,6 +275,7 @@ def run_events(property_id, days=7):
                     "severity": "High",
                     "title": "Could not list events from Data API",
                     "detail": scrub_pii(str(e)),
+                    "error": error_result(e),
                 }
             ],
         )
@@ -297,6 +309,7 @@ def run_events(property_id, days=7):
                         "severity": "Low",
                         "title": f"Could not check parameter coverage for {ev}",
                         "detail": scrub_pii(str(e)),
+                        "error": error_result(e),
                     }
                 )
 
@@ -330,6 +343,7 @@ def run_events(property_id, days=7):
 # ---------- Funnel ----------
 
 
+@read_operation
 def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
     if not steps:
         return _ok(
@@ -414,6 +428,7 @@ def run_funnel(property_id, steps=None, days=28, check_postpayment=False):
 # ---------- Conversions ----------
 
 
+@read_operation
 def run_conversions(property_id):
     findings = []
     try:
@@ -427,6 +442,7 @@ def run_conversions(property_id):
                     "severity": "High",
                     "title": "Could not list key events",
                     "detail": scrub_pii(str(e)),
+                    "error": error_result(e),
                 }
             ],
         )
@@ -466,6 +482,7 @@ def run_conversions(property_id):
 # ---------- Attribution ----------
 
 
+@read_operation
 def run_attribution(property_id, days=28, primary_event="purchase"):
     findings = []
     data: dict[str, Any] = {}
@@ -489,6 +506,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
                 "severity": "Medium",
                 "title": "Attribution settings request failed",
                 "detail": scrub_pii(str(e)),
+                "error": error_result(e),
             }
         )
 
@@ -527,6 +545,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
                 "severity": "Medium",
                 "title": "Channel breakdown for primary event failed",
                 "detail": scrub_pii(str(e)),
+                "error": error_result(e),
             }
         )
 
@@ -541,6 +560,7 @@ def run_attribution(property_id, days=28, primary_event="purchase"):
 # ---------- Property ----------
 
 
+@read_operation
 def run_property(property_id):
     findings = []
     data: dict[str, Any] = {}
@@ -554,6 +574,7 @@ def run_property(property_id):
                 "severity": "High",
                 "title": "Could not fetch property details",
                 "detail": scrub_pii(str(e)),
+                "error": error_result(e),
             }
         )
 
@@ -574,7 +595,8 @@ def run_property(property_id):
             {
                 "severity": "Medium",
                 "title": "Could not fetch data retention settings",
-                "detail": str(e),
+                "detail": scrub_pii(str(e)),
+                "error": error_result(e),
             }
         )
 
@@ -595,6 +617,7 @@ def run_property(property_id):
                 "severity": "Medium",
                 "title": "Could not list data streams",
                 "detail": scrub_pii(str(e)),
+                "error": error_result(e),
             }
         )
 
@@ -693,6 +716,7 @@ def _underperf_finding(label, name, rate, avg, share, metric_label):
     }
 
 
+@read_operation
 def run_segments(property_id, days=28):
     findings = []
     data = {"cohorts": {}}
@@ -808,6 +832,7 @@ def _resolve_funnel_steps(args, events_output):
     return []
 
 
+@read_operation
 def orchestrate(
     property_id,
     days=28,
@@ -836,8 +861,8 @@ def orchestrate(
 
     # parallel: quality + property
     with ThreadPoolExecutor(max_workers=2) as ex:
-        f_quality = ex.submit(run_quality, property_id, days)
-        f_property = ex.submit(run_property, property_id)
+        f_quality = ex.submit(copy_context().run, run_quality, property_id, days)
+        f_property = ex.submit(copy_context().run, run_property, property_id)
         quality_out = f_quality.result()
         property_out = f_property.result()
 
@@ -847,9 +872,11 @@ def orchestrate(
     # parallel fan-out
     funnel_steps = _resolve_funnel_steps(_Namespace(funnel_steps=funnel_steps_arg), events_out)
     with ThreadPoolExecutor(max_workers=3) as ex:
-        f_funnel = ex.submit(run_funnel, property_id, funnel_steps, days, check_postpayment)
-        f_conv = ex.submit(run_conversions, property_id)
-        f_seg = ex.submit(run_segments, property_id, days)
+        f_funnel = ex.submit(
+            copy_context().run, run_funnel, property_id, funnel_steps, days, check_postpayment
+        )
+        f_conv = ex.submit(copy_context().run, run_conversions, property_id)
+        f_seg = ex.submit(copy_context().run, run_segments, property_id, days)
         funnel_out = f_funnel.result()
         conv_out = f_conv.result()
         seg_out = f_seg.result()

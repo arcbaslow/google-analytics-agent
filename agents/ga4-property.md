@@ -70,3 +70,5 @@ Compatibility is uncached and does not validate funnels or realtime. Metadata
 uses the 15-minute cache; successful custom-definition and key-event writes
 invalidate it. Both reads scrub responses. No report triggers these reads
 automatically. See docs/REPORT_FIELDS.md for filters and limits.
+
+Read operations share a 100-request budget, including retries and Admin pages; a full audit shares it across workers. Python callers can use ga4_transport.read_budget(max_requests=N), with N from 1 to 1000. Transient reads have at most three attempts with a 30-second RPC timeout and GAPIC retries disabled. Auth, permission and quota failures are not retried. CLI/MCP and partial Admin errors expose stable categories; partial failures are not successful checks or cached results. Admin writes do not use this retry helper.

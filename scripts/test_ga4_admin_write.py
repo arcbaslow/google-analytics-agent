@@ -131,7 +131,7 @@ class _FakeAdminClient:
         self.dims = list(dims)
         self.metrics = list(metrics)
 
-    def list_key_events(self, parent):
+    def list_key_events(self, parent, retry=None, timeout=None):
         return list(self.key_events)
 
     def create_key_event(self, parent, key_event):
@@ -141,10 +141,10 @@ class _FakeAdminClient:
     def delete_key_event(self, name):
         self.key_events.remove(name.rsplit("/", 1)[1])
 
-    def list_custom_dimensions(self, parent):
+    def list_custom_dimensions(self, parent, retry=None, timeout=None):
         return list(self.dims)
 
-    def list_custom_metrics(self, parent):
+    def list_custom_metrics(self, parent, retry=None, timeout=None):
         return list(self.metrics)
 
     def create_custom_dimension(self, parent, custom_dimension):

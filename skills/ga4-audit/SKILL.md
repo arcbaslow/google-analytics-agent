@@ -150,3 +150,5 @@ or MCP `reporting_identity(property_id)`. This alpha read uses the 15-minute
 cache and response scrubber. Older SDKs without the method return
 `status: unsupported`. Report the selected mode as context for user counts;
 there is no identity write or universal recommendation to switch modes.
+
+Read operations share a 100-request budget, including retries and Admin pages; a full audit shares it across workers. Python callers can use ga4_transport.read_budget(max_requests=N), with N from 1 to 1000. Transient reads have at most three attempts with a 30-second RPC timeout and GAPIC retries disabled. Auth, permission and quota failures are not retried. CLI/MCP and partial Admin errors expose stable categories; partial failures are not successful checks or cached results. Admin writes do not use this retry helper.
