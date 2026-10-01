@@ -56,6 +56,7 @@ py-modules = [
   "ga4_advertising",
   "ga4_approval",
   "ga4_audit",
+  "ga4_audience_templates",
   "ga4_benchmarks",
   "ga4_bigquery",
   "ga4_context",
