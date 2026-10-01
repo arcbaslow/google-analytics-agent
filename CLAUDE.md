@@ -168,3 +168,5 @@ Build local audience JSON with ga4_audience_templates.py or MCP audience_templat
 Website-context fetches validate and pin the numeric destination at socket creation, including every redirect. HTTPS keeps the original hostname for SNI and certificate verification. Proxy environment settings are intentionally ignored for context fetches, and URLs containing credentials are rejected. This may prevent fetching sites reachable only through a proxy; do not bypass the public-address guard. DNS resolution still uses the operating system resolver.
 
 Account/property discovery through ga4_auth.py --properties also uses the bounded read transport, including every account-summary page. Quota failures are not retried and partial lists are not returned as complete.
+
+Saved CSV report files preserve their rendered line endings on Windows, including quoted multiline fields, without introducing blank rows.

@@ -419,7 +419,9 @@ def _write_output(out, args):
         if isinstance(out, (bytes, bytearray)):
             Path(args.output).write_bytes(out)
         elif isinstance(out, str):
-            Path(args.output).write_text(out, encoding="utf-8")
+            # Rendered CSV already has CRLF terminators. A second Windows
+            # newline translation would turn each one into CRCRLF.
+            Path(args.output).write_text(out, encoding="utf-8", newline="")
         else:
             Path(args.output).write_text(
                 json.dumps(scrub_pii(out), indent=2, default=str), encoding="utf-8"

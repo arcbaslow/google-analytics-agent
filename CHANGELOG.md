@@ -28,6 +28,8 @@
 
 ### Fixed
 
+- Preserve rendered CSV line endings when saving reports on Windows, preventing blank rows from double newline translation.
+
 - Apply the read retry and request budget to account/property discovery, including subsequent account-summary pages.
 
 - Pin website-context connections to validated public socket addresses, preserve HTTPS hostname verification, and disable proxy redirection to close the DNS validation/connection race.
