@@ -25,8 +25,9 @@ custom-metric and key-event creates/archives/deletes invalidate that
 property's metadata cache. Key events affect their event-specific rate
 metrics as described in the [schema](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#key_event_rate_metrics_for_each_key_event).
 External edits can remain cached until expiry; local invalidation does not
-guarantee immediate API propagation. Existing cache concurrency limitations
-still apply.
+guarantee immediate API propagation. Locked generations prevent local
+in-flight reads from refilling invalidated entries; disk failures and live
+role changes remain limitations described below.
 
 ## Compatibility
 
@@ -52,7 +53,8 @@ report request are not established by a successful compatibility response.
 
 The MCP/Python `filter_dict` accepts the same shorthand or raw dimension
 FilterExpression as `run_report` and takes precedence over `filter_expr`.
-Metric filters are not exposed by these adapters. Use the existing report
+Compatibility does not expose metric filters; reports accept `--metric-filter`.
+Use the existing report
 path after inspecting the result; no field is automatically removed or replaced.
 
 Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.

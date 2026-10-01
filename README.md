@@ -25,6 +25,8 @@ A Python CLI and MCP server for inspecting Google Analytics 4 properties. It com
 | Configuration | Streams, audiences, custom definitions, key events and event rules |
 | Reporting | Markdown, HTML and optional PDF audits; saved report and segment definitions |
 | Integration | Python adapters, `/ga4` skills and an MCP server with preview-first write tools |
+| Exploration | Uncached realtime, same-property group/date comparisons and alpha advertising conversion reports |
+| Export evidence | Optional BigQuery aggregate queries with dry-run defaults and byte caps |
 
 ## Installation
 
@@ -103,7 +105,7 @@ For an MCP client that supports `mcpServers` configuration:
 
 Authenticate on the machine running the server before querying it. `uvx` installs the available registry version; to run the current checkout, install `.[mcp]` and set the client's command to the absolute path of `.venv/bin/ga4-mcp` (or `.venv\Scripts\ga4-mcp.exe` on Windows).
 
-Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return previews. `confirm=true` cannot supply the terminal approval required for execution; use the interactive CLI for writes. See [ga4_mcp.py](scripts/ga4_mcp.py) for the registered tools and parameter contracts.
+Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return previews. `confirm=true` cannot supply terminal approval. Use `propose_admin_write` to prepare an expiring, single-use proposal, then run its approval command yourself and answer `y/N`. See the [approval workflow](docs/APPROVALS.md) and [registered tools](scripts/ga4_mcp.py).
 
 ## Everyday commands
 
@@ -112,11 +114,19 @@ python scripts/ga4_data.py --property 123456789 --report eventCount --dimensions
 python scripts/ga4_events.py --property 123456789 --list-events --days 7 --json
 python scripts/ga4_admin.py --property 123456789 --streams --json
 python scripts/ga4_admin.py --property 123456789 --key-events --json
-python scripts/ga4_definitions.py --list-segments --json
+python scripts/ga4_definitions.py --list-segments
 python scripts/ga4_benchmarks.py --list-verticals
 ```
 
 The [router](skills/ga4/SKILL.md) provides `/ga4 audit`, `/ga4 funnel`, `/ga4 events`, `/ga4 audiences` and other agent commands. [AGENTS.md](AGENTS.md) documents the equivalent Python calls for other runtimes.
+
+Additional adapters have separate, explicit contracts:
+
+- [Realtime and comparisons](docs/EXPLORATION.md): minute ranges or named groups/dates within one property.
+- [Advertising conversions](docs/ADVERTISING.md): alpha conversion-action metadata, models and report-section verification.
+- [BigQuery evidence](docs/BIGQUERY.md): optional `.[bigquery]` client; parameter, consent, freshness and funnel aggregates. Execution can incur query charges and requires `--execute` after a dry-run check.
+- [Annotations and history](docs/CHANGE_HISTORY.md): dated context, with private actor/snapshot fields omitted. History is a read that requires edit scope.
+- [Audience templates](docs/AUDIENCE_TEMPLATES.md): offline public-filter proposals; creation still requires separate approval.
 
 ### Configuration writes
 
@@ -124,7 +134,7 @@ Admin writes require the appropriate property role and `analytics.edit` scope; p
 
 ### Interpreting an audit
 
-Responses use a 15-minute local cache, with supported PII patterns scrubbed by [ga4_utils.py](scripts/ga4_utils.py). Review exports before sharing them: scrubbing is not a guarantee that every identifying value has been removed.
+Cacheable Data/Admin reads use a 15-minute cache isolated by resolved identity and scopes. Successful Admin writes invalidate all property queries; context has a separate 24-hour expiry. Explicit exploration, advertising, history and BigQuery reads are uncached. Responses pass through [PII scrubbing](scripts/ga4_utils.py), which cannot guarantee that every identifying value is removed. Partial reports expose `complete: false` and must not be presented as totals.
 
 The bundled benchmark bands cover nine verticals. They are directional estimates stored in the repository, not live market measurements. Confidence labels describe the observed data-quality conditions; they do not establish causality. The audit supports arbitrary event journeys, although the legacy HTML template still uses an e-commerce heading.
 
@@ -137,7 +147,7 @@ python -m mypy
 python -m pytest scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=93
 ```
 
-CI runs on Python 3.10–3.13 with a **93% coverage floor**. Tests cover the CLI, audit orchestration, segments, funnels, reports, auth, MCP previews and Admin API proto round-trips using mocked transport. They need no live GA4 property. Offline integration tests do not establish that every write has been exercised against a live property. See the [release verification](docs/VERIFICATION.md).
+CI runs on Python 3.10–3.13 with a **93% production-only coverage floor**, excluding test modules. Minimum/current Analytics clients are checked separately. Tests use mocked transport and real SDK messages, plus synthetic in-memory SQL execution for BigQuery. They need no live GA4 property or BigQuery job. Offline integration tests do not establish live permissions, eligibility or API behavior. See the [verification record](docs/VERIFICATION.md).
 
 ## Repository map
 

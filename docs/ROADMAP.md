@@ -2,24 +2,25 @@
 
 Reviewed 2026-09-30 against master `aec65cb` (package 0.5.3). File and line
 references below refer to that baseline, not to later edits on `roadmap-work`.
-The owner authorized this bounded feature run. Writes still require one
+The owner authorized this feature run, then explicitly authorized all remaining
+items, including larger implementations, on 2026-10-01. Writes still require one
 reviewed proposal and `y/N` per operation. No live property was used.
 
 Effort estimates are engineering days including mocked tests and documentation.
-Risk describes the change, not the severity of the existing defect. Now is the
-initial implementation scope for this branch. The owner's follow-up to work
-through the roadmap authorizes the bounded Next work recorded below. Larger
-design and semantic questions retain their stated decision requirements.
+Risk describes the change, not the severity of the existing defect. Now, Next
+and Later retain the original priority order. All actionable items in these
+groups are implemented. Rejected ideas and unresolved intent/evidence questions
+remain explicit at the end; they are not claims of missing shipped features.
 
 ## Implementation status
 
-All Now items were completed locally on `roadmap-work`. The entries below
-retain the baseline problem and planned scope so the changes can be reviewed.
-The first two Next items are now implemented: supported Admin calls use explicit
-beta clients and matching message types, with a minimum/current dependency
-matrix in CI, and explicit CLI/MCP reads expose report metadata and Core
-compatibility. Later items remain proposals. See [verification](VERIFICATION.md)
-for the baseline/final checks, environment and limits of each run.
+All Now, Next and Later implementation items are completed on `roadmap-work`.
+The entries retain baseline findings and effort/risk estimates for review;
+completed rows describe the resulting behavior. The continuation also closed
+the DNS rebinding race, bounded account discovery, fixed Windows CSV file
+line endings and preserved saved-comparison resource IDs through scrubbing.
+See [verification](VERIFICATION.md) for the starting/final checks,
+commit inventory, environment and limits. This continuation is committed locally.
 
 | Item | Implementation commit |
 | --- | --- |
@@ -110,7 +111,7 @@ break or poison subsequent reads. Evidence: `scripts/ga4_utils.py:48`,
 `scripts/ga4_utils.py:60`, `scripts/ga4_admin.py:149`,
 `scripts/ga4_data.py:148`, `scripts/test_ga4_admin_write.py:170`.
 Effort: 1 day. Risk: low. Cross-process invalidation races and credential
-isolation are separate Next work.
+isolation were subsequently completed in Next.
 
 ### N4. Stop reporting nonexistent Admin capabilities
 
@@ -137,8 +138,8 @@ Why: a site's response must not redirect the profiler into a private network.
 Evidence: `scripts/ga4_context.py:166` and
 `scripts/test_ga4_context_fetch_guard.py:72`. Confirmed by reading the opener
 path; no network exploit was attempted. Effort: 0.5 day. Risk: low; DNS
-rebinding between validation and connection remains a separate transport
-design question.
+rebinding between validation and connection was subsequently fixed with
+address pinning, as recorded below.
 
 ### N6. Report incomplete quality checks honestly
 
@@ -187,7 +188,7 @@ including the larger adapters and approval workflow. Rejected actions that
 violate the write/privacy constraints remain rejected. Each implemented item
 is marked below; live property verification remains excluded.
 
-| Item | Operator value and evidence | Effort | Risk and reason deferred |
+| Item | Operator value and evidence | Effort | Risk and implementation limits |
 | --- | --- | --- | --- |
 | Completed: verify minimum supported Google clients and use explicit beta clients | Reproduced missing EventEditRule/KeyEvent in Admin 0.22.0 and undecodable sampling metadata in Data 0.18.0. Require Admin 0.23.0 and Data 0.18.16; use explicit beta clients/types for supported calls. [Data library history][data-library], [Admin library history][admin-library], `pyproject.toml`, `constraints/minimum-google.txt` | 2 days | Medium; CI now covers minimum/current clients across Python 3.10–3.13. Local checks use Windows/Python 3.12 only. Identity remains optional below Admin 0.25.0 |
 | Completed: metadata discovery and compatibility preflight | Explicit CLI/MCP reads expose available fields and Core compatibility. [getMetadata][metadata], [checkCompatibility][compatibility], `ga4_data.py`, [usage](REPORT_FIELDS.md) | 1–2 days | Low; metadata uses the scrubbed 15-minute cache and invalidates after custom-definition/key-event writes; compatibility is uncached. No automatic extra report request. Live custom-field availability remains unverified |
@@ -203,7 +204,7 @@ is marked below; live property verification remains excluded.
 
 ## Later
 
-| Item | Operator value and evidence | Effort | Risk and reason deferred |
+| Item | Operator value and evidence | Effort | Risk and implementation limits |
 | --- | --- | --- | --- |
 | Completed: alpha advertising conversion reports | Distinguish Ads conversions, key events and session acquisition. [Data API news][data-news] adds `conversionSpec`, model selection and metadata sections; not all properties qualify | 4–6 days | High; explicit alpha adapter, conversionSpec, action metadata, model selection and section verification. [Usage and official references](ADVERTISING.md). Older clients return unsupported; live eligibility is unverified |
 | Completed: BigQuery evidence adapter | Parameter presence/usable-value counts, consent aggregates, observed export freshness and first-entry sequential funnels use [export schema][bq-schema] | 1–2 weeks | High; optional ADC/client, fixed aggregate SQL, daily tables only, dry-run default and enforced byte caps. [Usage, cost controls and limitations](BIGQUERY.md). SQL is tested offline; live IAM, billing and SQL acceptance remain unverified |
@@ -348,6 +349,16 @@ evidence that their outputs are accurate.
 - Leave FX defaults unchanged: they are dated mid-2025 static estimates and
   are not wired to a real `--base-currency` flag. Currency history needs explicit
   dates/rate provenance before any financial comparison feature.
+- Leave permissive parsing of unknown Admin JSON fields unchanged. The existing
+  `scripts/test_ga4_admin_write_integration.py:test_dict_to_proto_accepts_camelcase_and_drops_unknown_fields`
+  explicitly requires it, so intent is established but strictness remains an
+  owner decision. Unknown fields shown in a proposal are not sent to the API;
+  review definitions against the public schema. Template-generated definitions
+  are validated strictly before being returned.
+- Open question: Core reports append dimension ordering after user `order_bys`,
+  including dimensions already ordered by the caller (`scripts/ga4_data.py:run_report`).
+  Duplicate-order rejection by the service has not been established. Do not
+  label this a confirmed API failure or change user ordering without evidence.
 - Resolved after authorization of larger work: website connections now use
   the exact validated numeric socket address, with no second DNS lookup at
   connect time. HTTP Host and HTTPS SNI/certificate checks retain the original
