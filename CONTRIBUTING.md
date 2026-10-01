@@ -29,14 +29,15 @@ pip install -e ".[dev]" -c constraints/minimum-google.txt
 pip check
 ```
 
-Then run the four checks above. The constraints cover Data/Admin only, not
+Then run the four checks above. The constraints cover Data/Admin and the optional BigQuery SDK, not
 every transitive dependency. Keep them aligned with the lower bounds in
 `pyproject.toml`. Optional reporting-identity contract tests skip on clients
 without that method; the unsupported-result test still runs.
 
 Coverage measures production modules only: `scripts/test_*.py` and
 `scripts/conftest.py` are omitted by `pyproject.toml`. The floor remains 93%
-for both dependency jobs. Do not remove production files from the denominator
+for both dependency jobs. BigQuery's declared minimum is tested alongside the
+Analytics minima. Do not remove production files from the denominator
 to accommodate optional SDK methods. Use real SDK messages and client specs
 with mocked transports to test request contracts. Optional annotation,
 reporting-identity, UPD and advertising fields skip only when absent; their
