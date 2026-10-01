@@ -15,6 +15,7 @@ from typing import Any, Callable, TypeVar, cast
 import ga4_admin
 import ga4_advertising
 import ga4_approval
+import ga4_audience_templates
 import ga4_audit
 import ga4_auth
 import ga4_benchmarks
@@ -187,6 +188,23 @@ def change_history(
 ) -> dict[str, Any]:
     """Read API-supported changes in UTC dates. Requires edit scope but performs no write."""
     return ga4_admin.search_change_history(account_id, property_id, start_date, end_date)
+
+
+@mcp.tool()
+@_auth_guarded
+def audience_template(
+    template: str,
+    display_name: str,
+    events: list[str],
+    membership_days: int = 30,
+    parameter: str | None = None,
+    threshold: float | None = None,
+    window_seconds: int | None = None,
+) -> dict[str, Any]:
+    """Build an offline audience definition. Creating it separately still requires terminal y/N."""
+    return ga4_audience_templates.audience_template(
+        template, display_name, events, membership_days, parameter, threshold, window_seconds
+    )
 
 
 @mcp.tool()

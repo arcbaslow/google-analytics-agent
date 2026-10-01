@@ -4,6 +4,8 @@
 
 ### Added
 
+- Build offline audience proposals for event participation, a same-event numeric threshold, or an ordered event sequence; creation retains the existing y/N gate.
+
 - Read annotations and property-scoped configuration history for explicit dates, with bounded pagination and private actor/snapshot fields omitted.
 
 - Read uncached realtime reports and same-property group/date comparisons, preserving quota, completeness and comparison columns.

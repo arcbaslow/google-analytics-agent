@@ -83,3 +83,5 @@ stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
 
 MCP propose_admin_write saves one exact Admin proposal for an expiring, single-use terminal approval. The user must run its approval_command and answer the existing y/N prompt themselves; agents must not supply approval. admin_proposal_status only reads the outcome. There is no MCP execute tool, and confirm=true remains insufficient. Refused or failed proposals cannot be replayed; applied:null means the result is unknown. See docs/APPROVALS.md.
+
+Build local audience JSON with ga4_audience_templates.py or MCP audience_template: event_participants, event_parameter_threshold, or event_sequence. Membership days do not mean lookback or disengagement. These are public-filter templates, not replicas of undocumented UI lifecycle audiences. Review the definition, then use the existing separate create-audience y/N flow or MCP proposal handoff; never chain writes. See docs/AUDIENCE_TEMPLATES.md.

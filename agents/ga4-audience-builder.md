@@ -81,3 +81,5 @@ and asks `y/N` for that operation. Run it in an interactive terminal; piped
 input, EOF and cancellation refuse the write. There is no bypass flag. MCP
 stdio tools provide previews; `confirm=true` returns `confirmation_required`
 without terminal approval. Never chain writes.
+
+Build local definitions with ga4_audience_templates.py or MCP audience_template. Supported templates are event_participants, event_parameter_threshold and event_sequence; see docs/AUDIENCE_TEMPLATES.md for exact scopes and duration semantics. Creation is a separate action through the existing y/N gate. Do not claim these reproduce undocumented GA4 UI lifecycle templates.
