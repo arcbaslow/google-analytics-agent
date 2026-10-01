@@ -25,7 +25,7 @@ def test_reporting_identity_read_is_cached_and_never_writes(monkeypatch, identit
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", factory)
     assert ga4_admin.get_reporting_identity_settings("123")["reporting_identity"] == identity
     assert ga4_mcp.reporting_identity("123")["reporting_identity"] == identity
-    factory.assert_called_once_with()
+    assert factory.call_count == 2  # resolve identity before both cache reads
     client.get_reporting_identity_settings.assert_called_once_with(
         name="properties/123/reportingIdentitySettings", retry=None, timeout=30
     )

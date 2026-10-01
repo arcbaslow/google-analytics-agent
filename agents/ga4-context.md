@@ -81,3 +81,5 @@ the section.
 The context fetcher validates every redirect destination before following it.
 Private, loopback, link-local and non-HTTP(S) redirects are refused. DNS
 rebinding between address validation and connection remains an open limitation.
+
+API cache entries expire after 15 minutes and are isolated by resolved account/token identity, granted or declared scopes, and quota project. Only hashes are stored; credential files are never opened by the cache. Unidentified clients use a process-local random namespace. Every successful Admin write invalidates all API queries for that property across namespaces. Locked generation checks prevent older in-flight reads from refilling invalidated entries. Cache I/O failure disables reuse in the current process; other processes can remain stale until expiry if the shared disk cannot be updated. Role revocations cannot be verified offline. Context uses a separate 24-hour expiry and the same identity isolation; --refresh still forces refresh. Run python scripts/ga4_utils.py --cleanup-cache to remove only expired toolkit cache JSON files, including legacy entries; unrelated files and generation markers are retained.
