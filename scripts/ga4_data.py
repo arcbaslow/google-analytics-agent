@@ -17,7 +17,7 @@ from ga4_auth import get_credentials
 from ga4_utils import cache_get, cache_set, scrub_pii, scrub_response
 
 _FILTER_RE = re.compile(
-    r"^\s*(?P<dim>\w+)\s+(?P<op>=|!=|IN|CONTAINS|BEGINS_WITH)\s+(?P<val>.+?)\s*$",
+    r"^\s*(?P<dim>[\w:]+)\s+(?P<op>=|!=|IN|CONTAINS|BEGINS_WITH)\s+(?P<val>.+?)\s*$",
     re.IGNORECASE,
 )
 
@@ -52,6 +52,8 @@ def parse_filter(expr):
 
 def date_range(days):
     """Return (start_date, end_date) as YYYY-MM-DD, end = yesterday."""
+    if type(days) is not int or days < 1:
+        raise ValueError("days must be a positive integer")
     end = date.today() - timedelta(days=1)
     start = end - timedelta(days=days - 1)
     return start.isoformat(), end.isoformat()
@@ -115,12 +117,19 @@ def build_dimension_filter(filter_dict):
     FilterExpression is a proto-plus wrapper, so the raw path parses into the
     underlying protobuf via .pb() and wraps the result (ParseDict cannot target
     a proto-plus message directly)."""
+    if not isinstance(filter_dict, dict) or not filter_dict:
+        raise ValueError("filter must be a nonempty object")
     if {"field", "op"} <= set(filter_dict.keys()):
+        if set(filter_dict) - {"field", "op", "value", "values", "not"}:
+            raise ValueError("unsupported shorthand filter fields")
         return _build_filter_expression(filter_dict)
     from google.analytics.data_v1beta.types import FilterExpression
-    from google.protobuf.json_format import ParseDict
+    from google.protobuf.json_format import ParseDict, ParseError
 
-    pb = ParseDict(filter_dict, FilterExpression.pb(FilterExpression()), ignore_unknown_fields=True)
+    try:
+        pb = ParseDict(filter_dict, FilterExpression.pb(FilterExpression()))
+    except ParseError as exc:
+        raise ValueError(f"invalid filter: {scrub_pii(str(exc))}") from None
     return FilterExpression.wrap(pb)
 
 
@@ -185,17 +194,32 @@ def run_report(
     daily=False,
     include_metadata=False,
     use_cache=True,
+    limit=10000,
+    page_size=10000,
+    max_pages=10,
+    start_date=None,
+    end_date=None,
+    metric_filter=None,
+    order_bys=None,
 ):
     """Run a Data API report. Returns dict with rows + optional metadata.
 
     When both are supplied, filter_dict (a prebuilt filter dict) wins over
     filter_expr (a 'dim OP value' string)."""
-    from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest
+    from google.analytics.data_v1beta.types import (
+        DateRange,
+        Dimension,
+        Metric,
+        OrderBy,
+        RunReportRequest,
+    )
+
+    validate_report_options(limit, page_size, max_pages, start_date, end_date)
 
     if daily and "date" not in dimensions:
         dimensions = ["date", *dimensions]
 
-    start, end = date_range(days)
+    start, end = (start_date, end_date) if start_date else date_range(days)
     cache_args = (
         "run_report",
         property_id,
@@ -206,6 +230,11 @@ def run_report(
         start,
         end,
         include_metadata,
+        limit,
+        page_size,
+        max_pages,
+        json.dumps(metric_filter, sort_keys=True),
+        json.dumps(order_bys, sort_keys=True),
     )
     if use_cache:
         cached = cache_get(*cache_args)
@@ -219,7 +248,11 @@ def run_report(
         "dimensions": [Dimension(name=d) for d in dimensions],
         "date_ranges": [DateRange(start_date=start, end_date=end)],
         "return_property_quota": include_metadata,
+        "order_bys": [OrderBy(**order) for order in (order_bys or [])]
+        + [OrderBy(dimension=OrderBy.DimensionOrderBy(dimension_name=d)) for d in dimensions],
     }
+    if metric_filter:
+        req_kwargs["metric_filter"] = build_dimension_filter(metric_filter)
     if filter_dict:
         req_kwargs["dimension_filter"] = build_dimension_filter(filter_dict)
     elif filter_expr:
@@ -227,12 +260,61 @@ def run_report(
         if parsed:
             req_kwargs["dimension_filter"] = _build_filter_expression(parsed)
 
-    response = client.run_report(RunReportRequest(**req_kwargs))
-    out = _serialize_run_report(response, include_metadata=include_metadata)
+    out = None
+    page_metadata = []
+    reason = None
+    for page_index in range(max_pages):
+        offset = len(out["rows"]) if out else 0
+        response = client.run_report(
+            RunReportRequest(**req_kwargs, offset=offset, limit=min(page_size, limit - offset))
+        )
+        page = _serialize_run_report(response, include_metadata=include_metadata)
+        if out is None:
+            out = {**page, "rows": []}
+        elif any(page[key] != out[key] for key in ("row_count", "dimensions", "metrics")):
+            reason = "report_changed_between_pages"
+            break
+        if include_metadata:
+            page_metadata.append(dict(page["metadata"]))
+        out["rows"].extend(page["rows"][: limit - offset])
+        if len(out["rows"]) >= out["row_count"]:
+            break
+        if not page["rows"]:
+            reason = "empty_page_before_end"
+            break
+        if len(out["rows"]) >= limit:
+            reason = "row_limit"
+            break
+    assert out is not None
+    out["rows_returned"] = len(out["rows"])
+    out["pages_fetched"] = page_index + 1
+    out["complete"] = reason is None and out["rows_returned"] == out["row_count"]
+    if not out["complete"]:
+        out["incomplete_reason"] = reason or "page_limit"
+    if include_metadata:
+        out["metadata"]["pages"] = page_metadata
     out = scrub_pii(out)
-    if use_cache:
+    if use_cache and out["complete"]:
         cache_set(out, *cache_args)
     return out
+
+
+def validate_report_options(
+    limit=10000, page_size=10000, max_pages=10, start_date=None, end_date=None
+):
+    """Bound total work locally before constructing a client."""
+    for name, value, maximum in (
+        ("limit", limit, 250000),
+        ("page_size", page_size, 250000),
+        ("max_pages", max_pages, 100),
+    ):
+        if type(value) is not int or not 1 <= value <= maximum:
+            raise ValueError(f"{name} must be an integer from 1 to {maximum}")
+    if bool(start_date) != bool(end_date):
+        raise ValueError("start_date and end_date must be supplied together")
+    if start_date:
+        if date.fromisoformat(start_date) > date.fromisoformat(end_date):
+            raise ValueError("start_date must not follow end_date")
 
 
 def _serialize_run_report(response, include_metadata=False):
@@ -381,6 +463,13 @@ def main():
     parser.add_argument("--daily", action="store_true")
     parser.add_argument("--include-metadata", action="store_true")
     parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--limit", type=int, default=10000)
+    parser.add_argument("--page-size", type=int, default=10000)
+    parser.add_argument("--max-pages", type=int, default=10)
+    parser.add_argument("--start-date")
+    parser.add_argument("--end-date")
+    parser.add_argument("--metric-filter", help="FilterExpression JSON")
+    parser.add_argument("--order-bys", help="JSON list of OrderBy objects")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     if args.metrics is not None and not args.check_compatibility:
@@ -427,6 +516,13 @@ def main():
                 daily=args.daily,
                 include_metadata=args.include_metadata,
                 use_cache=use_cache,
+                limit=args.limit,
+                page_size=args.page_size,
+                max_pages=args.max_pages,
+                start_date=args.start_date,
+                end_date=args.end_date,
+                metric_filter=json.loads(args.metric_filter) if args.metric_filter else None,
+                order_bys=json.loads(args.order_bys) if args.order_bys else None,
             )
     except Exception as e:
         print(json.dumps({"error": scrub_pii(str(e)), "type": type(e).__name__}), file=sys.stderr)

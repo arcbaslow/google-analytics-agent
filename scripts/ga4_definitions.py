@@ -121,10 +121,61 @@ def build_filter_from_definition(filter_expression: dict[str, Any]):
 REPORT_FORMATS = ("json", "csv", "md", "html", "pdf")
 
 
+def validate_report_def(definition):
+    """Reject unsupported fields instead of silently ignoring saved intent."""
+    from ga4_data import build_dimension_filter, date_range, validate_report_options
+    from google.analytics.data_v1beta.types import OrderBy
+
+    allowed = {
+        "name",
+        "description",
+        "metrics",
+        "dimensions",
+        "default_days",
+        "default_format",
+        "dimension_filter",
+        "metric_filter",
+        "order_bys",
+        "limit",
+        "page_size",
+        "max_pages",
+        "start_date",
+        "end_date",
+    }
+    if not isinstance(definition, dict) or set(definition) - allowed:
+        raise ValueError("report definition contains unsupported fields")
+    for key in ("metrics", "dimensions"):
+        values = definition.get(key, [])
+        if (
+            not isinstance(values, list)
+            or (key == "metrics" and not values)
+            or any(not isinstance(v, str) or not v.strip() for v in values)
+            or len(set(values)) != len(values)
+        ):
+            raise ValueError(f"{key} must be a list of unique nonempty field names")
+    date_range(definition.get("default_days", 28))
+    validate_report_options(
+        **{
+            k: definition[k]
+            for k in ("limit", "page_size", "max_pages", "start_date", "end_date")
+            if k in definition
+        }
+    )
+    if definition.get("default_format", "json") not in REPORT_FORMATS:
+        raise ValueError("unsupported default_format")
+    for key in ("dimension_filter", "metric_filter"):
+        if key in definition:
+            build_dimension_filter(definition[key])
+    if not isinstance(definition.get("order_bys", []), list):
+        raise ValueError("order_bys must be a list")
+    for order in definition.get("order_bys", []):
+        OrderBy(**order)
+    return definition
+
+
 def save_report_def(name: str, definition: dict[str, Any]) -> Path:
     """Persist a custom report definition. Validates required keys."""
-    if not definition.get("metrics"):
-        raise ValueError("report definition needs at least one entry in 'metrics'")
+    validate_report_def(definition)
     _ensure_dirs()
     payload = {**definition, "name": name}
     path = REPORTS_DIR / f"{_slug(name)}.json"
@@ -157,7 +208,7 @@ def load_report_def(name: str) -> dict[str, Any]:
     path = REPORTS_DIR / f"{_slug(name)}.json"
     if not path.exists():
         raise FileNotFoundError(f"no report named {name!r} at {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return validate_report_def(json.loads(path.read_text(encoding="utf-8")))
 
 
 @scrub_response
@@ -173,19 +224,52 @@ def run_report_def(
     name: str,
     property_id: str,
     days_override: int | None = None,
-    format: str = "json",
+    format: str | None = None,
     segment: str | None = None,
 ) -> Any:
     """Execute a saved report definition. Returns rows for json/csv, rendered
     string for html, file bytes for pdf (caller must write to disk)."""
-    if format not in REPORT_FORMATS:
+    if format is not None and format not in REPORT_FORMATS:
         raise ValueError(f"format must be one of {REPORT_FORMATS}")
     defn = load_report_def(name)
-    days = days_override or defn.get("default_days", 28)
+    format = format or defn.get("default_format", "json")
+    days = days_override if days_override is not None else defn.get("default_days", 28)
 
     from ga4_data import run_report
 
     seg_filter = load_segment(segment)["filter_expression"] if segment else None
+    saved_filter = defn.get("dimension_filter")
+    if saved_filter and seg_filter:
+        from google.analytics.data_v1beta.types import FilterExpression
+
+        seg_filter = FilterExpression.to_dict(
+            FilterExpression(
+                and_group={
+                    "expressions": [
+                        build_filter_from_definition(saved_filter),
+                        build_filter_from_definition(seg_filter),
+                    ]
+                }
+            )
+        )
+    elif saved_filter:
+        seg_filter = saved_filter
+    options = {
+        key: defn[key]
+        for key in (
+            "metric_filter",
+            "order_bys",
+            "limit",
+            "page_size",
+            "max_pages",
+            "start_date",
+            "end_date",
+        )
+        if key in defn
+    }
+    if days_override is not None:
+        options.pop("start_date", None)
+        options.pop("end_date", None)
     rows = run_report(
         property_id=property_id,
         metrics=defn["metrics"],
@@ -193,6 +277,7 @@ def run_report_def(
         days=days,
         include_metadata=True,
         filter_dict=seg_filter,
+        **options,
     )
 
     defn, rows = scrub_pii(defn), scrub_pii(rows)
@@ -267,7 +352,7 @@ def main():
     parser.add_argument("--run-report", metavar="NAME")
     parser.add_argument("--property")
     parser.add_argument("--days", type=int)
-    parser.add_argument("--format", choices=REPORT_FORMATS, default="json")
+    parser.add_argument("--format", choices=REPORT_FORMATS)
     parser.add_argument("--segment", help="Apply a saved segment to the report run")
     parser.add_argument("--output", help="Write output to this path instead of stdout")
 

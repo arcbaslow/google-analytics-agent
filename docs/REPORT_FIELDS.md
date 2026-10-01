@@ -56,3 +56,7 @@ Metric filters are not exposed by these adapters. Use the existing report
 path after inspecting the result; no field is automatically removed or replaced.
 
 Parameter aggregate metrics return `coverage_pct: null` with `status: not_measurable`; positive revenue is not proof of complete tagging. Segment audits use the API `sessionKeyEventRate` and label findings `session_key_event_rate`.
+
+Reports accept --limit (default 10000, maximum 250000), --page-size and --max-pages (default 10, maximum 100), --start-date/--end-date, --metric-filter JSON and --order-bys JSON. Responses expose complete, pages_fetched and incomplete_reason; do not treat partial results as totals. Partial results are not cached. Saved reports validate their schema, apply these options plus dimension_filter, and honor default_format unless --format overrides it. A saved segment is ANDed with the report filter. See docs/REPORT_FIELDS.md.
+
+Pagination orders dimensions to stabilize offsets; it cannot guarantee a snapshot while source data changes. Every page retains its sampling and quota metadata under metadata.pages. Counts and rates are never summed across pages. Saved reports allow name, description, metrics, dimensions, default_days, default_format, dimension_filter, metric_filter, order_bys, limit, page_size, max_pages, start_date and end_date. Dates are ISO calendar dates and must be provided together. --days on a saved report overrides stored dates. Unknown definition/filter fields fail locally.
