@@ -1,5 +1,112 @@
 # Verification
 
+## Roadmap completion — 2026-10-01
+
+Continued from `52d00f0` on `roadmap-work`. The owner explicitly authorized
+all remaining items, including larger implementations. All actionable Now,
+Next and Later items are implemented. The previously rejected ideas and
+questions about established behavior remain in [ROADMAP.md](ROADMAP.md).
+Package version remains 0.5.3. This continuation is committed locally; it
+was not pushed, merged, tagged, published or submitted as a pull request.
+
+### Environment and checks
+
+Both environments use Windows and Python 3.12.14. Current clients: Data
+0.23.2, Admin 0.30.1, BigQuery 3.45.2. Minimum clients: Data 0.18.16, Admin
+0.23.0, BigQuery 3.25.0. The minimum constraints now include BigQuery.
+Other transitive dependency minima and intermediate releases were not tested.
+The optional BigQuery SDK is free; executing queries against a user's project
+can incur charges. No jobs were submitted in this work.
+
+| Check | Starting current | Starting minimum | Final current | Final minimum |
+| --- | --- | --- | --- | --- |
+| pip check | Pass | Pass | Pass | Pass |
+| Ruff lint/format | Pass, 44 files | Pass, 44 files | Pass, 65 files | Pass, 65 files |
+| Mypy | Pass, 13 source files | Pass, 13 source files | Pass, 19 source files | Pass, 19 source files |
+| Mocked tests | 529 passed, 1 skipped | 526 passed, 4 skipped | 723 passed, 1 skipped | 715 passed, 9 skipped |
+| Coverage | 96.25%, includes tests | 95.86%, includes tests | 94.52%, production only | 93.63%, production only |
+
+The coverage percentages use different denominators: the final configuration
+omits test modules and conftest, retaining the same 93% floor. All production
+modules remain included, including optional alpha paths. Skips reflect SDK
+capabilities; unsupported-result tests still run. The minimum environment
+emits two upstream protobuf 4 deprecation warnings about Python 3.14, which
+is outside the configured CI matrix. Mypy passes with its existing settings;
+untyped function bodies are not fully checked.
+
+The checks follow `.github/workflows/tests.yml`: pip check, Ruff lint, Ruff
+format, mypy, and pytest with coverage. Every commit followed passing checks
+in both environments. An external pytest guard kept synthetic credential
+file IO in memory, disabled ADC discovery, and blocked socket connections.
+No credential files or `.secrets/` were read, created or staged. Temporary
+SQL fixtures, cache tests and reports used isolated test directories or
+memory. No live GA4 property, auth flow, write or BigQuery job was used.
+
+New tests include all 15 real Admin request contracts, SDK response parsing,
+refusal/expiry/replay and post-prompt proposal binding, cache identity and
+cross-process invalidation, SQL denominator/sequence semantics on synthetic
+in-memory rows, DNS address pinning with original TLS hostname verification,
+and Windows CSV newline behavior. The runtime instruction additions match
+across AGENTS.md, CLAUDE.md and GEMINI.md. Local documentation links and
+`git diff --check` pass.
+
+### Implementation commits in this continuation
+
+| Commit | Change |
+| --- | --- |
+| `34c2433` | Correct parameter coverage and session key-event rates |
+| `1080a0d` | Bound pagination and validate saved-report options |
+| `03c77bf` | Preserve funnel intent and parse API step totals |
+| `2051db0` | Bound read retries and classify API failures |
+| `4ee3dc9` | Isolate cached reads and prevent stale concurrent refills |
+| `97570b3` | Read consent settings and identify missing evidence |
+| `43930e9` | Respect custom key-event limits and granted edit scopes |
+| `909a8b4` | Bind MCP proposals to single-use terminal approval |
+| `68c43ca` | Add bounded alpha advertising conversion reports |
+| `4578a44` | Add cost-bounded BigQuery aggregate evidence |
+| `5b396f0` | Add realtime and same-property comparisons |
+| `a84fe41` | Read annotations and scoped configuration history |
+| `52a7645` | Build validated audience-template proposals |
+| `e2b1da2` | Pin context fetches to validated public addresses |
+| `b3475d5` | Bound account/property discovery reads |
+| `ebfd437` | Preserve CSV line endings when saving reports |
+| `cb9dd44` | Enforce production-only coverage and real SDK contracts |
+| `d448326` | Preserve saved-comparison resource identifiers |
+| `7a7ea76` | Test the minimum supported BigQuery client |
+
+The final documentation commit records this review; its hash is in the branch log.
+
+### Deliberately unbuilt or unverified
+
+- Static FX defaults remain unchanged: there is no sourced historical-rate
+  dataset or established base-currency feature contract.
+- Unknown fields in Admin JSON remain ignored because an existing regression
+  test explicitly requires that behavior. Strict parsing needs an owner
+  decision; unknown proposal fields are not sent to the API.
+- Duplicate user/default dimension ordering remains a question: no service
+  rejection was established, so ordering semantics were left unchanged.
+- Exact lifecycle UI audience replicas are not shipped: published release
+  notes do not define their conditions. Public-filter templates are shipped.
+- Autonomous/batched writes, `--yes`, audience-member exports, paid benchmark
+  feeds, a hosted dashboard and a replacement framework remain rejected.
+  The alpha conversational API remains unnecessary overlap with the agent.
+- Benchmark cells still lack defensible per-cell public provenance and remain
+  labeled unverified heuristics. No replacement numbers were invented.
+- Live roles/scopes, quotas, property-specific compatibility, propagation,
+  alpha eligibility, audience populations and end-to-end writes remain
+  unverified. BigQuery SQL was translated and executed offline; live SQL
+  acceptance, export completeness, IAM and billing were not verified.
+- Local checks cover Windows/Python 3.12 only. The configured Ubuntu matrix
+  on Python 3.10–3.13 was not executed remotely. Competitor offerings were
+  researched from public sources, not installed or security-audited.
+- PII scrubbing is heuristic. Existing user caches were not inspected. Role
+  revocation and shared-disk invalidation failures can leave cached data until
+  expiry. Context uses the OS DNS resolver; its resolution latency is not a
+  Python-controlled deadline, and proxy-only sites are intentionally unsupported.
+
+The sections below are historical records and describe the scope and limits
+at those earlier checkpoints.
+
 ## Next: report field discovery — 2026-09-30
 
 Continued after `74a3335`, which completed the Google client compatibility

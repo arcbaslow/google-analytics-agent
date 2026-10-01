@@ -294,3 +294,9 @@ Compatibility is uncached and does not validate funnels or realtime. Metadata
 uses the 15-minute cache; successful custom-definition and key-event writes
 invalidate it. Both reads scrub responses. No report triggers these reads
 automatically. See docs/REPORT_FIELDS.md for filters and limits.
+
+## Optional adapters and read contracts
+
+See [approval handoff](APPROVALS.md), [realtime/comparisons](EXPLORATION.md), [alpha advertising](ADVERTISING.md), [BigQuery aggregates](BIGQUERY.md), [annotations/history](CHANGE_HISTORY.md), and [audience templates](AUDIENCE_TEMPLATES.md) for the added commands. BigQuery needs its own authorized ADC scope and an explicit billing project; install `.[bigquery]`. Its SDK is free, but executing queries can incur charges. The default is a dry run. History is read-only but requires analytics.edit. New alpha methods return unsupported when absent from the installed client.
+
+Cacheable API reads expire after 15 minutes and are isolated by identity/scopes. All successful Admin writes invalidate property reads; context expires after 24 hours. Exploration, advertising, history and BigQuery reads are uncached. Context fetches pin validated public addresses and ignore proxy settings. CI coverage now excludes tests and retains the 93% floor.
