@@ -23,6 +23,8 @@ from unittest.mock import MagicMock
 
 import ga4_admin
 import pytest
+from google.analytics.admin_v1alpha import AnalyticsAdminServiceClient as AlphaClient
+from google.analytics.admin_v1alpha import types as alpha_types
 from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
 from google.analytics.admin_v1beta import AnalyticsAdminServiceClient as BetaClient
 from google.analytics.admin_v1beta.types import (
@@ -42,8 +44,20 @@ def _load(proto_cls, name):
 
 
 def _alpha(monkeypatch, method, response):
-    client = MagicMock()
-    getattr(client, method).return_value = response
+    client = MagicMock(spec=AlphaClient)
+    request_types = {
+        "create_event_edit_rule": alpha_types.CreateEventEditRuleRequest,
+        "update_event_edit_rule": alpha_types.UpdateEventEditRuleRequest,
+        "create_event_create_rule": alpha_types.CreateEventCreateRuleRequest,
+        "create_audience": alpha_types.CreateAudienceRequest,
+        "update_audience": alpha_types.UpdateAudienceRequest,
+    }
+
+    def call(**kwargs):
+        request_types[method](**kwargs)
+        return response
+
+    getattr(client, method).side_effect = call
     monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda write=False: client)
     return client
 
@@ -308,6 +322,81 @@ def test_admin_factory_selects_explicit_surface_and_scope(monkeypatch, version, 
     assert factory(write=write) is constructor.return_value
     credentials.assert_called_once_with(write=write)
     constructor.assert_called_once_with(credentials=credentials.return_value)
+
+
+@pytest.mark.parametrize(
+    "surface,adapter,request_name,arguments",
+    [
+        (
+            "alpha",
+            "delete_event_edit_rule",
+            "DeleteEventEditRuleRequest",
+            ("properties/123/dataStreams/9/eventEditRules/1",),
+        ),
+        (
+            "alpha",
+            "delete_event_create_rule",
+            "DeleteEventCreateRuleRequest",
+            ("properties/123/dataStreams/9/eventCreateRules/1",),
+        ),
+        (
+            "alpha",
+            "reorder_event_edit_rules",
+            "ReorderEventEditRulesRequest",
+            (
+                "123",
+                "9",
+                [
+                    "properties/123/dataStreams/9/eventEditRules/2",
+                    "properties/123/dataStreams/9/eventEditRules/1",
+                ],
+            ),
+        ),
+        ("alpha", "archive_audience", "ArchiveAudienceRequest", ("properties/123/audiences/1",)),
+        (
+            "beta",
+            "archive_custom_dimension",
+            "ArchiveCustomDimensionRequest",
+            ("properties/123/customDimensions/1",),
+        ),
+        (
+            "beta",
+            "archive_custom_metric",
+            "ArchiveCustomMetricRequest",
+            ("properties/123/customMetrics/1",),
+        ),
+        ("beta", "delete_key_event", "DeleteKeyEventRequest", ("properties/123/keyEvents/1",)),
+    ],
+)
+def test_remaining_writes_construct_real_requests_once(
+    monkeypatch, surface, adapter, request_name, arguments
+):
+    from google.analytics import admin_v1beta
+
+    api = alpha_types if surface == "alpha" else admin_v1beta.types
+    client = MagicMock(spec=AlphaClient if surface == "alpha" else BetaClient)
+    requests = []
+
+    def call(**kwargs):
+        requests.append(
+            getattr(api, request_name)(kwargs["request"])
+            if "request" in kwargs
+            else getattr(api, request_name)(**kwargs)
+        )
+
+    getattr(client, adapter).side_effect = call
+    monkeypatch.setattr(
+        ga4_admin,
+        "_get_admin_alpha_client" if surface == "alpha" else "_get_admin_client",
+        lambda **k: client,
+    )
+    out = getattr(ga4_admin, adapter)(*arguments)
+    assert out["status"] in ("deleted", "archived", "reordered")
+    assert len(requests) == 1
+    if adapter == "reorder_event_edit_rules":
+        assert list(requests[0].event_edit_rules) == arguments[2]
+    else:
+        assert requests[0].name == arguments[0]
 
 
 @pytest.fixture(autouse=True)

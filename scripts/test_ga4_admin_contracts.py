@@ -86,3 +86,25 @@ def test_property_audit_surfaces_retention_failure(monkeypatch):
     monkeypatch.setattr(ga4_admin, "list_custom_defs", lambda _: {})
     out = ga4_audit.run_property("123")
     assert any(f["title"] == "Could not fetch data retention settings" for f in out["findings"])
+
+
+def test_rule_and_audience_reads_use_real_alpha_resources(monkeypatch):
+    from google.analytics.admin_v1alpha.types import Audience, EventCreateRule, EventEditRule
+
+    client = MagicMock(spec=AlphaClient)
+    client.list_event_edit_rules.return_value = [EventEditRule(display_name="Edit")]
+    client.list_event_create_rules.return_value = [EventCreateRule(destination_event="derived")]
+    client.list_audiences.return_value = [
+        Audience(name="properties/123/audiences/1", display_name="Audience")
+    ]
+    client.get_audience.return_value = Audience(
+        name="properties/123/audiences/1", description="person@example.com"
+    )
+    monkeypatch.setattr(ga4_admin, "_get_admin_alpha_client", lambda **k: client)
+    assert (
+        ga4_admin.list_event_rules("123", "9")["create_rules"][0]["destination_event"] == "derived"
+    )
+    assert ga4_admin.list_audiences("123")[0]["display_name"] == "Audience"
+    ga4_admin.list_audiences("123")
+    assert client.list_audiences.call_count == 2  # Deliberately uncached.
+    assert "person@example.com" not in str(ga4_admin.get_audience("properties/123/audiences/1"))

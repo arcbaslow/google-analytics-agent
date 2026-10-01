@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock
 
 import ga4_advertising as advertising
@@ -94,3 +95,34 @@ def test_invalid_conversion_request_is_rejected(kwargs):
     args = {"start_date": "2026-09-01", "end_date": "2026-09-30", **kwargs}
     with pytest.raises(ValueError):
         advertising.run_conversion_report("123", ["allConversionsByConversionDate"], [], **args)
+
+
+def test_cli_optional_support_and_validation_without_auth(monkeypatch, capsys):
+    monkeypatch.setattr(advertising, "_supported", lambda: False)
+    monkeypatch.setattr("sys.argv", ["advertising", "--property", "123", "--metadata"])
+    assert advertising.main() == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "unsupported"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "advertising",
+            "--property",
+            "123",
+            "--start-date",
+            "2026-09-01",
+            "--end-date",
+            "2026-09-02",
+            "--dimensions",
+            "",
+            "--conversion-actions",
+            "conversionActions/123",
+        ],
+    )
+    assert advertising.main() == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "unsupported"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["advertising", "--property", "123", "--conversion-actions", "person@example.com"],
+    )
+    assert advertising.main() == 1
+    assert "person@example.com" not in capsys.readouterr().err
