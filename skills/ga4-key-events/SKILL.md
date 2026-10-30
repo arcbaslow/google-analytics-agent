@@ -30,8 +30,8 @@ Scope required: `analytics.edit`.
 
 ## Counting methods
 
-- `ONCE_PER_EVENT` — every event hit counts (default; matches old "Standard")
-- `ONCE_PER_SESSION` — one count per session no matter how many fires
+- `ONCE_PER_EVENT` - every event hit counts (default; matches old "Standard")
+- `ONCE_PER_SESSION` - one count per session no matter how many fires
 
 High-frequency events (`add_to_cart`, `page_view`) use `ONCE_PER_EVENT`
 when every fire matters. Lead-gen forms and signup events typically use

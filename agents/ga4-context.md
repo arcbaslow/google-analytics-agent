@@ -74,7 +74,7 @@ paragraph:
 }
 ```
 
-Findings are optional — surface them only when the site analysis flags a
+Findings are optional - surface them only when the site analysis flags a
 concrete tagging or instrumentation risk. Do not invent findings to fill
 the section.
 

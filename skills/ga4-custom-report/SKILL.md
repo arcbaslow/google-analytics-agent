@@ -56,18 +56,18 @@ See [report fields](../../docs/REPORT_FIELDS.md) for filters and limits.
 
 ## Output formats
 
-- `json` (default) — adapter output with rows and available response metadata
-- `md` — Markdown table
-- `csv` — flattened rows, no metadata
-- `html` — single-report Manrope-styled HTML (same look as audit report)
-- `pdf` — HTML rendered via WeasyPrint
+- `json` (default) - adapter output with rows and available response metadata
+- `md` - Markdown table
+- `csv` - flattened rows, no metadata
+- `html` - single-report Manrope-styled HTML (same look as audit report)
+- `pdf` - HTML rendered via WeasyPrint
 
 ## Useful starter reports
 
-- **funnel-by-channel** — purchase funnel events broken down by channel group
-- **landing-page-revenue** — landing page × purchase value
-- **device-conversion** — sessions and conversions by device category
-- **search-terms** — site search keyword volume
+- **funnel-by-channel** - purchase funnel events broken down by channel group
+- **landing-page-revenue** - landing page × purchase value
+- **device-conversion** - sessions and conversions by device category
+- **search-terms** - site search keyword volume
 
 For each, save a definition once with `--save-report`, then re-run weekly.
 

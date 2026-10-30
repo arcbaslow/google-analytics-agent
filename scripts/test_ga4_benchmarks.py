@@ -51,7 +51,7 @@ def test_markdown_and_html_benchmark_annotations_disclose_limitations():
     )
 
 
-# ---------- compare() — happy paths ----------
+# ---------- compare() - happy paths ----------
 
 
 def test_compare_bounce_rate_above_p75_is_critical_for_ecomm():

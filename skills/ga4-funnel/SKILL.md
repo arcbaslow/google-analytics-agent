@@ -24,8 +24,8 @@ metadata:
 
 ## Funnel inputs
 
-- `--steps event1,event2,event3` — arbitrary list of GA4 event names; the funnel runs in the listed order.
-- `--preset ecomm` — convenience preset for the recommended e-commerce purchase funnel: `view_item -> add_to_cart -> begin_checkout -> add_payment_info -> purchase`.
+- `--steps event1,event2,event3` - arbitrary list of GA4 event names; the funnel runs in the listed order.
+- `--preset ecomm` - convenience preset for the recommended e-commerce purchase funnel: `view_item -> add_to_cart -> begin_checkout -> add_payment_info -> purchase`.
 - Neither flag: the agent proposes a funnel based on which events fire on the property.
 
 ## Optional checks
@@ -33,7 +33,7 @@ metadata:
 - `--check-postpayment` (off by default): runs the post-payment heuristic
   against `add_payment_info`. If the count is within 10% of `purchase`, the
   result is a hypothesis to investigate; it neither proves order nor removes a step.
-- `--breakdown <dim>` — funnel split by one dimension (e.g.
+- `--breakdown <dim>` - funnel split by one dimension (e.g.
   `deviceCategory`, `sessionDefaultChannelGroup`).
 
 ## Date range

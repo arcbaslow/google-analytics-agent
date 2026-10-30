@@ -118,7 +118,7 @@ def test_healthy_audit_produces_no_critical_findings(monkeypatch):
     assert "Overall funnel conversion rate" in _titles(findings, "Low")
 
     # Full ecomm taxonomy means parameter coverage was actually checked and
-    # passed — no coverage findings.
+    # passed - no coverage findings.
     assert not any("coverage below" in t for t in _titles(findings))
 
     # Attribution ran (key events exist) and direct share was healthy.
