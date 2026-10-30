@@ -181,7 +181,7 @@ vertical and appends a band + interpretation phrase to the finding line.
 - No `feat:` / `fix:` / `chore:` Conventional Commits prefixes.
 - No `Co-Authored-By:` trailers, no `Generated with...` footers.
 - Plain imperative commit messages, sentence-case acceptable.
-- Don't generalize the tool's framing toward any single industry — funnel
+- Don't generalize the tool's framing toward any single industry - funnel
   analysis here works for e-commerce, lead-gen, SaaS, content, anything
   expressible as an ordered list of GA4 events.
 

@@ -286,7 +286,7 @@ def run_events(property_id, days=7):
     data["ecomm_events_missing"] = [e for e in ecomm_events if present.get(e, 0) == 0]
 
     if fires_count == len(ecomm_events):
-        # Full ecomm taxonomy — validate parameter coverage on the critical events.
+        # Full ecomm taxonomy - validate parameter coverage on the critical events.
         for ev in ("purchase", "add_to_cart"):
             try:
                 coverage = ga4_events.event_params_coverage(property_id, ev, days=days)
@@ -862,7 +862,7 @@ def orchestrate(
 
     agents_output: list[dict[str, Any]] = []
 
-    # ga4-context "agent" — wrap the analyzer output in the agent envelope so
+    # ga4-context "agent" - wrap the analyzer output in the agent envelope so
     # the report has a context summary line in its executive section.
     site = (context or {}).get("site") or {}
     summary = site.get("summary") or "context profile complete"

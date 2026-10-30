@@ -134,7 +134,7 @@ Before any analysis command, verify auth:
 python scripts/ga4_auth.py --check
 ```
 
-If auth fails, prefer Google's own ADC path — install gcloud and run:
+If auth fails, prefer Google's own ADC path - install gcloud and run:
 
 ```bash
 python scripts/ga4_auth.py --adc          # prints the gcloud command

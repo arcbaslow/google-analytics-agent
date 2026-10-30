@@ -1,6 +1,6 @@
 # Verification
 
-## Roadmap completion — 2026-10-01
+## Roadmap completion - 2026-10-01
 
 Continued from `52d00f0` on `roadmap-work`. The owner explicitly authorized
 all remaining items, including larger implementations. All actionable Now,
@@ -107,7 +107,7 @@ The final documentation commit records this review; its hash is in the branch lo
 The sections below are historical records and describe the scope and limits
 at those earlier checkpoints.
 
-## Next: report field discovery — 2026-09-30
+## Next: report field discovery - 2026-09-30
 
 Continued after `74a3335`, which completed the Google client compatibility
 item. Added explicit beta `getMetadata` and `checkCompatibility` adapters,
@@ -144,7 +144,7 @@ features were added. Live field availability, compatibility, permissions and
 propagation remain deliberately unverified; local tests ran only on Python
 3.12.14/Windows, with the external no-network/no-credential-file guard.
 
-## Next: Google client compatibility — 2026-09-30
+## Next: Google client compatibility - 2026-09-30
 
 Continued on `roadmap-work` at the owner's request to work through the roadmap.
 Starting commit: `2393862`. Baseline checks passed again: 495 tests, 96.07%
@@ -187,7 +187,7 @@ To reproduce the minimum environment, install `.[dev]` with
 checks. The constraints limit the two Analytics clients only. The local
 pytest command adds `-p offline_guard` with the same `PYTHONPATH` as below.
 
-## Roadmap work — 2026-09-30
+## Roadmap work - 2026-09-30
 
 Local branch: `roadmap-work`, created from master `aec65cb`. Package version
 remains 0.5.3. No push, PR, tag, release or publication was performed.
@@ -280,7 +280,7 @@ new semantics, cost/permission concerns or broader interfaces.
   migrated. Cache principal isolation, in-flight invalidation races and DNS
   rebinding require separate designs recorded in the roadmap.
 
-## Historical release verification — v0.5.2
+## Historical release verification - v0.5.2
 
 Date: 2026-09-08. Local environment: Windows, Python 3.12.14; Node.js 24 for GTM Diff.
 

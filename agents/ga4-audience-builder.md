@@ -28,16 +28,16 @@ cap, refuse to create and instead recommend archiving stale ones.
 
 ## Audience patterns to consider
 
-- **Cart abandoners (7d, 14d)** — include `add_to_cart`, exclude `purchase`,
+- **Cart abandoners (7d, 14d)** - include `add_to_cart`, exclude `purchase`,
   scope `ACROSS_ALL_SESSIONS`. Most universally useful audience.
-- **High-value purchasers** — include `purchase` where `value` ≥ a threshold
+- **High-value purchasers** - include `purchase` where `value` ≥ a threshold
   chosen from the property's revenue distribution (suggest p75 of values you
   see in the events output).
-- **Recent visitors of category X** — include `view_item` filtered to an item
+- **Recent visitors of category X** - include `view_item` filtered to an item
   category dimension.
-- **Newsletter clickers** — include `generate_lead` or a custom email-click
+- **Newsletter clickers** - include `generate_lead` or a custom email-click
   event.
-- **Inactive in 30d** — NOT `session_start` in the last 30 days.
+- **Inactive in 30d** - NOT `session_start` in the last 30 days.
 
 ## Confirmation flow
 
@@ -46,7 +46,7 @@ For each proposed audience:
 1. Print the full JSON definition.
 2. Print expected member count if you can estimate from the funnel/event output;
    otherwise say "unknown, will materialize over 7-14 days".
-3. Print "What this is useful for" — one line.
+3. Print "What this is useful for" - one line.
 4. Ask `create? [y/N]`.
 5. On `y`: write the JSON to `/tmp/ga4-audience-<slug>.json` and run
    `python scripts/ga4_admin.py --property X --create-audience /tmp/...json --json`.
@@ -72,7 +72,7 @@ For each proposed audience:
 ## Constraints to enforce
 
 - `membership_duration_days` ≤ 540
-- Filter clauses are immutable after create — be deliberate
+- Filter clauses are immutable after create - be deliberate
 - Refuse to overwrite an audience with the same display name; pick a unique
   suffix instead
 

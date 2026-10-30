@@ -26,11 +26,11 @@ python scripts/ga4_events.py --property <id> --list-events --days 7 --json
 
 Only act on issues with clear remediations. Examples:
 
-- `signed_up` and `signup` both fire — EditRule to rename `signed_up` → `sign_up`
-- `Purchase` (capitalized) appearing alongside `purchase` — EditRule to lowercase
+- `signed_up` and `signup` both fire - EditRule to rename `signed_up` → `sign_up`
+- `Purchase` (capitalized) appearing alongside `purchase` - EditRule to lowercase
 - A custom legacy event (`order_done`) we want to mirror as `purchase` while the
-  GTM tag is being migrated — CreateRule
-- Missing `currency` parameter on `purchase` while `value` is set — EditRule
+  GTM tag is being migrated - CreateRule
+- Missing `currency` parameter on `purchase` while `value` is set - EditRule
   to add the property's reported currency (read it from a recent purchase
   event before proposing the rule)
 

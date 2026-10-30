@@ -25,9 +25,9 @@ SOURCE_STATUS = "unverified_heuristic"
 SOURCE_NOTE = "Unverified heuristic bands; p25/p50/p75 are legacy labels, not measured population percentiles."
 
 # direction: how to interpret values
-#   "lower_better"  — higher = worse (bounce_rate, direct_share, cart_abandon)
-#   "higher_better" — higher = better (engagement_rate, conversion_rate, pages_per_session)
-#   "neutral"       — value is contextual (mobile_share, lang_count)
+#   "lower_better" - higher = worse (bounce_rate, direct_share, cart_abandon)
+#   "higher_better" - higher = better (engagement_rate, conversion_rate, pages_per_session)
+#   "neutral" - value is contextual (mobile_share, lang_count)
 _DIRECTION = {
     "bounce_rate": "lower_better",
     "engagement_rate": "higher_better",

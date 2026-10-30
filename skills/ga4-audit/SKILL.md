@@ -79,14 +79,14 @@ education, nonprofit, other. See `python scripts/ga4_benchmarks.py
 The unified report is rendered by `scripts/ga4_report.py`. The markdown
 template has no emoji and includes:
 
-1. **Header** — property ID, generation timestamp, confidence label, benchmark vertical
-2. **Property Context** — homepage status, inferred vertical / platform / framework, language, SPA-vs-MPA, sitemap-derived page-type inventory
-3. **Executive Summary** — one bullet per agent
-4. **Action Plan** — findings grouped by severity (Critical / High / Medium / Low). Each finding shows source agent and benchmark band where applicable, e.g.
+1. **Header** - property ID, generation timestamp, confidence label, benchmark vertical
+2. **Property Context** - homepage status, inferred vertical / platform / framework, language, SPA-vs-MPA, sitemap-derived page-type inventory
+3. **Executive Summary** - one bullet per agent
+4. **Action Plan** - findings grouped by severity (Critical / High / Medium / Low). Each finding shows source agent and benchmark band where applicable, e.g.
 
    > **Bounce rate above the heuristic upper band** _(source: ga4-quality)_ (value 0.74, vertical ecommerce, p25 0.35 / p50 0.45 / p75 0.58, band above_p75, interpretation critical; unverified heuristic)
 
-5. **Per-Agent Output** — each agent's summary + raw JSON in a collapsed `<details>` block
+5. **Per-Agent Output** - each agent's summary + raw JSON in a collapsed `<details>` block
 
 To export HTML or PDF instead, pass `--format html` or `--format pdf`.
 
@@ -115,7 +115,7 @@ a `metric_value` (float):
 
 The reporter calls `ga4_benchmarks.compare()` and appends the band /
 interpretation automatically. Findings without a metric just print
-without a benchmark annotation — that's fine for qualitative findings.
+without a benchmark annotation - that's fine for qualitative findings.
 
 ## Error Handling
 

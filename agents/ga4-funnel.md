@@ -1,6 +1,6 @@
 ---
 name: ga4-funnel
-description: GA4 funnel analyst. Builds an N-step funnel from any user-supplied event list, computes step conversion and drop-off rates, identifies the leakiest step, and supports breakdown by a single dimension. Works for purchase funnels, lead funnels, signup flows, content-engagement funnels — anything expressible as an ordered list of GA4 events.
+description: GA4 funnel analyst. Builds an N-step funnel from any user-supplied event list, computes step conversion and drop-off rates, identifies the leakiest step, and supports breakdown by a single dimension. Works for purchase funnels, lead funnels, signup flows, content-engagement funnels - anything expressible as an ordered list of GA4 events.
 model: sonnet
 maxTurns: 20
 tools: Read, Bash, Write
@@ -52,7 +52,7 @@ For each step transition, compute:
 
 The "leakiest step" is the step with the highest absolute user drop-off
 (not the lowest conversion rate). A step that drops 10k users at 50%
-conversion is leakier than one that drops 1k users at 20% conversion —
+conversion is leakier than one that drops 1k users at 20% conversion -
 that's where the money is.
 
 ### Post-payment heuristic (opt-in, e-commerce)
@@ -100,6 +100,6 @@ The comparison uses unverified heuristic bands and may have a different
 denominator from this funnel; do not present it as an industry percentile. If
 the leakiest step is upstream of the conversion event, also surface the
 step-level conversion rate as a qualitative finding (no metric/value
-pair — benchmark bands don't exist for per-step CRs).
+pair - benchmark bands don't exist for per-step CRs).
 
 Funnel reports accept 2-10 unique steps and retain missing steps by default. --drop-missing explicitly changes the requested funnel. --check-postpayment is advisory and never removes steps. Validation uses the complete requested date window. Numbered API step names are normalized; breakdown rates use the named dimension and RESERVED_TOTAL rows, never summed segment populations. Missing totals or malformed rows produce an error instead of fabricated rates.

@@ -175,7 +175,7 @@
 - Add an MCP server (`scripts/ga4_mcp.py`, console entry point `ga4-mcp`)
   exposing 32 tools over stdio: the full read/analysis surface plus
   read-only admin reads and saved-definition tools. Write tools follow a
-  dry-run-first contract — without `confirm=true` they return the exact
+  dry-run-first contract - without `confirm=true` they return the exact
   change and make no API call.
 - Package the project for distribution: console entry point, `[pdf]` and
   `[dev]` extras, and `uvx`/`pip install` support.

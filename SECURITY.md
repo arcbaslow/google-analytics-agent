@@ -22,7 +22,7 @@ Please do not file public issues for security problems.
 ## What's out of scope
 
 - Misuse of the toolkit against a property you do not own
-- Bugs in the upstream Google APIs themselves — report those to Google
+- Bugs in the upstream Google APIs themselves - report those to Google
 - Issues that require an attacker with shell access to the user's
   machine (they already own `~/.claude/`)
 

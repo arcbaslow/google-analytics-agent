@@ -13,7 +13,7 @@ metadata:
 # GA4: Property Context
 
 The first thing the auditor needs to know is what the property *is*. The
-GA4 API can't tell you that — the data stream only points at a URL. This
+GA4 API can't tell you that - the data stream only points at a URL. This
 skill walks from the GA4 property to that URL, fetches the live site,
 and produces a structured profile that every downstream agent can lean
 on:
@@ -38,7 +38,7 @@ on:
    ```
 3. If the user asks for a refresh of a cached profile, pass `--refresh`.
 4. Spawn the `ga4-context` agent only if the user wants a human-readable
-   summary of the raw analysis. Otherwise the JSON output is enough — it
+   summary of the raw analysis. Otherwise the JSON output is enough - it
    is consumed directly by other skills.
 
 ## Direct commands
@@ -78,14 +78,14 @@ on:
 
 ## Caveats
 
-The fetch is a plain HTTP GET — no JS execution. SPA pages return their
+The fetch is a plain HTTP GET - no JS execution. SPA pages return their
 shell HTML; framework detection still works (Next, Nuxt, React, Vue
 leave server-side markers) but per-route content does not. For deeper
 inspection use a headless-browser tool outside this skill.
 
 The fetch obeys a 12-second timeout per URL, an 800 KB cap on the
 homepage download, and the first 200 URLs of any sitemap. Sites that
-block non-browser user agents will return a 4xx — the skill records
+block non-browser user agents will return a 4xx - the skill records
 that gracefully and the context is still useful for downstream agents
 (they just lose the inferred vertical, which the user can override on
 the audit command line).

@@ -74,16 +74,16 @@ gcloud auth application-default login --scopes=https://www.googleapis.com/auth/a
 
 ## Limits and constraints
 
-- v1alpha API — schema may change; recheck on SDK bump.
+- v1alpha API - schema may change; recheck on SDK bump.
 - Web streams only (per current Admin docs).
 - Edit rules run in a defined order; use `reorder_event_edit_rules` to rearrange.
 - Edit rules **cannot** modify events produced by create rules.
 
 ## Common mistakes to flag
 
-- Renaming `purchase` — breaks every conversion report and Ads import. Refuse without explicit confirmation in the message.
-- Mutating `transaction_id` — kills duplicate-purchase detection.
-- Creating a synthesized event whose name collides with a real one — produces double-counting.
+- Renaming `purchase` - breaks every conversion report and Ads import. Refuse without explicit confirmation in the message.
+- Mutating `transaction_id` - kills duplicate-purchase detection.
+- Creating a synthesized event whose name collides with a real one - produces double-counting.
 
 Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
 and asks `y/N` for that operation. Run it in an interactive terminal; piped

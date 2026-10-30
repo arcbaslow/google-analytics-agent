@@ -45,7 +45,7 @@ source .venv/bin/activate              # or .venv\Scripts\Activate.ps1 on Window
 pip install -r scripts/requirements.txt
 ```
 
-For PDF report rendering (optional — markdown is the default):
+For PDF report rendering (optional - markdown is the default):
 
 ```
 pip install -e ".[pdf]"

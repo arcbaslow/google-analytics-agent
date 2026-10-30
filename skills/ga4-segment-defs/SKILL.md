@@ -1,6 +1,6 @@
 ---
 name: ga4-segment-defs
-description: "Saved GA4 segment definitions stored as local JSON. GA4 has no stored Segment resource — segments only exist inside Explorations. This skill saves filter expressions to ~/.claude/ga4-definitions/segments/ and applies them as dimensionFilter on Data API runReport calls. Use for reusable cohorts on the public API. For stored cohorts that work in GA4 reports and Google Ads, use ga4-audiences. For funnel drop-off cohort analysis, use ga4-segments."
+description: "Saved GA4 segment definitions stored as local JSON. GA4 has no stored Segment resource - segments only exist inside Explorations. This skill saves filter expressions to ~/.claude/ga4-definitions/segments/ and applies them as dimensionFilter on Data API runReport calls. Use for reusable cohorts on the public API. For stored cohorts that work in GA4 reports and Google Ads, use ga4-audiences. For funnel drop-off cohort analysis, use ga4-segments."
 user-invokable: true
 argument-hint: "[--save <name> --field F --op OP --value V] [--save-json <name> <path>] [--list] [--delete <name>]"
 license: MIT
@@ -13,7 +13,7 @@ metadata:
 # GA4: Saved Segment Definitions
 
 GA4 has no public Segment API. We persist filter expressions locally and inject
-them into `runReport` calls — same effect for analytics, but they do not
+them into `runReport` calls - same effect for analytics, but they do not
 propagate to the GA4 UI or to Google Ads. Users who need cohorts visible inside
 GA4 should use the `ga4-audiences` skill instead. For funnel drop-off cohort
 analysis (read-only), use `ga4-segments`.

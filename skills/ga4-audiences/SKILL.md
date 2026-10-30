@@ -12,7 +12,7 @@ metadata:
 
 # GA4: Audiences
 
-Audiences are **immutable post-create** for their filter clauses — only
+Audiences are **immutable post-create** for their filter clauses - only
 `display_name` and `description` can be changed afterward. To alter the
 filter, archive the existing audience and create a new one.
 
