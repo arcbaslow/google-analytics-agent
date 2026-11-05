@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Google Analytics Agent - GA4 data quality, funnels and property management." width="100%">
+  <img src="assets/hero.jpg" alt="Google Analytics Agent: small robots on ladders measure each tier of a glass funnel with calipers while particles flow down into a short bar chart." width="100%">
 </p>
 
 # Google Analytics Agent
@@ -11,7 +11,7 @@ GA4 data quality, funnels and property management.
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-d97706?logo=python&logoColor=white)](#installation)
 [![MIT license](https://img.shields.io/badge/license-MIT-475569)](LICENSE)
 
-[Quick start](#quick-start) · [Example output](#example-output) · [Tests](#tests) · [Releases](#releases) · [Contributing](CONTRIBUTING.md)
+[Quick start](#quick-start) | [How an audit runs](#how-an-audit-runs) | [Example output](#example-output) | [MCP server](#mcp-server) | [Tests](#tests) | [Contributing](CONTRIBUTING.md)
 
 A Python CLI and MCP server for inspecting Google Analytics 4 properties. It combines the Data and Admin APIs with website context, configurable funnels, segment comparisons and benchmark annotations, then produces a prioritized audit report.
 
@@ -28,13 +28,30 @@ A Python CLI and MCP server for inspecting Google Analytics 4 properties. It com
 | Exploration | Uncached realtime, same-property group/date comparisons and alpha advertising conversion reports |
 | Export evidence | Optional BigQuery aggregate queries with dry-run defaults and byte caps |
 
+## How an audit runs
+
+```mermaid
+flowchart LR
+  A["Property context<br/>web stream, site, vertical"] --> B["Data quality"]
+  A --> C["Property config"]
+  B --> D["Events<br/>up to 7 days"]
+  C --> D
+  D --> E["Funnel"]
+  D --> F["Key events"]
+  D --> G["Segments"]
+  F --> H{"Key events<br/>configured?"}
+  H -- yes --> I["Attribution"]
+  H -- no --> J["Attribution skipped"]
+  E & G & I & J --> K["Report with<br/>confidence label"]
+  classDef step fill:#fdf3e6,stroke:#d97706,color:#17202a
+  class A,B,C,D,E,F,G,H,I,J,K step
+```
+
+Quality and property checks run side by side, then events. Funnel, key events and segments run in parallel after that. Funnel steps come from `--funnel-steps`, or from the e-commerce events the events check found when at least four of them fire; otherwise the funnel is skipped. The report's confidence label comes from the quality check.
+
 ## Installation
 
-Requires **Python 3.10+**. For the source CLI:
-
-The package requires Google Data client 0.18.16+ and Admin client 0.23.0+
-(both below 1.0). Reporting identity requires Admin 0.25.0+; older supported
-clients return `status: unsupported` for that read.
+Requires **Python 3.10+**, Google Analytics Data client 0.18.16+ and Admin client 0.23.0+ (both below 1.0). Reporting identity requires Admin 0.25.0+; older supported clients return `status: unsupported` for that read. For the source CLI:
 
 ```bash
 git clone https://github.com/arcbaslow/google-analytics-agent.git
@@ -85,11 +102,6 @@ Inspect the [generated report](examples/demo/report.md) and [source fixtures](ex
 
 ## MCP server
 
-Use `ga4_data.py --property 123 --metadata --json` to discover report fields,
-or `--check-compatibility --metrics sessions --dimensions date --json` for
-an explicit Core compatibility check. MCP exposes these as `report_metadata`
-and `check_compatibility`. See [report fields](docs/REPORT_FIELDS.md).
-
 For an MCP client that supports `mcpServers` configuration:
 
 ```json
@@ -104,6 +116,8 @@ For an MCP client that supports `mcpServers` configuration:
 ```
 
 Authenticate on the machine running the server before querying it. `uvx` installs the available registry version; to run the current checkout, install `.[mcp]` and set the client's command to the absolute path of `.venv/bin/ga4-mcp` (or `.venv\Scripts\ga4-mcp.exe` on Windows).
+
+Use `ga4_data.py --property 123 --metadata --json` to discover report fields, or `--check-compatibility --metrics sessions --dimensions date --json` for an explicit Core compatibility check. MCP exposes these as `report_metadata` and `check_compatibility`. See [report fields](docs/REPORT_FIELDS.md).
 
 Read tools cover audits, reports, context, funnels, events, quality and property configuration. MCP write tools return previews. `confirm=true` cannot supply terminal approval. Use `propose_admin_write` to prepare an expiring, single-use proposal, then run its approval command yourself and answer `y/N`. See the [approval workflow](docs/APPROVALS.md) and [registered tools](scripts/ga4_mcp.py).
 
@@ -136,7 +150,7 @@ Admin writes require the appropriate property role and `analytics.edit` scope; p
 
 Cacheable Data/Admin reads use a 15-minute cache isolated by resolved identity and scopes. Successful Admin writes invalidate all property queries; context has a separate 24-hour expiry. Explicit exploration, advertising, history and BigQuery reads are uncached. Responses pass through [PII scrubbing](scripts/ga4_utils.py), which cannot guarantee that every identifying value is removed. Partial reports expose `complete: false` and must not be presented as totals.
 
-The bundled benchmark bands cover nine verticals. They are directional estimates stored in the repository, not live market measurements. Confidence labels describe the observed data-quality conditions; they do not establish causality. The audit supports arbitrary event journeys, although the legacy HTML template still uses an e-commerce heading.
+The bundled benchmark bands cover nine verticals. They are directional estimates stored in the repository, not live market measurements. Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`; their p25/p50/p75 names are legacy band labels, not verified population percentiles. Do not present them as evidence of industry performance or use them alone to set severity. See [the source review](docs/ROADMAP.md). Confidence labels describe the observed data-quality conditions; they do not establish causality. The audit supports arbitrary event journeys, although the legacy HTML template still uses an e-commerce heading.
 
 ## Tests
 
@@ -154,7 +168,7 @@ CI runs on Python 3.10–3.13 with a **93% production-only coverage floor**, exc
 | Path | Purpose |
 | --- | --- |
 | [scripts/](scripts/) | Data/Admin adapters, MCP server, report renderer and tests |
-| [agents/](agents/) · [skills/](skills/) | Specialist analysis and `/ga4` routing |
+| [agents/](agents/), [skills/](skills/) | Specialist analysis and `/ga4` routing |
 | [examples/demo/](examples/demo/) | Synthetic report inputs and generated Markdown |
 | [docs/](docs/) | Setup, releases and verification |
 
@@ -183,8 +197,3 @@ Maintained by [Good Labs](https://goodlabs.kz) - measurement implementation, tra
 ## License
 
 [MIT](LICENSE) © Dilshat Rakhimov. This is an independent project; it is not an official product of the platform vendors.
-
-Benchmark tables and comparisons are labeled `source_status: unverified_heuristic`.
-Their p25/p50/p75 names are legacy band labels, not verified population
-percentiles. Do not present them as evidence of industry performance or use
-them alone to set severity. See [the source review](docs/ROADMAP.md).
