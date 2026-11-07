@@ -68,12 +68,7 @@ Pass `--format html` or `--format pdf` when the user wants those.
 - No `Co-Authored-By:` trailers, no `Generated with...` footers, no emoji.
 - Commit message style: short imperative sentence, sentence-case acceptable.
 
-## Asset role (2026-08)
-
-Shipped and public. Maintenance mode: bugfixes, Google API version bumps,
-and docs only - the active OSS build slot belongs to capi-kit. Role:
-portfolio proof for the measurement practice; the README should keep a link
-to Good Labs services. New features need an explicit owner decision.
+## Writes, PII and cache
 
 Every Admin write is gated inside `ga4_admin.py`: it prints a scrubbed proposal
 and asks `y/N` for that operation. Run it in an interactive terminal; piped

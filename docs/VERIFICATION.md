@@ -223,7 +223,7 @@ Python 3.10, 3.11, 3.13 and Ubuntu were not exercised locally. The separate
 release workflow's packaging/publishing path was not run for this branch.
 
 To honor the no-credentials-file constraint, this review used an external
-pytest plugin, `../ga4-review-tools/offline_guard.py`, outside the repository.
+pytest plugin, `offline_guard`, kept outside the repository.
 It intercepted synthetic `ga4-credentials.json` IO in memory, blocked access
 to `.secrets/`, disabled ADC discovery, and blocked socket connections.
 Existing auth tests could still replace the mocked auth functions themselves.
@@ -234,7 +234,7 @@ not project dependencies or staged files.
 The actual local test command, from the repository in PowerShell, was:
 
 ```powershell
-$env:PYTHONPATH = 'C:\Program Data\Repository\ga4-review-tools'
+$env:PYTHONPATH = '<path-to-offline_guard>'
 .\.venv\Scripts\python.exe -m pytest -p offline_guard scripts/ -q --cov=scripts --cov-report=term-missing --cov-fail-under=93
 ```
 
