@@ -144,8 +144,10 @@ def test_non_auth_error_is_not_swallowed():
 
 
 def test_server_reports_resolved_package_version():
-    assert ga4_mcp.mcp._mcp_server.version == ga4_mcp._resolve_version()
-    assert ga4_mcp.mcp._mcp_server.version  # non-empty
+    server = ga4_mcp.mcp
+    version = server.version if hasattr(server, "version") else server._mcp_server.version
+    assert version == ga4_mcp._resolve_version()
+    assert version  # non-empty
 
 
 # ---------- dry-run / confirm contract across every write tool ----------

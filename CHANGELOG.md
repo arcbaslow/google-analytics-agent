@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Support MCP SDK 2.x (`MCPServer`) as well as 1.x (`FastMCP`); the MCP dependency range is now `mcp>=1.2,<3`.
+
 - Measure production-only coverage at the existing 93% CI floor, with real SDK request contracts for all 15 Admin writers and offline SQL semantics tests.
 
 ### Added

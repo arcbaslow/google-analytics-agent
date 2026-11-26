@@ -28,7 +28,6 @@ import ga4_explore
 import ga4_funnel
 from ga4_transport import error_result, read_budget
 from ga4_utils import scrub_pii
-from mcp.server.fastmcp import FastMCP
 
 
 def _resolve_version() -> str:
@@ -46,11 +45,18 @@ def _resolve_version() -> str:
         return "0.0.0+source"
 
 
-mcp = FastMCP("google-analytics-agent")
-# FastMCP has no `version` constructor argument; the underlying low-level server
-# otherwise reports the `mcp` library's own version on initialize. Set our real
-# package version so MCP clients see the toolkit version, not the SDK's.
-mcp._mcp_server.version = _resolve_version()
+mcp: Any
+try:
+    from mcp.server import MCPServer  # type: ignore[attr-defined, unused-ignore]
+except ImportError:  # mcp 1.x
+    from mcp.server.fastmcp import FastMCP  # type: ignore[attr-defined, unused-ignore]
+
+    mcp = FastMCP("google-analytics-agent")
+    # FastMCP has no `version` constructor argument; the underlying low-level server
+    # otherwise reports the `mcp` library's own version on initialize.
+    mcp._mcp_server.version = _resolve_version()
+else:
+    mcp = MCPServer("google-analytics-agent", version=_resolve_version())
 
 F = TypeVar("F", bound=Callable[..., Any])
 
