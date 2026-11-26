@@ -32,7 +32,7 @@ pdf = [
   "weasyprint>=60.0"
 ]
 mcp = [
-  "mcp>=1.2,<2"
+  "mcp>=1.2,<3"
 ]
 dev = [
   "pytest>=7.4.0",
@@ -42,7 +42,7 @@ dev = [
   "google-cloud-bigquery>=3.25,<4",
   "duckdb>=1.1,<2",
   "sqlglot>=25,<31",
-  "mcp>=1.2,<2"
+  "mcp>=1.2,<3"
 ]
 
 [project.scripts]
