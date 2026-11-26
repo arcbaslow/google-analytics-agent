@@ -10,6 +10,7 @@ GA4 data quality, funnels and property management.
 [![Release](https://img.shields.io/github/v/release/arcbaslow/google-analytics-agent?color=d97706&label=release)](https://github.com/arcbaslow/google-analytics-agent/releases)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-d97706?logo=python&logoColor=white)](#installation)
 [![MIT license](https://img.shields.io/badge/license-MIT-475569)](LICENSE)
+[![arcbaslow/google-analytics-agent MCP server](https://glama.ai/mcp/servers/arcbaslow/google-analytics-agent/badges/score.svg)](https://glama.ai/mcp/servers/arcbaslow/google-analytics-agent)
 
 [Quick start](#quick-start) | [How an audit runs](#how-an-audit-runs) | [Example output](#example-output) | [MCP server](#mcp-server) | [Tests](#tests) | [Contributing](CONTRIBUTING.md)
 
